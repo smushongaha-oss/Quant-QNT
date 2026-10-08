@@ -1,86 +1,266 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>QNT Lifetime — SNIPER logic</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FOCUS AUTO TRADERS — Spreadsheet Signal Bot</title>
 <style>
-:root{--bg:#03070c;--line:#123041;--cyan:#33d6ff;--red:#ff4d4d;--green:#3ddc84;--muted:#5f7d92}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#dff6ff;font-family:'Courier New',monospace}
-.shell{padding:8px;display:grid;gap:8px;max-width:900px;margin:auto}
-.p{background:#071018;border:1px solid var(--line);border-radius:10px;padding:10px}
-h1{font-size:14px;margin:0;color:var(--green)}small{color:var(--muted);font-size:10px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.z{border:1px solid var(--line);border-radius:6px;padding:8px;text-align:center;font-size:11px;font-weight:800}
-.z.BUY{color:var(--green);border-color:var(--green);background:rgba(61,220,132,.08)}.z.SELL{color:var(--red);border-color:var(--red);background:rgba(255,77,77,.08)}.z.NEUTRAL{color:var(--muted)}
-.banner{border:1px solid var(--line);border-radius:6px;padding:10px;text-align:center;font-weight:800;font-size:12px}
-.banner.buy{color:var(--green);border-color:var(--green)}.banner.sell{color:var(--red);border-color:var(--red)}
-.lv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:10px}
-.lv div{border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
-.e{color:var(--cyan);border-color:var(--cyan)!important}.s{color:var(--red);border-color:var(--red)!important}.t{color:var(--green);border-color:var(--green)!important}
-.chart{height:240px;background:#040b12;border:1px solid var(--line);border-radius:6px}.chart svg{width:100%;height:100%}
-table{width:100%;border-collapse:collapse;font-size:11px}td,th{padding:5px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:400}
-input,button{background:#07141f;color:var(--cyan);border:1px solid #1a7a99;border-radius:8px;padding:8px;font:inherit;font-size:12px}
-</style></head><body><div class="shell">
-<div class="p"><h1>QNT LIFETIME — SNIPER structure logic</h1>
-<small id="status">loading Binance QNTUSDT…</small></div>
-<div class="p"><div class="grid3" id="zones"></div><div class="banner" id="banner" style="margin-top:8px">…</div></div>
-<div class="p"><div class="chart"><svg id="chart" viewBox="0 0 400 240" preserveAspectRatio="none"></svg></div><small>Monthly closes, log scale. Dashed: Entry / SL / TP1.</small></div>
-<div class="p"><div class="lv" id="levels"></div></div>
-<div class="p"><b style="font-size:11px">LIFETIME STATS</b><table id="stats"></table></div>
-<div class="p"><b style="font-size:11px">MARKET-CAP SCENARIOS</b> <small>(price = target cap ÷ supply)</small><br>
-<small>Supply: <input id="supply" type="number" value="14612493" style="width:120px"></small>
-<table id="scen"></table>
-<small>Scenarios are arithmetic, not forecasts. They show what price a given market cap requires.</small></div>
-</div>
+:root{--bg:#0f1722;--card:#17212f;--line:#263447;--tx:#e6edf5;--mut:#8aa0b8;--buy:#1fa971;--sell:#e5484d;--acc:#4da3ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 Arial,Helvetica,sans-serif}
+header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+h1{font-size:18px;margin:0}h2{font-size:14px;margin:0 0 10px;color:var(--acc)}
+main{padding:14px;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.wide{grid-column:1/-1}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:5px 0;color:var(--mut)}
+input,select{background:#0c131c;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 7px;width:120px}
+input[type=text],input[type=password]{width:170px}
+button{background:var(--acc);color:#04111f;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer;margin:4px 4px 0 0}
+button.alt{background:#2a3b52;color:var(--tx)}button.stop{background:var(--sell);color:#fff}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
+.kv b{font-weight:bold}.buy{color:var(--buy)}.sell{color:var(--sell)}
+#status{color:var(--mut);font-size:12px}
+.tw{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+th{position:sticky;top:0;background:#1f2e43;padding:6px 8px;text-align:right}
+td{padding:4px 8px;text-align:right;border-top:1px solid var(--line)}
+tr.BUY td{background:rgba(31,169,113,.18)}tr.SELL td{background:rgba(229,72,77,.18)}
+td.sg{font-weight:bold;text-align:center}
+.note{color:var(--mut);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>FOCUS AUTO TRADERS — Spreadsheet Signal Bot</h1>
+  <div id="status">Idle</div>
+</header>
+<main>
+  <section class="card">
+    <h2>Settings (the "Settings sheet")</h2>
+    <label>Symbol <input id="symbol" type="text" value="R_75"></label>
+    <label>Candle size
+      <select id="gran"><option value="60">1 min</option><option value="300" selected>5 min</option><option value="900">15 min</option><option value="3600">1 hour</option></select></label>
+    <label>Candles to fetch <input id="count" type="number" value="500" min="50" max="600"></label>
+    <label>EMA fast <input id="emaF" type="number" value="9"></label>
+    <label>EMA slow <input id="emaS" type="number" value="21"></label>
+    <label>RSI period <input id="rsiN" type="number" value="14"></label>
+    <label>ATR period <input id="atrN" type="number" value="14"></label>
+    <label>Stop-loss = ATR × <input id="slM" type="number" step="0.1" value="1.5"></label>
+    <label>Reward : Risk <input id="rr" type="number" step="0.1" value="2"></label>
+    <label>BUY RSI min / max <span><input id="buyLo" type="number" value="50" style="width:55px"> <input id="buyHi" type="number" value="70" style="width:55px"></span></label>
+    <label>SELL RSI min / max <span><input id="sellLo" type="number" value="30" style="width:55px"> <input id="sellHi" type="number" value="50" style="width:55px"></span></label>
+    <label>Account balance <input id="bal" type="number" value="1000"></label>
+    <label>Risk per trade (%) <input id="riskPct" type="number" step="0.1" value="1"></label>
+    <div class="note">Derived: α fast <span id="d1"></span> · α slow <span id="d2"></span> · RSI/ATR α <span id="d3"></span> · warm-up <span id="d4"></span> bars · risk amount <span id="d5"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>Telegram &amp; alerts</h2>
+    <label>Bot token <input id="tgTok" type="password" placeholder="123456:ABC..."></label>
+    <label>Chat ID <input id="tgChat" type="text" placeholder="-100123... or your ID"></label>
+    <label>Browser notification + sound <input id="notif" type="checkbox" checked style="width:auto"></label>
+    <label>Use demo (synthetic) candles <input id="demo" type="checkbox" style="width:auto"></label>
+    <div>
+      <button id="run">▶ Start bot</button>
+      <button id="stop" class="stop" style="display:none">■ Stop</button>
+      <button id="once" class="alt">Check now</button>
+      <button id="test" class="alt">Send test message</button>
+      <button id="csv" class="alt">Export CSV</button>
+    </div>
+    <div class="note">Token &amp; settings are saved only in <b>this browser</b> (localStorage). Never hard-code your token in a public GitHub repo. The page must stay open for the bot to run.</div>
+  </section>
+
+  <section class="card">
+    <h2>Dashboard</h2>
+    <div class="kv"><span>Total signals</span><b id="k_tot">–</b></div>
+    <div class="kv"><span>Buys / Sells</span><b id="k_bs">–</b></div>
+    <div class="kv"><span>Latest signal</span><b id="k_dir">–</b></div>
+    <div class="kv"><span>Time (UTC)</span><b id="k_time">–</b></div>
+    <div class="kv"><span>Entry</span><b id="k_en">–</b></div>
+    <div class="kv"><span>Stop loss</span><b id="k_sl">–</b></div>
+    <div class="kv"><span>Take profit</span><b id="k_tp">–</b></div>
+    <div class="kv"><span>Size (units)</span><b id="k_un">–</b></div>
+    <div class="kv"><span>Bars since</span><b id="k_ago">–</b></div>
+    <div class="kv"><span>Last close</span><b id="k_c">–</b></div>
+    <div class="kv"><span>RSI / ATR</span><b id="k_ra">–</b></div>
+    <div class="kv"><span>Trend</span><b id="k_tr">–</b></div>
+  </section>
+
+  <section class="card wide">
+    <h2>Data sheet (formulas applied to every candle — newest first, last 150 rows)</h2>
+    <div class="tw"><table id="tbl"><thead><tr>
+      <th>Time (UTC)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>EMA f</th><th>EMA s</th>
+      <th>RSI</th><th>ATR</th><th>Cross</th><th>SIGNAL</th><th>Entry</th><th>SL</th><th>TP</th><th>Units</th><th>#</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="note">BUY: fast EMA crosses above slow EMA and RSI is in the BUY band. SELL is the mirror image. SL = Entry ∓ ATR×mult; TP = Entry ± ATR×mult×R:R; Units = risk amount ÷ SL distance. Mechanical signals only — not advice, not backtested. Test on demo first.</div>
+  </section>
+</main>
+
 <script>
-const BASES=['https://api.binance.com','https://data-api.binance.vision'];
-async function klines(interval,limit){
-  for(const b of BASES){try{const r=await fetch(`${b}/api/v3/klines?symbol=QNTUSDT&interval=${interval}&limit=${limit}`);if(!r.ok)continue;const j=await r.json();return j.map(k=>({epoch:k[0]/1000,open:+k[1],high:+k[2],low:+k[3],close:+k[4]}))}catch(e){}}
-  throw new Error('Binance unreachable');
+"use strict";
+const DERIV_WS = "wss://ws.derivws.com/websockets/v3?app_id=1089"; // change app_id/endpoint if needed
+const $ = id => document.getElementById(id);
+const IDS = ["symbol","gran","count","emaF","emaS","rsiN","atrN","slM","rr","buyLo","buyHi","sellLo","sellHi","bal","riskPct","tgTok","tgChat"];
+const CHECKS = ["notif","demo"];
+let timer = null, running = false, lastRows = [];
+
+/* ---------- Settings ---------- */
+function saveSettings(){
+  const o = {}; IDS.forEach(i => o[i] = $(i).value); CHECKS.forEach(i => o[i] = $(i).checked);
+  localStorage.setItem("fat_settings", JSON.stringify(o));
 }
-function computeStructure(c,lb){const n=c.length;if(n<lb*2+3)return{state:0,barsSinceBos:999};const sw=[];for(let i=lb;i<n-lb;i++){let H=true,L=true;for(let k=1;k<=lb;k++){if(c[i].high<=c[i-k].high||c[i].high<=c[i+k].high)H=false;if(c[i].low>=c[i-k].low||c[i].low>=c[i+k].low)L=false;if(!H&&!L)break}if(H)sw.push({at:i+lb,t:'H',p:c[i].high});if(L)sw.push({at:i+lb,t:'L',p:c[i].low})}sw.sort((a,b)=>a.at-b.at);let lH=null,lL=null,state=0,bos=-1,ptr=0;for(let i=0;i<n;i++){while(ptr<sw.length&&sw[ptr].at<=i){const s=sw[ptr];if(s.t==='H')lH=s.p;else lL=s.p;ptr++}if(i>0){const cl=c[i].close;if(lL!==null&&cl<lL){state=-1;bos=i;lL=null}else if(lH!==null&&cl>lH){state=1;bos=i;lH=null}}}return{state,barsSinceBos:bos===-1?999:n-1-bos}}
-function atr(c,p){if(c.length<p+1)return null;let s=0;for(let i=c.length-p;i<c.length;i++){const a=c[i],b=c[i-1];s+=Math.max(a.high-a.low,Math.abs(a.high-b.close),Math.abs(a.low-b.close))}return s/p}
-function val(r,dec){if(!r||r.state===0)return 50;const b=Math.min(r.barsSinceBos,100);return r.state===1?Math.max(50,92-dec*b):Math.min(50,8+dec*b)}
-function zone(v){return v>=60?'BUY':v<=40?'SELL':'NEUTRAL'}
-const fmt=n=>n>=100?n.toFixed(2):n.toFixed(3);
-const fmtCap=n=>n>=1e9?'$'+(n/1e9).toFixed(1)+'B':'$'+(n/1e6).toFixed(0)+'M';
-(async()=>{
- try{
-  const [M,W,D]=await Promise.all([klines('1M',200),klines('1w',500),klines('1d',500)]);
-  const price=D[D.length-1].close;
-  // lookbacks scaled for timeframe (v28 uses 20 on intraday; monthly has far fewer bars)
-  const zM=zone(val(computeStructure(M,3),4)),zW=zone(val(computeStructure(W,5),2)),zD=zone(val(computeStructure(D,10),1.5));
-  document.getElementById('zones').innerHTML=[['MONTHLY',zM],['WEEKLY',zW],['DAILY',zD]].map(([n,z])=>`<div class="z ${z}">${n}<br>${z}</div>`).join('');
-  // direction: monthly first, else weekly (same "H4 leads" idea, one tier up)
-  const lead=zM!=='NEUTRAL'?zM:zW,aligned=zM!=='NEUTRAL'&&zM===zW;
-  const A=atr(W,14),lows=W.slice(-20).map(c=>c.low),highs=W.slice(-20).map(c=>c.high);
-  const b=document.getElementById('banner');
-  let entry=null,sl=null,tp1=null,tp2=null;
-  if(lead==='NEUTRAL'){b.textContent='NEUTRAL — no swing, levels locked';}
-  else{
-   entry=price;
-   if(lead==='BUY'){sl=Math.min(...lows)-A*0.8;tp1=entry+A*2.5;tp2=entry+A*4}else{sl=Math.max(...highs)+A*0.8;tp1=entry-A*2.5;tp2=entry-A*4}
-   b.textContent=`SWING ${lead}`+(aligned?' — MONTHLY+WEEKLY ALIGNED':' — higher timeframe not fully aligned')+` @ ${fmt(price)}`;
-   b.className='banner '+(lead==='BUY'?'buy':'sell');
-  }
-  document.getElementById('levels').innerHTML=entry?`<div class="e">Entry<br>${fmt(entry)}</div><div class="s">SL<br>${fmt(sl)}</div><div class="t">TP1<br>${fmt(tp1)}</div><div class="t">TP2<br>${fmt(tp2)}</div>`:`<div style="grid-column:1/-1;opacity:.4">No swing — wait</div>`;
-  // chart
-  const src=M.map(c=>c.close),all=src.concat([sl,tp1,entry].filter(x=>x)),mn=Math.log(Math.min(...all)),mx=Math.log(Math.max(...all)),y=p=>230-((Math.log(p)-mn)/(mx-mn))*215;
-  let s=`<polyline fill="none" stroke="${lead==='SELL'?'#ff4d4d':'#3ddc84'}" stroke-width="1.5" points="${src.map((p,i)=>`${(i/(src.length-1))*400},${y(p).toFixed(1)}`).join(' ')}"/>`;
-  [[entry,'#33d6ff'],[sl,'#ff4d4d'],[tp1,'#3ddc84']].forEach(([p,c])=>{if(p)s+=`<line x1="0" x2="400" y1="${y(p)}" y2="${y(p)}" stroke="${c}" stroke-width=".8" stroke-dasharray="4 4"/>`});
-  document.getElementById('chart').innerHTML=s;
-  // stats from daily+monthly history
-  const ath=Math.max(...M.map(c=>c.high)),atl=Math.min(...M.map(c=>c.low));
-  const athBar=M.find(c=>c.high===ath),first=M[0];
-  const yr=D.slice(-365),ret=(a,n)=>D.length>n?((a/D[D.length-1-n].close-1)*100).toFixed(0)+'%':'—';
-  const rows=[['Price',fmt(price)],['All-time high (Binance)',fmt(ath)+' · '+new Date(athBar.epoch*1000).toISOString().slice(0,7)],['All-time low',fmt(atl)],['Below ATH',((1-price/ath)*100).toFixed(1)+'%'],['Above ATL',((price/atl-1)*100).toFixed(0)+'%'],['30d / 90d / 365d',`${ret(price,30)} / ${ret(price,90)} / ${ret(price,365)}`],['Weekly ATR(14)',fmt(A)+' ('+(A/price*100).toFixed(1)+'% of price)'],['History loaded',`${M.length} months since ${new Date(first.epoch*1000).toISOString().slice(0,7)}`]];
-  document.getElementById('stats').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
-  window._price=price;drawScen();
-  document.getElementById('status').textContent='live · Binance QNTUSDT · '+new Date().toLocaleString();
- }catch(e){document.getElementById('status').textContent='❌ '+e.message+' — open this file in a browser that can reach Binance';}
-})();
-function drawScen(){
- const sup=+document.getElementById('supply').value||14612493,p=window._price;if(!p)return;
- const caps=[2e9,5e9,10e9,25e9,50e9,100e9];
- document.getElementById('scen').innerHTML='<tr><th>Market cap</th><th>Price</th><th>vs now</th></tr>'+caps.map(c=>{const t=c/sup;return `<tr><td>${fmtCap(c)}</td><td>${fmt(t)}</td><td style="color:${t>=p?'#3ddc84':'#ff4d4d'}">${((t/p-1)*100).toFixed(0)}%</td></tr>`}).join('')+`<tr><td>Now</td><td>${fmt(p)}</td><td>${fmtCap(p*sup)}</td></tr>`;
+function loadSettings(){
+  try{ const o = JSON.parse(localStorage.getItem("fat_settings")||"{}");
+    IDS.forEach(i => { if(o[i]!==undefined) $(i).value = o[i]; });
+    CHECKS.forEach(i => { if(o[i]!==undefined) $(i).checked = o[i]; }); }catch(e){}
 }
-document.getElementById('supply').addEventListener('input',drawScen);
-</script></body></html>
+function S(){
+  const n = i => parseFloat($(i).value);
+  const st = {symbol:$("symbol").value.trim(), gran:parseInt($("gran").value), count:Math.min(600,Math.max(50,parseInt($("count").value)||500)),
+    emaF:n("emaF"), emaS:n("emaS"), rsiN:n("rsiN"), atrN:n("atrN"), slM:n("slM"), rr:n("rr"),
+    buyLo:n("buyLo"), buyHi:n("buyHi"), sellLo:n("sellLo"), sellHi:n("sellHi"), bal:n("bal"), riskPct:n("riskPct")/100};
+  st.aF = 2/(st.emaF+1); st.aS = 2/(st.emaS+1); st.aR = 1/st.rsiN; st.aA = 1/st.atrN;
+  st.warm = Math.max(st.emaF,st.emaS,st.rsiN,st.atrN)*3; st.riskAmt = st.bal*st.riskPct;
+  return st;
+}
+function showDerived(){
+  const s = S();
+  $("d1").textContent = s.aF.toFixed(4); $("d2").textContent = s.aS.toFixed(4);
+  $("d3").textContent = s.aR.toFixed(4)+" / "+s.aA.toFixed(4); $("d4").textContent = s.warm; $("d5").textContent = s.riskAmt.toFixed(2);
+}
+
+/* ---------- Candles ---------- */
+function fetchDeriv(st){
+  return new Promise((resolve,reject)=>{
+    const ws = new WebSocket(DERIV_WS);
+    const t = setTimeout(()=>{ try{ws.close()}catch(e){} reject(new Error("Deriv timeout"))}, 20000);
+    ws.onopen = () => ws.send(JSON.stringify({ticks_history:st.symbol, adjust_start_time:1, count:st.count+1, end:"latest", granularity:st.gran, style:"candles"}));
+    ws.onmessage = m => { clearTimeout(t); const r = JSON.parse(m.data); ws.close();
+      if(r.error) return reject(new Error(r.error.message));
+      const c = r.candles.slice(0,-1); // drop still-forming candle
+      resolve(c.map(x=>({t:x.epoch*1000,o:x.open,h:x.high,l:x.low,c:x.close}))); };
+    ws.onerror = () => { clearTimeout(t); reject(new Error("WebSocket error")); };
+  });
+}
+function demoCandles(st,n=300){
+  let p = 1000, out = [], t0 = Date.now()-st.gran*1000*n;
+  for(let i=0;i<n;i++){ const o=p, drift=((Math.floor(i/50)%2)?0.1:-0.1);
+    const g=(Math.random()+Math.random()+Math.random()-1.5)*2.2; p=o+drift+g;
+    out.push({t:t0+i*st.gran*1000,o,h:Math.max(o,p)+Math.random()*.9,l:Math.min(o,p)-Math.random()*.9,c:p}); }
+  return out;
+}
+
+/* ---------- The spreadsheet maths (one row = one candle) ---------- */
+function compute(cs, st){
+  const rows = []; let prev = null, sigNo = 0;
+  cs.forEach((k,i)=>{
+    const r = {...k};
+    if(!prev){ r.emaF=k.c; r.emaS=k.c; r.ag=0; r.al=0; r.tr=k.h-k.l; r.atr=r.tr; r.cross=0; }
+    else{
+      const ch = k.c-prev.c;
+      r.emaF = prev.emaF + st.aF*(k.c-prev.emaF);
+      r.emaS = prev.emaS + st.aS*(k.c-prev.emaS);
+      r.ag = prev.ag + st.aR*(Math.max(ch,0)-prev.ag);
+      r.al = prev.al + st.aR*(Math.max(-ch,0)-prev.al);
+      r.tr = Math.max(k.h-k.l, Math.abs(k.h-prev.c), Math.abs(k.l-prev.c));
+      r.atr = prev.atr + st.aA*(r.tr-prev.atr);
+    }
+    const tot = r.ag+r.al; r.rsi = tot===0 ? 50 : 100*r.ag/tot;
+    r.bar = i+1; r.valid = r.bar>st.warm ? 1 : 0;
+    if(prev){
+      if(r.valid!==1) r.cross=0;
+      else if(prev.emaF<=prev.emaS && r.emaF>r.emaS) r.cross=1;
+      else if(prev.emaF>=prev.emaS && r.emaF<r.emaS) r.cross=-1;
+      else r.cross=0;
+    }
+    r.signal = "";
+    if(r.cross===1 && r.rsi>=st.buyLo && r.rsi<=st.buyHi) r.signal="BUY";
+    else if(r.cross===-1 && r.rsi>=st.sellLo && r.rsi<=st.sellHi) r.signal="SELL";
+    if(r.signal){ const d=r.atr*st.slM, s=r.signal==="BUY"?1:-1;
+      r.entry=k.c; r.sl=k.c-s*d; r.tp=k.c+s*d*st.rr; r.units=st.riskAmt/d; sigNo++; }
+    r.sigNo = sigNo; rows.push(r); prev = r;
+  });
+  return rows;
+}
+
+/* ---------- Render ---------- */
+const f2 = v => v==null ? "" : Number(v).toFixed(2);
+const fT = ms => new Date(ms).toISOString().slice(0,16).replace("T"," ");
+function render(rows, st){
+  const tb = $("tbl").tBodies[0]; tb.innerHTML = "";
+  rows.slice(-150).reverse().forEach(r=>{
+    const tr = document.createElement("tr"); if(r.signal) tr.className = r.signal;
+    tr.innerHTML = `<td>${fT(r.t)}</td><td>${f2(r.o)}</td><td>${f2(r.h)}</td><td>${f2(r.l)}</td><td>${f2(r.c)}</td>
+      <td>${f2(r.emaF)}</td><td>${f2(r.emaS)}</td><td>${r.rsi.toFixed(1)}</td><td>${r.atr.toFixed(3)}</td><td>${r.cross}</td>
+      <td class="sg ${r.signal.toLowerCase()}">${r.signal}</td><td>${f2(r.entry)}</td><td>${f2(r.sl)}</td><td>${f2(r.tp)}</td>
+      <td>${r.units!=null?r.units.toFixed(2):""}</td><td>${r.sigNo}</td>`;
+    tb.appendChild(tr);
+  });
+  const last = rows[rows.length-1], sigs = rows.filter(r=>r.signal), ls = sigs[sigs.length-1];
+  $("k_tot").textContent = sigs.length;
+  $("k_bs").textContent = sigs.filter(r=>r.signal==="BUY").length+" / "+sigs.filter(r=>r.signal==="SELL").length;
+  const d = $("k_dir"); d.textContent = ls?ls.signal:"–"; d.className = ls?ls.signal.toLowerCase():"";
+  $("k_time").textContent = ls?fT(ls.t):"–"; $("k_en").textContent = ls?f2(ls.entry):"–";
+  $("k_sl").textContent = ls?f2(ls.sl):"–"; $("k_tp").textContent = ls?f2(ls.tp):"–";
+  $("k_un").textContent = ls?ls.units.toFixed(2):"–"; $("k_ago").textContent = ls?(last.bar-ls.bar):"–";
+  $("k_c").textContent = f2(last.c); $("k_ra").textContent = last.rsi.toFixed(1)+" / "+last.atr.toFixed(3);
+  const tr = $("k_tr"); tr.textContent = last.emaF>last.emaS?"Bullish":"Bearish"; tr.className = last.emaF>last.emaS?"buy":"sell";
+}
+
+/* ---------- Alerts ---------- */
+function msg(r, st){
+  return `${r.signal==="BUY"?"🟢":"🔴"} ${r.signal} ${st.symbol} (${st.gran/60}m)\nTime: ${fT(r.t)} UTC\nEntry: ${f2(r.entry)}\nSL: ${f2(r.sl)}\nTP: ${f2(r.tp)}\nRSI: ${r.rsi.toFixed(1)}  ATR: ${r.atr.toFixed(3)}\nSize: ${r.units.toFixed(2)} units (risk ${st.riskAmt.toFixed(2)})\n— FOCUS AUTO TRADERS (mechanical signal, not advice)`;
+}
+async function telegram(text){
+  const tok = $("tgTok").value.trim(), chat = $("tgChat").value.trim();
+  if(!tok||!chat) throw new Error("Telegram token / chat ID not set");
+  const res = await fetch(`https://api.telegram.org/bot${tok}/sendMessage`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chat,text})});
+  const j = await res.json(); if(!j.ok) throw new Error(j.description||"Telegram error");
+}
+function beep(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(), o=a.createOscillator(); o.connect(a.destination); o.frequency.value=880; o.start(); setTimeout(()=>{o.stop();a.close()},350);}catch(e){} }
+async function notify(r, st){
+  const text = msg(r, st);
+  if($("notif").checked){ beep();
+    if("Notification" in window){ if(Notification.permission==="default") await Notification.requestPermission();
+      if(Notification.permission==="granted") new Notification(`${r.signal} ${st.symbol}`,{body:`Entry ${f2(r.entry)}  SL ${f2(r.sl)}  TP ${f2(r.tp)}`}); } }
+  if($("tgTok").value.trim() && $("tgChat").value.trim()){
+    try{ await telegram(text); setStatus("Signal sent to Telegram ✔"); }catch(e){ setStatus("Telegram failed: "+e.message); } }
+}
+
+/* ---------- Main loop ---------- */
+function setStatus(t){ $("status").textContent = new Date().toISOString().slice(11,19)+" UTC · "+t; }
+async function check(){
+  const st = S(); saveSettings(); showDerived();
+  try{
+    setStatus("Fetching candles…");
+    const cs = $("demo").checked ? demoCandles(st) : await fetchDeriv(st);
+    if(cs.length < 5) throw new Error("Not enough candles returned");
+    const rows = compute(cs, st); lastRows = rows; render(rows, st);
+    const last = rows[rows.length-1], key = "fat_last_"+st.symbol+"_"+st.gran;
+    if(last.signal && localStorage.getItem(key)!==String(last.t)){ // act once per new closed candle
+      localStorage.setItem(key, String(last.t)); await notify(last, st); }
+    else setStatus(`${st.symbol} close ${f2(last.c)} · RSI ${last.rsi.toFixed(1)} · ${last.signal||"no new signal"}`);
+  }catch(e){ setStatus("Error: "+e.message); }
+}
+function schedule(){
+  if(!running) return;
+  const g = parseInt($("gran").value)*1000, wait = g-(Date.now()%g)+3000; // just after next candle closes
+  timer = setTimeout(async()=>{ await check(); schedule(); }, wait);
+}
+$("run").onclick = async()=>{ running=true; $("run").style.display="none"; $("stop").style.display="inline-block";
+  if($("notif").checked && "Notification" in window && Notification.permission==="default") Notification.requestPermission();
+  await check(); schedule(); };
+$("stop").onclick = ()=>{ running=false; clearTimeout(timer); $("stop").style.display="none"; $("run").style.display="inline-block"; setStatus("Stopped"); };
+$("once").onclick = check;
+$("test").onclick = async()=>{ try{ await telegram("✅ FOCUS AUTO TRADERS bot: test message"); setStatus("Test message sent ✔"); }catch(e){ setStatus("Telegram failed: "+e.message); } };
+$("csv").onclick = ()=>{
+  if(!lastRows.length) return setStatus("Nothing to export yet");
+  const h = ["time","open","high","low","close","emaFast","emaSlow","rsi","atr","cross","signal","entry","sl","tp","units","signalNo"];
+  const lines = [h.join(",")].concat(lastRows.map(r=>[fT(r.t),r.o,r.h,r.l,r.c,r.emaF,r.emaS,r.rsi,r.atr,r.cross,r.signal,r.entry??"",r.sl??"",r.tp??"",r.units??"",r.sigNo].join(",")));
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"})); a.download="signals.csv"; a.click();
+};
+IDS.concat(CHECKS).forEach(i => $(i).addEventListener("change", ()=>{ saveSettings(); showDerived(); }));
+loadSettings(); showDerived();
+</script>
+</body>
+</html>
