@@ -1,21 +1,27 @@
 # ============================================================================
-# FOCUS AUTO TRADERS - ALL-IN-ONE AUTOMATED SIGNAL BOT  (single file)
+# FOCUS AUTO TRADERS - ALL-IN-ONE SIGNAL + AUTO-TRADE BOT  (single file)
+# Path in your repo:  .github/workflows/signals.yml
 #
-# SETUP (5 minutes):
-#  1. Create a PRIVATE GitHub repo. Add a file at exactly this path:
-#         .github/workflows/signals.yml
-#     and paste this whole file into it. Commit.
-#  2. Telegram: @BotFather -> /newbot -> copy the token. Send any message to your
-#     bot, then open https://api.telegram.org/bot<TOKEN>/getUpdates -> copy chat.id
-#  3. Repo -> Settings -> Secrets and variables -> Actions -> New repository secret:
-#         TELEGRAM_TOKEN      and      TELEGRAM_CHAT_ID
-#  4. Repo -> Settings -> Actions -> General -> Workflow permissions ->
-#     "Read and write permissions" -> Save  (lets the bot save its state).
-#  5. Actions tab -> "Signal Bot" -> Run workflow (tick "demo" to test without Deriv).
+# WARNING: with TRADE_MODE "real" this places REAL-MONEY trades on your Deriv account.
+# The rules are mechanical and NOT backtested. You can lose money. Start in "dry",
+# then "demo", and only then "real". Use money you can afford to lose.
 #
-# Change the settings in the `env:` block below any time. Nothing else is needed.
-# Signals are mechanical (EMA cross + RSI filter, ATR stop/target). Not advice, not
-# backtested - test on a demo account first.
+# SECRETS (repo -> Settings -> Secrets and variables -> Actions):
+#   TELEGRAM_TOKEN, TELEGRAM_CHAT_ID   (alerts)
+#   DERIV_APP_ID                       (register an app at developers.deriv.com, type "PAT";
+#                                       old/legacy app IDs do NOT work with the new API)
+#   DERIV_PAT                          (Personal Access Token from developers.deriv.com ->
+#                                       scope "trade" ONLY. Never give admin/payments rights.)
+# Also: Settings -> Actions -> General -> Workflow permissions -> Read and write.
+#
+# TRADE_MODE (edit in the env block below):
+#   off  = signals to Telegram only (no Deriv login)
+#   dry  = like off, plus a Telegram preview of the trade it WOULD place
+#   demo = places trades on your Deriv DEMO account
+#   real = places trades on your Deriv REAL account
+# Actions tab -> Signal Bot -> Run workflow -> tick "test_connection" to check your
+# token/account/balance without trading. Emergency stop: set TRADE_MODE to "off"
+# (or disable the workflow in the Actions tab).
 # ============================================================================
 name: Signal Bot
 
@@ -25,12 +31,16 @@ on:
   workflow_dispatch:
     inputs:
       demo:
-        description: "Use synthetic demo candles (test mode)"
+        description: "Use synthetic demo candles (signals test, never trades)"
+        type: boolean
+        default: false
+      test_connection:
+        description: "Test Deriv token/account/balance (no trade)"
         type: boolean
         default: false
 
 permissions:
-  contents: write              # to save state.json (prevents duplicate alerts)
+  contents: write              # to save state.json (prevents duplicate alerts/trades)
 
 concurrency:
   group: signal-bot
@@ -41,28 +51,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
-      # ---------------- SETTINGS (the "Settings sheet") ----------------
-      SYMBOLS: "R_75"          # comma separated, e.g. "R_75,R_100,frxEURUSD"
+      # ---------------- STRATEGY SETTINGS ----------------
+      SYMBOLS: "R_75"          # comma separated, e.g. "R_75,R_100"
       GRANULARITY: "300"       # seconds: 300 = 5m, 900 = 15m, 3600 = 1h
       CANDLES: "500"           # max 600
       EMA_FAST: "9"
       EMA_SLOW: "21"
       RSI_PERIOD: "14"
       ATR_PERIOD: "14"
-      SL_ATR_MULT: "1.5"       # stop loss = ATR x this
-      REWARD_RISK: "2"         # take profit = stop distance x this
+      SL_ATR_MULT: "1.5"       # stop loss distance = ATR x this
+      REWARD_RISK: "2"         # take profit = stop loss x this
       BUY_RSI_MIN: "50"
       BUY_RSI_MAX: "70"
       SELL_RSI_MIN: "30"
       SELL_RSI_MAX: "50"
-      BALANCE: "1000"
-      RISK_PCT: "0.01"         # 0.01 = 1% of balance per trade
       CATCH_UP: "3"            # re-check last N candles in case a run was late
-      # ----------------------------------------------------------------
-      DERIV_WS: "wss://ws.derivws.com/websockets/v3?app_id=1089"   # update if Deriv changes its API
+      # ---------------- TRADING SETTINGS ----------------
+      TRADE_MODE: "dry"        # off | dry | demo | real   <-- the master switch
+      MULTIPLIER: "30"         # Deriv multiplier; must be one offered for the symbol (a wrong value is rejected, not traded)
+      RISK_PCT: "0.01"         # risk per trade as fraction of ACCOUNT BALANCE (0.01 = 1%)
+      BALANCE: "1000"          # only used for the dry-run preview
+      MAX_STAKE: "50"          # hard cap on stake per trade (USD)
+      MIN_STAKE: "1"
+      MAX_OPEN_TRADES: "1"     # never hold more than this many multiplier trades
+      MAX_DAILY_LOSS_PCT: "0.03"   # stop trading for the day after losing 3% of balance
+      MAX_SIGNAL_AGE_MIN: "10" # skip trades if the signal candle closed longer ago than this
+      MAX_ENTRY_DRIFT_ATR: "0.5"   # skip if price moved more than 0.5 x ATR since the signal
+      # ----------------------------------------------------
       DEMO: ${{ inputs.demo && '1' || '0' }}
+      TEST_CONN: ${{ inputs.test_connection && '1' || '0' }}
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      DERIV_APP_ID: ${{ secrets.DERIV_APP_ID }}
+      DERIV_PAT: ${{ secrets.DERIV_PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +91,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Run signal bot
+      - name: Run signal + trading bot
         run: |
           node --input-type=module <<'BOT_EOF'
           import fs from "node:fs";
@@ -82,30 +103,58 @@ jobs:
             slM: num("SL_ATR_MULT"), rr: num("REWARD_RISK"),
             buyLo: num("BUY_RSI_MIN"), buyHi: num("BUY_RSI_MAX"), sellLo: num("SELL_RSI_MIN"), sellHi: num("SELL_RSI_MAX"),
             bal: num("BALANCE"), riskPct: num("RISK_PCT"), catchUp: parseInt(E.CATCH_UP),
+            mode: (E.TRADE_MODE || "off").toLowerCase(), mult: num("MULTIPLIER"),
+            maxOpen: parseInt(E.MAX_OPEN_TRADES), maxStake: num("MAX_STAKE"), minStake: num("MIN_STAKE"),
+            maxDailyLossPct: num("MAX_DAILY_LOSS_PCT"), maxAgeMin: num("MAX_SIGNAL_AGE_MIN"), maxDriftAtr: num("MAX_ENTRY_DRIFT_ATR"),
           };
           const st = { ...cfg,
             aF: 2 / (cfg.emaF + 1), aS: 2 / (cfg.emaS + 1), aR: 1 / cfg.rsiN, aA: 1 / cfg.atrN,
-            warm: Math.max(cfg.emaF, cfg.emaS, cfg.rsiN, cfg.atrN) * 3, riskAmt: cfg.bal * cfg.riskPct };
+            warm: Math.max(cfg.emaF, cfg.emaS, cfg.rsiN, cfg.atrN) * 3 };
+          const API_BASE = E.DERIV_API_BASE || "https://api.derivws.com";
+          const PUBLIC_WS = [E.DERIV_PUBLIC_WS || "wss://api.derivws.com/trading/v1/options/ws/public", "wss://ws.binaryws.com/websockets/v3"];
           const STATE = "state.json";
           const state = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, "utf8")) : {};
           const DEMO = E.DEMO === "1";
+          const r2 = v => Math.round(v * 100) / 100;
+          const f2 = v => Number(v).toFixed(2);
+          const fT = ms => new Date(ms).toISOString().slice(0, 16).replace("T", " ");
 
-          function fetchDeriv(symbol) {
+          /* ---------- WebSocket helpers ---------- */
+          function openWS(url) {
             return new Promise((resolve, reject) => {
-              const ws = new WebSocket(E.DERIV_WS);
-              const t = setTimeout(() => { try { ws.close(); } catch {} reject(new Error("Deriv timeout")); }, 25000);
-              ws.addEventListener("open", () => ws.send(JSON.stringify({
-                ticks_history: symbol, adjust_start_time: 1, count: cfg.count + 1,
-                end: "latest", granularity: cfg.gran, style: "candles" })));
-              ws.addEventListener("message", (m) => {
-                clearTimeout(t); const r = JSON.parse(m.data); ws.close();
-                if (r.error) return reject(new Error(r.error.message));
-                resolve(r.candles.slice(0, -1).map(x => ({ t: x.epoch * 1000, o: x.open, h: x.high, l: x.low, c: x.close })));
-              });
-              ws.addEventListener("error", () => { clearTimeout(t); reject(new Error("WebSocket error")); });
+              const ws = new WebSocket(url);
+              const t = setTimeout(() => { try { ws.close(); } catch {} reject(new Error("WebSocket connect timeout")); }, 20000);
+              ws.addEventListener("open", () => { clearTimeout(t); resolve(ws); });
+              ws.addEventListener("error", () => { clearTimeout(t); reject(new Error("WebSocket error " + url.split("?")[0])); });
+            });
+          }
+          function client(ws) {
+            let id = 0; const pend = new Map();
+            ws.addEventListener("message", (m) => {
+              const d = JSON.parse(m.data), p = pend.get(d.req_id);
+              if (!p) return; pend.delete(d.req_id); clearTimeout(p.t);
+              if (d.error) p.rej(new Error((d.error.code || "error") + ": " + d.error.message)); else p.res(d);
+            });
+            return (req, ms = 20000) => new Promise((res, rej) => {
+              const rid = ++id;
+              const t = setTimeout(() => { pend.delete(rid); rej(new Error("timeout waiting for " + Object.keys(req)[0])); }, ms);
+              pend.set(rid, { res, rej, t }); ws.send(JSON.stringify({ ...req, req_id: rid }));
             });
           }
 
+          /* ---------- Market data (public, no login) ---------- */
+          async function fetchCandles(symbol) {
+            let lastErr;
+            for (const url of PUBLIC_WS) {
+              try {
+                const ws = await openWS(url), call = client(ws);
+                const r = await call({ ticks_history: symbol, adjust_start_time: 1, count: cfg.count + 1, end: "latest", granularity: cfg.gran, style: "candles" });
+                ws.close();
+                return r.candles.slice(0, -1).map(x => ({ t: x.epoch * 1000, o: x.open, h: x.high, l: x.low, c: x.close })); // drop forming candle
+              } catch (e) { lastErr = e; }
+            }
+            throw lastErr;
+          }
           function demoCandles(n = 300) {
             let p = 1000; const out = [], t0 = Date.now() - cfg.gran * 1000 * n;
             for (let i = 0; i < n; i++) {
@@ -115,7 +164,7 @@ jobs:
             return out;
           }
 
-          // ---- the spreadsheet maths: one row per candle ----
+          /* ---------- The spreadsheet maths: one row per candle ---------- */
           function compute(cs) {
             const rows = []; let prev = null;
             cs.forEach((k, i) => {
@@ -143,18 +192,14 @@ jobs:
               else if (r.cross === -1 && r.rsi >= st.sellLo && r.rsi <= st.sellHi) r.signal = "SELL";
               if (r.signal) {
                 const d = r.atr * st.slM, s = r.signal === "BUY" ? 1 : -1;
-                r.entry = k.c; r.sl = k.c - s * d; r.tp = k.c + s * d * st.rr; r.units = st.riskAmt / d;
+                r.entry = k.c; r.sl = k.c - s * d; r.tp = k.c + s * d * st.rr;
               }
               rows.push(r); prev = r;
             });
             return rows;
           }
 
-          const f2 = v => Number(v).toFixed(2);
-          const fT = ms => new Date(ms).toISOString().slice(0, 16).replace("T", " ");
-          const message = (sym, r) =>
-            `${r.signal === "BUY" ? "🟢" : "🔴"} ${r.signal} ${sym} (${cfg.gran / 60}m)\nTime: ${fT(r.t)} UTC\nEntry: ${f2(r.entry)}\nSL: ${f2(r.sl)}\nTP: ${f2(r.tp)}\nRSI: ${r.rsi.toFixed(1)}  ATR: ${r.atr.toFixed(3)}\nSize: ${r.units.toFixed(2)} units (risk ${st.riskAmt.toFixed(2)})\n— FOCUS AUTO TRADERS (mechanical signal, not advice)`;
-
+          /* ---------- Telegram ---------- */
           async function send(text) {
             if (!E.TELEGRAM_TOKEN || !E.TELEGRAM_CHAT_ID) { console.log("[no Telegram secrets - printing only]\n" + text + "\n"); return; }
             const res = await fetch("https://api.telegram.org/bot" + E.TELEGRAM_TOKEN + "/sendMessage", {
@@ -162,22 +207,104 @@ jobs:
               body: JSON.stringify({ chat_id: E.TELEGRAM_CHAT_ID, text }) });
             const j = await res.json(); if (!j.ok) throw new Error("Telegram: " + (j.description || res.status));
           }
+          const signalText = (sym, r) =>
+            `${r.signal === "BUY" ? "🟢" : "🔴"} ${r.signal} ${sym} (${cfg.gran / 60}m)\nTime: ${fT(r.t)} UTC\nEntry: ${f2(r.entry)}\nSL: ${f2(r.sl)}\nTP: ${f2(r.tp)}\nRSI: ${r.rsi.toFixed(1)}  ATR: ${r.atr.toFixed(3)}\n— FOCUS AUTO TRADERS (mechanical signal, not advice)`;
 
-          let failed = false;
-          for (const sym of cfg.symbols) {
-            try {
-              const rows = compute(DEMO ? demoCandles() : await fetchDeriv(sym));
-              const last = rows[rows.length - 1], key = sym + "_" + cfg.gran, lastSent = state[key] || 0;
-              const fresh = rows.slice(-cfg.catchUp).filter(r => r.signal && r.t > lastSent);
-              console.log(sym + " close=" + f2(last.c) + " rsi=" + last.rsi.toFixed(1) + " new_signals=" + fresh.length);
-              for (const r of fresh) { await send(message(sym, r)); state[key] = r.t; }
-            } catch (e) { console.error(sym + ": " + e.message); failed = true; }
+          /* ---------- Deriv trading (PAT -> account -> OTP -> authenticated WebSocket) ---------- */
+          async function connectTrading(type) {
+            if (!E.DERIV_PAT || !E.DERIV_APP_ID) throw new Error("Secrets DERIV_PAT and DERIV_APP_ID are not set");
+            const H = { Authorization: "Bearer " + E.DERIV_PAT, "Deriv-App-ID": E.DERIV_APP_ID };
+            const ar = await fetch(API_BASE + "/trading/v1/options/accounts", { headers: H });
+            const aj = await ar.json().catch(() => ({}));
+            if (!ar.ok) throw new Error("Accounts request failed (HTTP " + ar.status + "): " + JSON.stringify(aj.errors || aj).slice(0, 200));
+            const list = Array.isArray(aj.data) ? aj.data : [aj.data];
+            console.log("Accounts found: " + list.map(a => `${a.account_id} [${a.account_type}, ${a.status}, ${a.balance} ${a.currency}]`).join("; "));
+            const acc = list.find(a => a && a.account_type === type && (!a.status || a.status === "active"));
+            if (!acc) throw new Error("No active " + type.toUpperCase() + " account found on this token");
+            const or = await fetch(API_BASE + "/trading/v1/options/accounts/" + acc.account_id + "/otp", { method: "POST", headers: H });
+            const oj = await or.json().catch(() => ({}));
+            if (!or.ok || !oj.data || !oj.data.url) throw new Error("OTP request failed (HTTP " + or.status + ")");
+            if (!oj.data.url.includes("/" + type)) throw new Error("Safety stop: WebSocket URL does not match the " + type + " account type");
+            const ws = await openWS(oj.data.url), call = client(ws);
+            const bal = (await call({ balance: 1 })).balance;
+            return { ws, call, acc, balance: Number(bal.balance), currency: bal.currency || acc.currency || "USD" };
           }
-          if (!DEMO) fs.writeFileSync(STATE, JSON.stringify(state, null, 2) + "\n");
-          if (failed) process.exit(1);
+
+          async function safetyChecks(ctx) {
+            // any failure here blocks the trade (fail closed)
+            const open = (await ctx.call({ portfolio: 1 })).portfolio?.contracts || [];
+            const openMult = open.filter(c => String(c.contract_type || "").startsWith("MULT")).length;
+            if (openMult >= cfg.maxOpen) return `max open trades reached (${openMult}/${cfg.maxOpen})`;
+            const dayStart = Math.floor(Date.now() / 86400000) * 86400;
+            const pt = (await ctx.call({ profit_table: 1, description: 1, limit: 100, sort: "DESC", date_from: dayStart })).profit_table?.transactions || [];
+            const pnl = pt.reduce((s, x) => s + (Number(x.sell_price) - Number(x.buy_price)), 0);
+            if (pnl <= -cfg.maxDailyLossPct * ctx.balance) return `daily loss limit hit (${pnl.toFixed(2)} today)`;
+            return null;
+          }
+
+          async function handleTrade(sym, r, ctx) {
+            const ageMin = (Date.now() - (r.t + cfg.gran * 1000)) / 60000;
+            if (ageMin > cfg.maxAgeMin) { await send(`⏭ ${sym}: trade skipped - signal is ${ageMin.toFixed(0)} min old`); return ctx; }
+            const type = cfg.mode === "real" ? "real" : "demo";
+            const dry = cfg.mode === "dry";
+            const ds = r.atr * cfg.slM;
+            let balance = cfg.bal;
+            if (!dry) { if (!ctx) ctx = await connectTrading(type); balance = ctx.balance; }
+            const riskAmt = balance * cfg.riskPct;
+            let stake = Math.min(riskAmt * r.c / (cfg.mult * ds), cfg.maxStake);
+            stake = r2(Math.max(stake, cfg.minStake));
+            let sl = r2(Math.min(stake * cfg.mult * ds / r.c, riskAmt, stake * 0.95));
+            const tp = r2(sl * cfg.rr);
+            const ctype = r.signal === "BUY" ? "MULTUP" : "MULTDOWN";
+            const plan = `${ctype} ${sym} x${cfg.mult}\nStake: ${stake}  Stop-loss: -${sl}  Take-profit: +${tp}`;
+            if (dry) { await send(`🧪 DRY-RUN (no order placed)\n${plan}\nRisk basis: balance ${balance} x ${cfg.riskPct * 100}%`); return ctx; }
+
+            const block = await safetyChecks(ctx);
+            if (block) { await send(`⛔ ${sym}: trade blocked - ${block}`); return ctx; }
+            if (stake > ctx.balance) { await send(`⛔ ${sym}: trade blocked - stake ${stake} exceeds balance`); return ctx; }
+            const prop = (await ctx.call({ proposal: 1, amount: stake, basis: "stake", contract_type: ctype, currency: ctx.currency,
+              multiplier: cfg.mult, underlying_symbol: sym, limit_order: { stop_loss: sl, take_profit: tp } })).proposal;
+            if (prop.spot != null && Math.abs(prop.spot - r.entry) > cfg.maxDriftAtr * r.atr) {
+              await send(`⏭ ${sym}: trade skipped - price moved ${f2(Math.abs(prop.spot - r.entry))} since the signal`); return ctx; }
+            const buy = (await ctx.call({ buy: prop.id, price: r2(Number(prop.ask_price) * 1.02) }, 30000)).buy;
+            state.trades = (state.trades || []).concat({ t: Date.now(), sym, side: ctype, id: buy.contract_id, stake }).slice(-20);
+            await send(`✅ ${type.toUpperCase()} TRADE OPENED\n${plan}\nContract ID: ${buy.contract_id}\nPaid: ${buy.buy_price} ${ctx.currency}\nAccount: ${ctx.acc.account_id}`);
+            return ctx;
+          }
+
+          /* ---------- Main ---------- */
+          async function main() {
+            if (E.TEST_CONN === "1") {   // manual connection test from the Actions tab
+              const type = cfg.mode === "real" ? "real" : "demo";
+              const ctx = await connectTrading(type);
+              const blocked = await safetyChecks(ctx);
+              await send(`🔌 Deriv connection OK\nAccount: ${ctx.acc.account_id} (${type.toUpperCase()})\nBalance: ${ctx.balance} ${ctx.currency}\nTrade mode: ${cfg.mode.toUpperCase()}\nSafety checks: ${blocked ? "would block now - " + blocked : "passing"}`);
+              ctx.ws.close(); return;
+            }
+            let ctx = null, failed = false;
+            for (const sym of cfg.symbols) {
+              try {
+                const rows = compute(DEMO ? demoCandles() : await fetchCandles(sym));
+                const last = rows[rows.length - 1], key = sym + "_" + cfg.gran, lastSent = state[key] || 0;
+                const fresh = rows.slice(-cfg.catchUp).filter(r => r.signal && r.t > lastSent);
+                console.log(sym + " close=" + f2(last.c) + " rsi=" + last.rsi.toFixed(1) + " new_signals=" + fresh.length + " mode=" + cfg.mode);
+                for (const r of fresh) {
+                  await send(signalText(sym, r)); state[key] = r.t;
+                  if (cfg.mode === "off" || DEMO) continue;
+                  try { ctx = await handleTrade(sym, r, ctx); }
+                  catch (e) { console.error(sym + " trade error: " + e.message); failed = true; try { await send(`⚠️ ${sym}: trade FAILED - ${e.message}`); } catch {} }
+                }
+              } catch (e) { console.error(sym + ": " + e.message); failed = true; }
+            }
+            if (ctx && ctx.ws) ctx.ws.close();
+            if (!DEMO) fs.writeFileSync(STATE, JSON.stringify(state, null, 2) + "\n");
+            if (failed) process.exitCode = 1;
+          }
+          await main();
+          process.exit(process.exitCode || 0);
           BOT_EOF
 
-      - name: Save state (prevents duplicate alerts)
+      - name: Save state (prevents duplicate alerts and trades)
         if: always()
         run: |
           if [ -f state.json ]; then
