@@ -98,7 +98,7 @@ td.sg{font-weight:bold;text-align:center}
 
 <script>
 "use strict";
-const DERIV_WS = "wss://ws.derivws.com/websockets/v3?app_id=1089"; // change app_id/endpoint if needed
+const DERIV_WS_LIST = ["wss://api.derivws.com/trading/v1/options/ws/public","wss://ws.binaryws.com/websockets/v3"]; // new public endpoint, then legacy fallback
 const $ = id => document.getElementById(id);
 const IDS = ["symbol","gran","count","emaF","emaS","rsiN","atrN","slM","rr","buyLo","buyHi","sellLo","sellHi","bal","riskPct","tgTok","tgChat"];
 const CHECKS = ["notif","demo"];
@@ -130,9 +130,16 @@ function showDerived(){
 }
 
 /* ---------- Candles ---------- */
-function fetchDeriv(st){
+async function fetchDeriv(st){
+  let lastErr;
+  for(const url of DERIV_WS_LIST){
+    try{ return await fetchOne(url, st); }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+function fetchOne(url, st){
   return new Promise((resolve,reject)=>{
-    const ws = new WebSocket(DERIV_WS);
+    const ws = new WebSocket(url);
     const t = setTimeout(()=>{ try{ws.close()}catch(e){} reject(new Error("Deriv timeout"))}, 20000);
     ws.onopen = () => ws.send(JSON.stringify({ticks_history:st.symbol, adjust_start_time:1, count:st.count+1, end:"latest", granularity:st.gran, style:"candles"}));
     ws.onmessage = m => { clearTimeout(t); const r = JSON.parse(m.data); ws.close();
