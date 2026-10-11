@@ -114,8 +114,8 @@ details summary::after{content:"+";float:right;color:var(--c2)}
 details[open] summary::after{content:"\2212"}
 details .body{margin-top:10px;display:grid;gap:10px;font-size:14px;color:#cfc7ee}
 details .body b{color:var(--ink);font-weight:600}
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translate(-50%,-140%);transition:transform .35s ease;background:var(--panel2);box-shadow:0 0 0 1px var(--amber),0 12px 30px rgba(0,0,0,.6);padding:12px 16px;z-index:9;max-width:92vw;min-width:260px}
-#toast.show{transform:translate(-50%,0)}
+#toast{opacity:0;visibility:hidden;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translate(-50%,-140%);transition:transform .35s ease,opacity .35s ease,visibility .35s;background:var(--panel2);box-shadow:0 0 0 1px var(--amber),0 12px 30px rgba(0,0,0,.6);padding:12px 16px;z-index:9;max-width:92vw;min-width:260px}
+#toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
 #toast .t1{font-weight:700;font-size:16px}
 #toast .t2{font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-top:2px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -137,7 +137,7 @@ details .body b{color:var(--ink);font-weight:600}
 
   <section class="hero">
     <div class="card meter">
-      <svg id="ring" viewBox="0 0 240 240" role="img" aria-label="Confluence score"></svg>
+      <svg id="ring" viewBox="0 14 240 190" role="img" aria-label="Confluence score"></svg>
       <div class="chips" id="chips"></div>
       <ul id="parts"></ul>
     </div>
@@ -413,17 +413,20 @@ const arcKey=()=>'cse_arch_'+cfg.sym+'_'+cfg.tf;
 
 /* ---------- connection ---------- */
 function setStatus(txt,cls){const e=$('st');e.className='st '+(cls||'');e.lastChild.textContent=txt;}
-function stop(){S.gen++;clearInterval(S.ping);if(S.ws){try{S.ws.onclose=null;S.ws.close();}catch(e){}S.ws=null;}}
-function connect(){
+const EPS=['wss://ws.derivws.com/websockets/v3?app_id=1089','wss://ws.binaryws.com/websockets/v3?app_id=1089'];
+function stop(){S.gen++;clearInterval(S.ping);clearTimeout(S.wd);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
+function connect(retry){
   stop();
+  if(!retry){S.tries=0;S.ep=0;}
   const my=S.gen;
   S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();
   S.arch=LS.get(arcKey(),{});
   renderAll();
-  setStatus('connecting');
+  setStatus(retry?'retrying':'connecting');
   let ws;
-  try{ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');}catch(e){setStatus('socket blocked','err');return;}
+  try{ws=new WebSocket(EPS[S.ep%EPS.length]);}catch(e){setStatus('socket blocked','err');return;}
   S.ws=ws;
+  S.wd=setTimeout(()=>{if(my===S.gen&&!S.C.length){try{ws.close();}catch(e){}}},12000);
   ws.onopen=()=>{
     if(my!==S.gen)return;
     const req=(g,cnt,id)=>ws.send(JSON.stringify({ticks_history:cfg.sym,adjust_start_time:1,count:cnt,end:'latest',start:1,style:'candles',granularity:g,subscribe:1,req_id:id}));
@@ -434,11 +437,11 @@ function connect(){
   ws.onmessage=ev=>{
     if(my!==S.gen)return;
     let d;try{d=JSON.parse(ev.data);}catch(e){return;}
-    if(d.error){setStatus(d.error.message||'API error','err');return;}
+    if(d.error){setStatus((d.error.message||'API error').slice(0,60),'err');return;}
     if(d.msg_type==='candles'){
       const arr=d.candles.map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close}));
       if(d.req_id===1)S.C=arr;else if(d.req_id===2)S.H=arr;
-      if(S.C.length&&S.H.length){setStatus('live','live');recompute();}
+      if(S.C.length&&S.H.length){S.tries=0;clearTimeout(S.wd);setStatus('live','live');recompute();}
     }else if(d.msg_type==='ohlc'&&d.ohlc){
       const o=d.ohlc,g=+o.granularity;
       const arr=g===cfg.tf?S.C:g===3600?S.H:null;
@@ -451,9 +454,14 @@ function connect(){
       if(g===cfg.tf){if(isNew)recompute();else sched();}
     }
   };
-  ws.onerror=()=>{if(my===S.gen)setStatus('connection error','err');};
-  ws.onclose=()=>{if(my!==S.gen)return;setStatus('reconnecting','err');setTimeout(()=>{if(my===S.gen)connect();},3000);};
+  ws.onclose=ev=>{
+    if(my!==S.gen)return;
+    S.tries++;S.ep++;
+    setStatus('reconnecting, attempt '+S.tries+(ev&&ev.code?' (code '+ev.code+')':''),'err');
+    setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,12000));
+  };
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1))connect();});
 function sched(){if(S.pend)return;S.pend=true;requestAnimationFrame(()=>{S.pend=false;draw();});}
 
 /* ---------- engine run ---------- */
