@@ -413,55 +413,84 @@ const arcKey=()=>'cse_arch_'+cfg.sym+'_'+cfg.tf;
 
 /* ---------- connection ---------- */
 function setStatus(txt,cls){const e=$('st');e.className='st '+(cls||'');e.lastChild.textContent=txt;}
-const EPS=['wss://ws.derivws.com/websockets/v3?app_id=1089','wss://ws.binaryws.com/websockets/v3?app_id=1089'];
-function stop(){S.gen++;clearInterval(S.ping);clearTimeout(S.wd);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
+const EPS=[
+  {n:'new API',u:'wss://api.derivws.com/trading/v1/options/ws/public',legacy:false},
+  {n:'legacy derivws',u:'wss://ws.derivws.com/websockets/v3?app_id=1089',legacy:true},
+  {n:'legacy binary',u:'wss://ws.binaryws.com/websockets/v3?app_id=1089',legacy:true}
+];
+const CNT=[[1500,400],[500,300],[200,200]];
+function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);clearTimeout(S.wd);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
+function histReq(ws,g,id){
+  const c=CNT[S.ci];
+  try{ws.send(JSON.stringify({ticks_history:cfg.sym,adjust_start_time:1,count:g===3600?c[1]:(cfg.tf===60?c[0]:Math.min(c[0],1000)),end:'latest',granularity:g,style:'candles',req_id:id}));}catch(e){}
+}
+function tickInto(arr,g,ep,p){
+  const last=arr[arr.length-1];if(!last)return false;
+  const be=Math.floor(ep/g)*g;
+  if(last.t===be){last.c=p;if(p>last.h)last.h=p;if(p<last.l)last.l=p;return false;}
+  if(be>last.t){arr.push({t:be,o:p,h:p,l:p,c:p});if(arr.length>2000)arr.shift();return true;}
+  return false;
+}
 function connect(retry){
   stop();
-  if(!retry){S.tries=0;S.ep=0;}
-  const my=S.gen;
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();
+  if(!retry){S.tries=0;S.ep=0;S.ci=0;}
+  const my=S.gen,ep=EPS[S.ep%EPS.length];
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();
   S.arch=LS.get(arcKey(),{});
   renderAll();
-  setStatus(retry?'retrying':'connecting');
+  setStatus((retry?'retrying ':'connecting ')+ep.n);
   let ws;
-  try{ws=new WebSocket(EPS[S.ep%EPS.length]);}catch(e){setStatus('socket blocked','err');return;}
+  try{ws=new WebSocket(ep.u);}catch(e){setStatus('socket blocked','err');S.ep++;S.tries++;setTimeout(()=>{if(my===S.gen)connect(true);},3000);return;}
   S.ws=ws;
-  S.wd=setTimeout(()=>{if(my===S.gen&&!S.C.length){try{ws.close();}catch(e){}}},12000);
+  S.wd=setTimeout(()=>{if(my===S.gen&&!S.C.length){try{ws.close();}catch(e){}}},15000);
   ws.onopen=()=>{
     if(my!==S.gen)return;
-    const req=(g,cnt,id)=>ws.send(JSON.stringify({ticks_history:cfg.sym,adjust_start_time:1,count:cnt,end:'latest',start:1,style:'candles',granularity:g,subscribe:1,req_id:id}));
-    req(cfg.tf,cfg.tf===60?1500:1000,1);
-    req(3600,400,2);
+    S.lastMsg=Date.now();
+    setStatus('loading '+symName(cfg.sym));
+    histReq(ws,cfg.tf,1);histReq(ws,3600,2);
+    try{ws.send(JSON.stringify({ticks:cfg.sym,subscribe:1}));}catch(e){}
     S.ping=setInterval(()=>{try{ws.send(JSON.stringify({ping:1}));}catch(e){}},30000);
+    S.h1t=setInterval(()=>{if(S.C.length)histReq(ws,3600,2);},300000);
+    S.stale=setInterval(()=>{if(Date.now()-S.lastMsg>45000){try{ws.close();}catch(e){}}},10000);
   };
   ws.onmessage=ev=>{
     if(my!==S.gen)return;
+    S.lastMsg=Date.now();
     let d;try{d=JSON.parse(ev.data);}catch(e){return;}
-    if(d.error){setStatus((d.error.message||'API error').slice(0,60),'err');return;}
-    if(d.msg_type==='candles'){
+    if(d.error){
+      const er=d.echo_req||{};
+      if(er.ticks_history&&!S.C.length&&S.ci<CNT.length-1){S.ci++;histReq(ws,cfg.tf,1);histReq(ws,3600,2);return;}
+      setStatus((d.error.message||'API error').slice(0,70),'err');return;
+    }
+    S.got=true;
+    if(d.msg_type==='candles'&&Array.isArray(d.candles)){
+      const er=d.echo_req||{};
+      if(er.ticks_history&&er.ticks_history!==cfg.sym)return;
       const arr=d.candles.map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close}));
-      if(d.req_id===1)S.C=arr;else if(d.req_id===2)S.H=arr;
+      let g=er.granularity;
+      if(g==null)g=d.req_id===2?3600:d.req_id===1?cfg.tf:(arr.length>1?arr[1].t-arr[0].t:null);
+      if(g===3600)S.H=arr;else if(g===cfg.tf)S.C=arr;
       if(S.C.length&&S.H.length){S.tries=0;clearTimeout(S.wd);setStatus('live','live');recompute();}
-    }else if(d.msg_type==='ohlc'&&d.ohlc){
-      const o=d.ohlc,g=+o.granularity;
-      const arr=g===cfg.tf?S.C:g===3600?S.H:null;
-      if(!arr||!arr.length)return;
-      const cd={t:+o.open_time,o:+o.open,h:+o.high,l:+o.low,c:+o.close};
-      const last=arr[arr.length-1];
-      let isNew=false;
-      if(last.t===cd.t)arr[arr.length-1]=cd;
-      else if(cd.t>last.t){arr.push(cd);if(arr.length>2000)arr.shift();isNew=true;}
-      if(g===cfg.tf){if(isNew)recompute();else sched();}
+    }else if(d.msg_type==='tick'&&d.tick){
+      const sy=d.tick.underlying_symbol||d.tick.symbol;
+      if(sy&&sy!==cfg.sym)return;
+      const pr=+d.tick.quote,e2=+d.tick.epoch;
+      if(!(pr===pr)||!S.C.length||!S.H.length)return;
+      const isNew=tickInto(S.C,cfg.tf,e2,pr);
+      tickInto(S.H,3600,e2,pr);
+      if(isNew)recompute();else sched();
     }
   };
+  ws.onerror=()=>{try{ws.close();}catch(e){}};
   ws.onclose=ev=>{
     if(my!==S.gen)return;
-    S.tries++;S.ep++;
-    setStatus('reconnecting, attempt '+S.tries+(ev&&ev.code?' (code '+ev.code+')':''),'err');
-    setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,12000));
+    S.tries++;
+    if(!S.got)S.ep++;
+    setStatus('reconnecting, attempt '+S.tries+' ('+ep.n+', code '+(ev&&ev.code||'?')+')','err');
+    setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,10000));
   };
 }
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1))connect();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000)){connect(true);}});
 function sched(){if(S.pend)return;S.pend=true;requestAnimationFrame(()=>{S.pend=false;draw();});}
 
 /* ---------- engine run ---------- */
