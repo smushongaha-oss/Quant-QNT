@@ -46,9 +46,9 @@ select:focus-visible,button:focus-visible{outline:1px solid var(--amb);outline-o
 .ph::before{content:"";width:6px;height:6px;background:#8fb4d9;transform:rotate(45deg);flex:none}
 .ph .r{margin-left:auto;color:var(--dim);font-size:10px}
 .lv{color:#6fa8ff;border:1px solid #1b3b66;background:#0b1d36;padding:0 6px;font-size:9px;margin-left:auto}
-.p-audit{grid-column:span 3}.p-chart{grid-column:span 3}.p-time{grid-column:span 4}.p-wire{grid-column:span 2}
+.p-chart{grid-column:span 9}.p-audit{grid-column:span 3}.p-time{grid-column:span 8}.p-wire{grid-column:span 4}
 .p-shell{grid-column:span 12}.p-tape{grid-column:span 7}.p-fun{grid-column:span 5}
-@media(max-width:1099px){.p-audit,.p-chart,.p-time,.p-wire,.p-tape,.p-fun{grid-column:span 6}}
+@media(max-width:1099px){.p-audit,.p-time,.p-tape,.p-fun{grid-column:span 6}.p-chart,.p-wire{grid-column:span 12}}
 @media(max-width:699px){.grid>.p{grid-column:span 12}}
 .lab{font-size:9px;color:var(--dim2);letter-spacing:.14em}
 .big{font-family:var(--o);font-weight:700;font-size:38px;line-height:1.05;margin:2px 0 4px;letter-spacing:.02em}
@@ -64,7 +64,7 @@ select:focus-visible,button:focus-visible{outline:1px solid var(--amb);outline-o
 .chh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .chh b{font-family:var(--o);font-size:17px;font-weight:700;color:#fff}
 canvas{display:block;width:100%}
-#cvChart{height:210px}#cvTl{height:100%;min-height:250px;flex:1}
+#cvChart{height:430px;flex:1;min-width:0;width:auto}#cvTl{height:100%;min-height:250px;flex:1}
 .zl{font-size:10.5px;margin-top:6px}
 .zr{display:grid;grid-template-columns:58px 1fr 54px;gap:6px;padding:2px 4px;align-items:center;position:relative}
 .zr.s{background:rgba(255,77,94,.07);color:#ff8d98}.zr.d{background:rgba(47,227,138,.07);color:#7defb4}
@@ -164,6 +164,17 @@ details.p summary{cursor:pointer;list-style:none;font-size:10.5px;letter-spacing
 details.p summary::-webkit-details-marker{display:none}
 details.p summary::after{content:"+";float:right;color:var(--blu)}
 details[open].p summary::after{content:"-"}
+.ctb{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:2px 0 6px;flex-wrap:wrap}
+.seg{display:inline-flex}
+.seg button{margin-left:-1px;padding:3px 10px}
+.chbody{display:flex;gap:10px;align-items:stretch;min-height:0}
+.chside{width:205px;flex:none;overflow:hidden}
+@media(max-width:899px){.chbody{flex-direction:column}.chside{width:auto}#cvChart{height:360px;width:100%}}
+@media(max-width:699px){#cvChart{height:340px}}
+.p-chart.full{position:fixed;inset:0;z-index:40;grid-column:auto;overflow:auto;padding:10px;background:#03060b;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}
+.p-chart.full #cvChart{height:calc(100vh - 170px);min-height:260px}
+@media(max-height:520px){.p-chart.full #cvChart{height:calc(100vh - 110px)}.p-chart.full .chside{display:none}.p-chart.full .chbody{flex-direction:row}}
+body.chfull{overflow:hidden}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -184,10 +195,22 @@ details[open].p summary::after{content:"-"}
     <button id="bSnd" type="button">SND</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
+  <section class="p p-chart" id="sChart">
+    <div class="chh"><div class="ph" style="margin:0" id="chT">-</div><b id="chPx">-</b></div>
+    <div class="ctb">
+      <div class="seg" id="chView"><button data-v="60" type="button">60</button><button data-v="90" type="button">90</button><button data-v="150" type="button">150</button><button data-v="220" type="button">220</button></div>
+      <button id="chFull" type="button">FULL SCREEN</button>
+    </div>
+    <div class="chbody">
+      <canvas id="cvChart"></canvas>
+      <div class="chside"><div class="ph" style="margin-top:2px">ZONE LADDER <span class="r" id="zlR"></span></div><div class="zl" id="zl"></div></div>
+    </div>
+  </section>
+
   <section class="p p-audit" id="sAudit">
     <div class="ph">ENGINE AUDIT <span class="r" id="auSym">-</span><span class="lv">LIVE</span></div>
     <div class="lab" id="auLab">EXPECTANCY AT 2R</div>
@@ -199,12 +222,6 @@ details[open].p summary::after{content:"-"}
     <div class="lad" id="ladder"></div>
   </section>
 
-  <section class="p p-chart">
-    <div class="chh"><div class="ph" style="margin:0" id="chT">-</div><b id="chPx">-</b></div>
-    <canvas id="cvChart"></canvas>
-    <div class="ph" style="margin-top:8px">ZONE LADDER <span class="r" id="zlR"></span></div>
-    <div class="zl" id="zl"></div>
-  </section>
 
   <section class="p p-time">
     <div class="ph">CONFLUENCE TIMELINE <span class="r">SCORE AND POTENTIAL, LAST 120 BARS</span></div>
@@ -514,7 +531,7 @@ function statOf(list,k){
 const $=id=>document.getElementById(id);
 const SYMS=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','Volatility 75 (1s)'],['R_100','Volatility 100'],['1HZ100V','Volatility 100 (1s)'],['R_50','Volatility 50'],['1HZ50V','Volatility 50 (1s)'],['R_25','Volatility 25'],['1HZ25V','Volatility 25 (1s)'],['R_10','Volatility 10'],['1HZ10V','Volatility 10 (1s)'],['1HZ15V','Volatility 15 (1s)'],['1HZ30V','Volatility 30 (1s)']];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2},LS.get('cse_set',{}));
+const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90},LS.get('cse_set',{}));
 if(cfg.tf!==60&&cfg.tf!==300)cfg.tf=60;
 try{const q=new URLSearchParams(location.search).get('sym');if(q&&SYMS.some(s=>s[0]===q))cfg.sym=q;}catch(e){}
 const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -882,13 +899,13 @@ function drawChart(){
   const f=fit($('cvChart'));if(!f)return;
   const {g,w:W,h:Hh}=f,C=S.C,X=S.X;
   $('chT').textContent=nameOf(cfg.sym).toUpperCase()+' / '+tfName();
-  g.font='10px "Share Tech Mono",monospace';
+  g.font='11px "Share Tech Mono",monospace';
   if(!X||C.length<20){g.fillStyle=K.dim;g.textAlign='center';g.fillText('LOADING CANDLES',W/2,Hh/2);return;}
-  const n=C.length,V=Math.min(90,n),st=n-V;
+  const n=C.length,V=Math.min(cfg.view||90,n),st=n-V;
   let mn=Infinity,mx=-Infinity;
   for(let i=st;i<n;i++){if(C[i].l<mn)mn=C[i].l;if(C[i].h>mx)mx=C[i].h;}
   const pd=(mx-mn)*0.1||1;mn-=pd;mx+=pd;
-  const axis=Math.max(52,Math.ceil(g.measureText(mx.toFixed(S.dp)).width)+10),top=6,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/V;
+  const axis=Math.max(58,Math.ceil(g.measureText(mx.toFixed(S.dp)).width)+10),top=6,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/V;
   const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
   g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
   const lyT=y(C[n-1].c);
@@ -1313,7 +1330,7 @@ function frame(now){
   if(VIS.map)safe(()=>mpFrame(now));
   requestAnimationFrame(frame);
 }
-function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;LS.set('cse_set',all);}
+function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;LS.set('cse_set',all);}
 function syncBtns(){$('b1').classList.toggle('on',cfg.tf===60);$('b5').classList.toggle('on',cfg.tf===300);$('bSnd').textContent=cfg.snd?'SND ON':'SND OFF';$('hThr').textContent=cfg.thr;$('thr').value=cfg.thr;$('thrv').textContent=cfg.thr;$('sndChk').checked=cfg.snd;}
 function init(){
   $('sym').innerHTML=SYMS.map(s=>'<option value="'+s[0]+'">'+s[1].toUpperCase()+'</option>').join('');
@@ -1347,6 +1364,12 @@ function init(){
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('Confluence engine test message')).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
   };
   mpBind();
+  const syncView=()=>document.querySelectorAll('#chView button').forEach(b=>b.classList.toggle('on',+b.dataset.v===cfg.view));
+  syncView();
+  $('chView').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;cfg.view=+b.dataset.v;persist();syncView();drawChart();};
+  const setFull=on=>{$('sChart').classList.toggle('full',on);document.body.classList.toggle('chfull',on);$('chFull').textContent=on?'EXIT FULL SCREEN':'FULL SCREEN';requestAnimationFrame(()=>{drawChart();});if(on)window.scrollTo(0,0);};
+  $('chFull').onclick=()=>setFull(!$('sChart').classList.contains('full'));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sChart').classList.contains('full'))setFull(false);});
   if('IntersectionObserver' in window){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
