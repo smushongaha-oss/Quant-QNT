@@ -177,6 +177,8 @@ details[open].p summary::after{content:"-"}
 @media(max-height:520px){.p-chart.full .chside{display:none}.p-chart.full .chbody{flex-direction:row}}
 body.chfull{overflow:hidden}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.p-lab{grid-column:span 12}
+.p-lab .tw{max-height:360px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -194,9 +196,10 @@ body.chfull{overflow:hidden}
     <div class="hs"><label>MUSCAT</label><b id="hClk">--:--:--</b></div>
     <div class="hs"><label>LINK</label><div class="st" id="st"><i></i><span>CONNECTING</span></div></div>
     <button id="bSnd" type="button">SND</button>
+    <button id="bSim" type="button">SIM OFF</button><button id="bMc" type="button">NULL TEST</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sStat">STATS</a><a href="#sLab">LAB</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
@@ -313,6 +316,21 @@ body.chfull{overflow:hidden}
       </div>
       <div class="lab" style="text-transform:none;letter-spacing:.02em">Alerts fire for any of the 13 indices, not only the one on the chart. Sound and notifications only work while this page is open in the foreground.</div>
     </div>
+  </section>
+
+  <section class="p p-lab" id="sLab">
+    <div class="ph">PATTERN LAB <span class="r" id="labSt">IDLE</span></div>
+    <div class="lab" style="text-transform:none;letter-spacing:.02em;margin-bottom:8px">Pulls candle history for all 13 indices on all 12 Deriv timeframes and tests it for structure (autocorrelation, volatility clustering, variance ratios, runs, streaks, hour of day, drift). Every result sits next to a matched random control, and the verdict uses false discovery control so chance findings are not reported as patterns.</div>
+    <div class="stabs">
+      <button id="labGo" type="button">RUN LAB</button><button id="labStop" type="button">STOP</button>
+      <select id="labDepth" aria-label="Depth"><option value="1">QUICK, 5000 CANDLES EACH</option><option value="3">DEEP, UP TO 15000 ON SMALL TFS</option></select>
+      <span class="sp"></span><button id="labCopy" type="button">COPY RESULTS</button>
+    </div>
+    <div class="lab" id="labProg" style="margin-bottom:6px">IDLE</div>
+    <div id="labSum"></div>
+    <div class="tw" id="labTf"></div>
+    <div class="tw" id="labTop"></div>
+    <div class="lab" id="labNote" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -544,7 +562,7 @@ const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[
 const tz={timeZone:'Asia/Muscat',hour12:false};
 const clk=ms=>new Date(ms).toLocaleTimeString('en-GB',tz);
 const clkS=sec=>new Date(sec*1000).toLocaleTimeString('en-GB',tz);
-const arcKey=()=>'cse_arch_'+cfg.sym+'_'+cfg.tf;
+const arcKey=()=>(cfg.sim?'cse_sim_':'cse_arch_')+cfg.sym+'_'+cfg.tf;
 const pct=(w,n)=>n?Math.round(100*w/n):0;
 
 /* ---------- state ---------- */
@@ -560,7 +578,7 @@ let SCN=[];
 
 function wlog(dir,type,txt,cls){WL.push({t:Date.now(),dir,type,txt,cls:cls||''});if(WL.length>80)WL.shift();S.wd=true;}
 function setStatus(t,c){const e=$('st');e.className='st '+(c||'');e.lastChild.textContent=t.toUpperCase();}
-function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
+function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);clearInterval(S.simT);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
 function histReq(ws,sym,g,cnt){
   const id=++S.rid;S.rmap[id]={sym,g};
   wlog('&#9654;','HISTORY',sym+' G'+g+' N'+cnt,'s');
@@ -618,6 +636,7 @@ function setFocus(sy){
 }
 function connect(retry){
   stop();
+  if(cfg.sim){simStart();return;}
   if(!retry){S.tries=0;S.ep=0;S.ci=0;}
   const my=S.gen,ep=EPS[S.ep%EPS.length];
   S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;
@@ -688,7 +707,7 @@ function connect(retry){
     setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,10000));
   };
 }
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000))connect(true);});
+document.addEventListener('visibilitychange',()=>{if(!cfg.sim&&!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000))connect(true);});
 
 /* ---------- focus recompute and derived data ---------- */
 function recompute(){
@@ -754,7 +773,7 @@ function alertSig(s,sy){
   t.classList.add('show');clearTimeout(alertSig.h);alertSig.h=setTimeout(()=>t.classList.remove('show'),12000);
   beep();
   try{if('Notification' in window&&Notification.permission==='granted')new Notification((s.d===1?'Buy ':'Sell ')+nameOf(sy)+' ('+s.score+')',{body:s.pat+' at '+s.kind});}catch(e){}
-  if(cfg.tok&&cfg.chat){
+  if(cfg.tok&&cfg.chat&&!cfg.sim){
     const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\nEntry '+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent(txt)).catch(()=>{});
   }
@@ -1207,10 +1226,17 @@ function renderStats2(){
   if(cfg.src==='live')list=list.filter(s=>s.src==='live');else if(cfg.src==='bt')list=list.filter(s=>s.src==='bt');
   const rows=groupBy(list,cfg.tab),all=statOf(list,k);
   if(!rows.length){setH('stBox','<div class="dm" style="padding:8px">NOTHING LOGGED FOR THIS FILTER YET</div>');$('stNote').textContent='';return;}
-  const line=(label,st,bold)=>'<tr'+(bold?' style="color:#fff"':'')+'><td>'+label+'</td><td class="n">'+st.n+'</td><td class="n">'+(st.n?pct(st.w[0],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[1],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[2],st.n)+'%':'-')+'</td><td class="n '+(st.n&&st.e>0?'pos':st.n&&st.e<0?'neg':'')+'">'+(st.n?(st.e>0?'+':'')+st.e.toFixed(2)+'R':'-')+'</td></tr>';
+  const vs=l=>{
+    if(S.C.length<200)return '-';
+    const d=diffOf(ciOf(l,k),ciOf(randBase(l,S.C,10,mulberry32(1)),k));
+    if(!d)return '-';
+    return '<span class="'+(d.d>0?'pos':'neg')+'">'+fmtR(d.d)+(Math.abs(d.z)>=2?' *':'')+'</span>';
+  };
+  const line=(label,st,bold,l)=>'<tr'+(bold?' style="color:#fff"':'')+'><td>'+label+'</td><td class="n">'+st.n+'</td><td class="n">'+(st.n?pct(st.w[0],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[1],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[2],st.n)+'%':'-')+'</td><td class="n '+(st.n&&st.e>0?'pos':st.n&&st.e<0?'neg':'')+'">'+(st.n?(st.e>0?'+':'')+st.e.toFixed(2)+'R':'-')+'</td><td class="n">'+vs(l)+'</td></tr>';
   const head={score:'SCORE',pat:'CANDLE',kind:'ZONE TYPE',side:'SIDE'}[cfg.tab];
-  setH('stBox','<table><thead><tr><th>'+head+'</th><th class="n">TRADES</th><th class="n">HIT 1R</th><th class="n">HIT 2R</th><th class="n">HIT 3R</th><th class="n">EXP AT '+k+'R</th></tr></thead><tbody>'+rows.map(([lab,l])=>line(lab,statOf(l,k))).join('')+line('ALL',all,true)+'</tbody></table>');
-  $('stNote').textContent=(all.open?all.open+' still open or expired are left out. ':'')+(all.n<30?'Under 30 resolved trades: treat these numbers as noise. ':'')+'Expectancy is average R per trade with a fixed '+k+'R target and the same stop.';
+  setH('stBox','<table><thead><tr><th>'+head+'</th><th class="n">TRADES</th><th class="n">HIT 1R</th><th class="n">HIT 2R</th><th class="n">HIT 3R</th><th class="n">EXP AT '+k+'R</th><th class="n">VS RANDOM</th></tr></thead><tbody>'+rows.map(([lab,l])=>line(lab,statOf(l,k),false,l)).join('')+line('ALL',all,true,list)+'</tbody></table>');
+  const cb=S.C.length>=200?ciOf(randBase(list,S.C,10,mulberry32(1)),k):null;
+  $('stNote').textContent=(all.open?all.open+' still open or expired are left out. ':'')+(all.n<30?'Under 30 resolved trades: treat these numbers as noise. ':'')+'Expectancy is average R per trade with a fixed '+k+'R target and the same stop. '+(cb?'Random entries with identical stops on this same history average '+fmtR(cb.m)+'. ':'')+'VS RANDOM is the signal result minus that random-timing result, and a star marks about 2 standard errors. Stars are not corrected for the many slices, so expect some by luck.';
 }
 
 /* ---------- constellation map ---------- */
@@ -1321,6 +1347,308 @@ function mpBind(){
   $('mpGo').onclick=()=>{if(MP.sel){setFocus(MP.sel);window.scrollTo({top:0,behavior:'smooth'});}};
 }
 
+/* ---------- SIM: seeded random-walk feed + null test ---------- */
+/*SIMPURE-START*/
+const YEAR=365*24*3600;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function makeGauss(rng){let sp=null;return function(){if(sp!==null){const v=sp;sp=null;return v;}let u=0;while(u===0)u=rng();const w=rng(),m=Math.sqrt(-2*Math.log(u)),a=6.283185307179586*w;sp=m*Math.sin(a);return m*Math.cos(a);};}
+const volOf=sy=>{const m=sy.match(/^R_(\d+)$/)||sy.match(/^1HZ(\d+)V$/);return m?+m[1]/100:0.5;};
+/* geometric random walk: no drift, constant volatility, independent steps */
+function makeSim(vol,dt,seed,start,t0){
+  const g=makeGauss(mulberry32(seed)),sig=vol*Math.sqrt(dt/YEAR),mu=-0.5*sig*sig;
+  const s={p:start,t:t0,dt,next(){s.p*=Math.exp(mu+sig*g());s.t+=dt;return Math.round(s.p*1000)/1000;}};
+  return s;
+}
+/* run the walk for `secs` seconds and build one candle array per granularity */
+function simHist(sim,secs,tfs){
+  const outs=tfs.map(()=>[]),n=Math.round(secs/sim.dt);
+  for(let i=0;i<n;i++){
+    const p=sim.next(),t=sim.t;
+    for(let k=0;k<tfs.length;k++){
+      const g=tfs[k],o=outs[k],be=Math.floor(t/g)*g,l=o[o.length-1];
+      if(l&&l.t===be){l.c=p;if(p>l.h)l.h=p;if(p<l.l)l.l=p;}else o.push({t:be,o:p,h:p,l:p,c:p});
+    }
+  }
+  return outs;
+}
+/* mean R per resolved trade at target k, with a 95% interval */
+function ciOf(list,k){
+  const r=list.filter(s=>RES_OK(s.res)),n=r.length;if(n<2)return null;
+  let sum=0,sq=0;for(const s of r){const v=s.reached>=k?k:-1;sum+=v;sq+=v*v;}
+  const m=sum/n,sd=Math.sqrt(Math.max(0,sq/n-m*m)),se=sd/Math.sqrt(n);
+  return {n,m,sd,lo:m-1.96*se,hi:m+1.96*se};
+}
+/* random-timing control: same stop distance as each real signal, random bar, random side, same resolver */
+function randBase(sigs,C,reps,rng){
+  const n=C.length,out=[];if(n<200)return out;
+  for(const s of sigs){
+    if(!(s.risk>0))continue;
+    for(let q=0;q<reps;q++){
+      const i=40+Math.floor(rng()*(n-191)),d=rng()<0.5?1:-1,e=C[i].c;
+      const b={i,t:C[i].t,d,score:s.score,pat:s.pat,kind:s.kind,entry:e,risk:s.risk,sl:e-d*s.risk,tp:[1,2,3].map(k=>e+d*k*s.risk),res:'open',reached:0,closedT:0,src:'rb'};
+      resolveSig(b,C,n-2);out.push(b);
+    }
+  }
+  return out;
+}
+function diffOf(a,b){if(!a||!b)return null;const d=a.m-b.m,se=Math.sqrt(a.sd*a.sd/a.n+b.sd*b.sd/b.n);return {d,z:se>0?d/se:0};}
+function fmtR(v){return (v>=0?'+':'')+v.toFixed(2)+'R';}
+/*SIMPURE-END*/
+
+let SIMS={};
+cfg.simSpeed=10; /* simulated seconds per real second */
+function simStart(){
+  const seed0=(cfg.simSeed|0)||12345;
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.rmap={};S.seenS=new Set();
+  Object.keys(SC).forEach(k=>delete SC[k]);Object.keys(R).forEach(k=>delete R[k]);
+  S.arch=LS.get(arcKey(),{});
+  const now=Math.floor(Date.now()/1000);SIMS={};
+  SYMS.forEach(([sy],j)=>{
+    const dt=sy.startsWith('1HZ')?1:2,focus=sy===cfg.sym,nC=focus?1500:500,nH=120;
+    const secs=Math.max(nC*cfg.tf,nH*3600),t0=Math.floor((now-secs)/3600)*3600;
+    const sim=makeSim(volOf(sy),dt,seed0+j*7919,1000+j*137,t0);
+    const [C,H]=simHist(sim,secs,[cfg.tf,3600]);
+    SIMS[sy]={sim,acc:0};
+    if(focus){S.C=C.slice(-nC);S.H=H.slice(-nH);}else SC[sy]={C:C.slice(-600),H:H.slice(-250)};
+  });
+  setStatus('SIM x'+cfg.simSpeed,'live');wlog('&#8226;','SIM','RANDOM WALK FEED, SEED '+seed0,'a');
+  recompute();
+  SYMS.forEach(([sy])=>{if(sy!==cfg.sym)scanRecompute(sy);});
+  S.simT=setInterval(simStep,250);
+}
+function simStep(){
+  SYMS.forEach(([sy])=>{
+    const q=SIMS[sy];if(!q)return;
+    q.acc+=cfg.simSpeed*0.25/q.sim.dt;
+    while(q.acc>=1){
+      q.acc--;
+      const pr=q.sim.next(),e2=q.sim.t,r=R[sy]||(R[sy]={});
+      r.px=pr;PULSE[sy]=1;
+      if(sy===cfg.sym){
+        if(!S.C.length||!S.H.length)continue;
+        const nw=tickInto(S.C,cfg.tf,e2,pr);tickInto(S.H,3600,e2,pr);
+        if(nw)recompute();
+      }else{
+        const st=SC[sy];if(!st||!st.C.length||!st.H.length)continue;
+        const nw=tickInto(st.C,cfg.tf,e2,pr);tickInto(st.H,3600,e2,pr);
+        if(nw)scanRecompute(sy);
+      }
+    }
+  });
+}
+/* Run the engine over many simulated series. Real edge would show up as expectancy above the null band. */
+function mcNull(o){
+  const say=(t,c)=>{wlog('&#8226;','MC',t,c||'');try{console.log('[MC] '+t);}catch(e){}};
+  if(mcNull.busy){say('ALREADY RUNNING','e');return;}
+  o=Object.assign({runs:40,vol:volOf(cfg.sym),dt:cfg.sym.startsWith('1HZ')?1:2,tf:cfg.tf,nC:1500,nH:150,seed:777},o||{});
+  mcNull.busy=true;
+  const pool=[],poolB=[],perRun=[];let r=0;
+  say('NULL TEST '+o.runs+' RUNS, VOL '+o.vol+', '+(o.tf===60?'M1':'M5')+', STARTING');
+  const finish=()=>{
+    mcNull.busy=false;
+    say('POOLED '+pool.length+' SIGNALS, '+statOf(pool,2).n+' RESOLVED, ABOUT '+Math.round(pool.length/o.runs)+' PER RUN');
+    const fair=[0.5,1/3,0.25];
+    for(const k of [1,2,3]){const c=ciOf(pool,k),h=statOf(pool,k);if(c)say('TARGET '+k+'R HIT '+pct(h.w[k-1],h.n)+'% (COIN FLIP '+Math.round(100*fair[k-1])+'%) EXP '+fmtR(c.m)+' 95% '+fmtR(c.lo)+' TO '+fmtR(c.hi));}
+    if(perRun.length>2){
+      const m=perRun.reduce((a,b)=>a+b,0)/perRun.length,sd=Math.sqrt(perRun.reduce((a,b)=>a+(b-m)*(b-m),0)/(perRun.length-1));
+      say('ONE RUN, EXP AT 2R: MEAN '+fmtR(m)+' SD '+fmtR(sd)+' (LUCK ALONE MOVES A SINGLE AUDIT THIS FAR)');
+    }
+    const dAll=diffOf(ciOf(pool,2),ciOf(poolB,2));
+    if(dAll)say('RANDOM TIMING, SAME STOPS: EXP AT 2R '+fmtR(ciOf(poolB,2).m)+'. SIGNALS MINUS RANDOM '+fmtR(dAll.d)+' ('+dAll.z.toFixed(1)+' SE)');
+    [['85+',s=>s.score>=85],['70-84',s=>s.score>=70&&s.score<85],['55-69',s=>s.score>=55&&s.score<70],['40-54',s=>s.score<55]].forEach(([lab,f])=>{
+      const a=ciOf(pool.filter(f),2),b=ciOf(poolB.filter(f),2),d=diffOf(a,b);
+      if(a&&d)say('BAND '+lab+' N'+a.n+' EXP '+fmtR(a.m)+' VS RANDOM '+fmtR(d.d)+' ('+d.z.toFixed(1)+' SE)');
+    });
+    say('WITH 4 BANDS, ONE ABOVE 2 SE IS EXPECTED BY CHANCE ABOUT 1 TIME IN 5');
+    const real=ciOf(S.sigs,2),nul=ciOf(pool,2);
+    if(real&&nul&&real.n>=10){const z=(real.m-nul.m)/(nul.sd/Math.sqrt(real.n));say('THIS AUDIT '+fmtR(real.m)+' OVER '+real.n+' TRADES IS '+z.toFixed(1)+' SE FROM THE NULL','a');}
+  };
+  const one=()=>{
+    if(r>=o.runs){finish();return;}
+    const secs=Math.max(o.nC*o.tf,o.nH*3600),t0=Math.floor((1.7e9-secs)/3600)*3600;
+    const sim=makeSim(o.vol,o.dt,o.seed+r*104729,1000,t0);
+    const [C0,H0]=simHist(sim,secs,[o.tf,3600]);
+    const C=C0.slice(-o.nC),H=H0.slice(-o.nH);
+    const sg=analyze(buildX(C,H,o.tf),40),st=statOf(sg,2);
+    if(st.n>=10)perRun.push(st.e);
+    for(const s of sg)pool.push(s);
+    for(const s of randBase(sg,C,3,mulberry32(o.seed+r*7+1)))poolB.push(s);
+    r++;if(r%10===0)say('RUN '+r+' OF '+o.runs+', '+pool.length+' SIGNALS');
+    setTimeout(one,0);
+  };
+  setTimeout(one,0);
+}
+window.mcNull=mcNull;
+
+/* ---------- PATTERN LAB: all indices, all timeframes, tested against a matched random control ---------- */
+/*LABPURE-START*/
+function erfcc(x){const z=Math.abs(x),t=1/(1+0.5*z);const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));return x>=0?r:2-r;}
+const pTwo=z=>erfcc(Math.abs(z)/Math.SQRT2);
+function acf(x,k){const n=x.length;let m=0;for(const v of x)m+=v;m/=n;let c0=0,ck=0;for(let i=0;i<n;i++){const d=x[i]-m;c0+=d*d;if(i>=k)ck+=d*(x[i-k]-m);}return c0>0?ck/c0:0;}
+/* every test uses closes only. Each returns a z score (or p) against "independent steps, constant volatility, no drift" */
+function battery(cl,tt,g){
+  const r=[],rt=[];
+  for(let i=1;i<cl.length;i++)if(cl[i]>0&&cl[i-1]>0){r.push(Math.log(cl[i]/cl[i-1]));rt.push(tt[i]);}
+  const n=r.length,out=[];if(n<300)return out;
+  const add=(name,z,eff,p)=>{if(z===z&&isFinite(z))out.push({name,z,eff,p:p===undefined?pTwo(z):p});};
+  const sq=Math.sqrt(n);let m=0;for(const v of r)m+=v;m/=n;
+  let v2=0;for(const v of r)v2+=(v-m)*(v-m);v2/=n-1;const sd=Math.sqrt(v2);if(!(sd>0))return out;
+  add('DRIFT',m/sd*sq,m/sd);
+  for(let k=1;k<=5;k++){const a=acf(r,k);add('AC'+k,a*sq,a);}
+  const ab=r.map(Math.abs);
+  for(let k=1;k<=3;k++){const a=acf(ab,k);add('VOL AC'+k,a*sq,a);}
+  let s3=0,s4=0;for(const v of r){const d=(v-m)/sd;s3+=d*d*d;s4+=d*d*d*d;}s3/=n;s4=s4/n-3;
+  add('SKEW',s3/Math.sqrt(6/n),s3);add('KURT',s4/Math.sqrt(24/n),s4);
+  const P=new Float64Array(n+1);for(let i=0;i<n;i++)P[i+1]=P[i]+r[i];
+  for(const q of [2,5,10]){
+    let s=0;for(let t=q;t<=n;t++){const d=P[t]-P[t-q]-q*m;s+=d*d;}
+    const vr=(s/(q*(n-q+1)*(1-q/n)))/v2;
+    add('VR'+q,(vr-1)/Math.sqrt(2*(2*q-1)*(q-1)/(3*q*n)),vr);
+  }
+  const sg=[],st=[];
+  for(let i=0;i<n;i++){if(r[i]>0){sg.push(1);st.push(rt[i]);}else if(r[i]<0){sg.push(-1);st.push(rt[i]);}}
+  const N=sg.length;
+  if(N>=300){
+    let n1=0;for(const v of sg)if(v>0)n1++;const n2=N-n1;let runs=1;for(let i=1;i<N;i++)if(sg[i]!==sg[i-1])runs++;
+    const mu=2*n1*n2/N+1,vr2=(mu-1)*(mu-2)/(N-1);if(vr2>0)add('RUNS',(runs-mu)/Math.sqrt(vr2),runs/mu-1);
+    const pu=n1/N;
+    for(const dir of [1,-1]){
+      for(let k=1;k<=3;k++){
+        let cA=0,hA=0,cB=0,hB=0;
+        for(let i=k;i<N;i++){
+          let all=true;for(let j=1;j<=k;j++)if(sg[i-j]!==dir){all=false;break;}
+          if(all){cA++;if(sg[i]===dir)hA++;}else{cB++;if(sg[i]===dir)hB++;}
+        }
+        if(cA>=30&&cB>=30){const p=(hA+hB)/(cA+cB),se=Math.sqrt(p*(1-p)*(1/cA+1/cB));if(se>0)add((dir===1?'UP':'DOWN')+' STREAK '+k,(hA/cA-hB/cB)/se,hA/cA);}
+      }
+    }
+    if(g<=3600){
+      const xs=new Array(24).fill(0),ns=new Array(24).fill(0);
+      for(let i=0;i<N;i++){const h=Math.floor((st[i]%86400)/3600);ns[h]++;if(sg[i]>0)xs[h]++;}
+      let chi=0,df=-1;for(let h=0;h<24;h++)if(ns[h]>=20){chi+=Math.pow(xs[h]-ns[h]*pu,2)/(ns[h]*pu*(1-pu));df++;}
+      if(df>=10){const z=(Math.cbrt(chi/df)-(1-2/(9*df)))/Math.sqrt(2/(9*df));add('HOUR OF DAY',z,chi/df,0.5*erfcc(z/Math.SQRT2));}
+    }
+  }
+  return out;
+}
+/* Benjamini-Hochberg false discovery control; flags t.bh and returns the count that survive */
+function fdr(tests,q){
+  const m=tests.length,idx=tests.map((t,i)=>i).sort((a,b)=>tests[a].p-tests[b].p);let kmax=-1;
+  for(let i=0;i<m;i++)if(tests[idx[i]].p<=(i+1)/m*q)kmax=i;
+  tests.forEach(t=>{t.bh=false;});for(let i=0;i<=kmax;i++)tests[idx[i]].bh=true;return kmax+1;
+}
+/* matched control: same length, same timestamps, same volatility, independent normal steps, zero drift */
+function ctrlBattery(cl,tt,g,seed){
+  const r=[];for(let i=1;i<cl.length;i++)if(cl[i]>0&&cl[i-1]>0)r.push(Math.log(cl[i]/cl[i-1]));
+  if(r.length<2)return [];
+  let m=0;for(const v of r)m+=v;m/=r.length;let v2=0;for(const v of r)v2+=(v-m)*(v-m);const sd=Math.sqrt(v2/(r.length-1));
+  const gs=makeGauss(mulberry32(seed)),c=new Array(cl.length);c[0]=1000;
+  for(let i=1;i<cl.length;i++)c[i]=c[i-1]*Math.exp(sd*gs());
+  return battery(c,tt,g);
+}
+/*LABPURE-END*/
+
+const TFS=[60,120,180,300,600,900,1800,3600,7200,14400,28800,86400];
+const TFN={60:'M1',120:'M2',180:'M3',300:'M5',600:'M10',900:'M15',1800:'M30',3600:'H1',7200:'H2',14400:'H4',28800:'H8',86400:'D1'};
+const LAB={busy:false,stop:false,id:0,gap:700,res:null};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function labSocket(){
+  return new Promise((res,rej)=>{
+    let i=0;
+    const next=()=>{
+      if(i>=EPS.length)return rej(new Error('NO ENDPOINT REACHABLE'));
+      const ep=EPS[(S.ep+i++)%EPS.length];let ws,done=false;
+      try{ws=new WebSocket(ep.u);}catch(e){return next();}
+      const to=setTimeout(()=>{if(!done){done=true;try{ws.close();}catch(e){}next();}},8000);
+      ws.onopen=()=>{if(done)return;done=true;clearTimeout(to);res(ws);};
+      ws.onerror=()=>{if(done)return;done=true;clearTimeout(to);try{ws.close();}catch(e){}next();};
+    };
+    next();
+  });
+}
+function labReq(ws,msg){
+  return new Promise(res=>{
+    const id=++LAB.id;
+    const to=setTimeout(()=>{ws.removeEventListener('message',h);res({error:{message:'timeout'}});},20000);
+    function h(ev){let d;try{d=JSON.parse(ev.data);}catch(e){return;}if(d.req_id!==id)return;clearTimeout(to);ws.removeEventListener('message',h);res(d);}
+    ws.addEventListener('message',h);
+    try{ws.send(JSON.stringify(Object.assign({req_id:id},msg)));}catch(e){clearTimeout(to);ws.removeEventListener('message',h);res({error:{message:'send failed'}});}
+  });
+}
+async function labFetch(ws,sy,g,pages){
+  const got=new Map();let end='latest';
+  for(let p=0;p<pages;p++){
+    let d=null;
+    for(let tr=0;tr<4;tr++){
+      d=await labReq(ws,{ticks_history:sy,adjust_start_time:1,count:5000,end,granularity:g,style:'candles'});
+      if(d.error&&/rate/i.test(String(d.error.code||'')+' '+String(d.error.message||''))){await sleep(12000);continue;}
+      break;
+    }
+    if(!d||d.error||!Array.isArray(d.candles)||!d.candles.length)break;
+    for(const x of d.candles)got.set(+x.epoch,+x.close);
+    end=+d.candles[0].epoch-1;
+    await sleep(LAB.gap);
+    if(d.candles.length<5000||LAB.stop)break;
+  }
+  return [...got.entries()].sort((a,b)=>a[0]-b[0]).map(x=>({t:x[0],c:x[1]}));
+}
+async function labRun(){
+  if(LAB.busy)return;
+  LAB.busy=true;LAB.stop=false;
+  const depth=+$('labDepth').value,NR=5,prog=t=>{$('labProg').textContent=t;};
+  let ws=null;
+  try{
+    $('labSt').textContent='RUNNING';prog('CONNECTING');
+    ws=await labSocket();
+    const total=SYMS.length*TFS.length,series=[];let k=0;
+    for(const [sy,nm] of SYMS){
+      for(const g of TFS){
+        if(LAB.stop)throw new Error('STOPPED');
+        k++;prog('FETCH '+k+' OF '+total+' / '+shortOf(nm)+' '+TFN[g]+' / '+series.length+' SERIES KEPT');
+        const pages=depth>1?(g<=300?3:g<=1800?2:1):1;
+        const cd=await labFetch(ws,sy,g,pages);
+        if(cd.length>=400)series.push({sy,g,t:cd.map(x=>x.t),c:cd.map(x=>x.c)});
+      }
+    }
+    try{ws.close();}catch(e){}ws=null;
+    prog('ANALYSING '+series.length+' SERIES');await sleep(30);
+    const real=[],ctrl=[];for(let i=0;i<NR;i++)ctrl.push([]);
+    let candles=0;
+    series.forEach((s,si)=>{
+      candles+=s.c.length;
+      for(const t of battery(s.c,s.t,s.g)){t.sy=s.sy;t.g=s.g;real.push(t);}
+      for(let rp=0;rp<NR;rp++)for(const t of ctrlBattery(s.c,s.t,s.g,1000+si*31+rp)){t.sy=s.sy;t.g=s.g;ctrl[rp].push(t);}
+    });
+    if(!real.length)throw new Error('NO DATA RETURNED');
+    const m=real.length,nom=real.filter(t=>t.p<0.05).length,bonf=real.filter(t=>t.p<0.05/m).length,bh=fdr(real,0.05);
+    const cNom=ctrl.map(a=>a.filter(t=>t.p<0.05).length/a.length),cBh=ctrl.map(a=>fdr(a,0.05));
+    const byTf=TFS.map(g=>{
+      const rr=real.filter(t=>t.g===g);if(!rr.length)return null;
+      const cr=ctrl.map(a=>a.filter(t=>t.g===g));
+      return {g,n:series.filter(s=>s.g===g).length,m:rr.length,nom:rr.filter(t=>t.p<0.05).length/rr.length,
+        cnom:cr.reduce((a,x)=>a+x.filter(t=>t.p<0.05).length/Math.max(1,x.length),0)/NR,
+        bh:rr.filter(t=>t.bh).length,cbh:Math.max(...cr.map(x=>x.filter(t=>t.bh).length))};
+    }).filter(Boolean);
+    const top=real.slice().sort((a,b)=>a.p-b.p).slice(0,15);
+    const res={ts:Date.now(),depth,series:series.length,candles,m,nom,bonf,bh,cNomMean:cNom.reduce((a,b)=>a+b,0)/NR,cBhMax:Math.max(...cBh),byTf,
+      top:top.map(t=>({sy:t.sy,tf:TFN[t.g],test:t.name,eff:+t.eff.toFixed(4),z:+t.z.toFixed(2),p:+t.p.toExponential(2),bh:t.bh}))};
+    LAB.res=res;LS.set('cse_lab',res);
+    labRender(res);prog('DONE, '+series.length+' SERIES, '+candles.toLocaleString('en-US')+' CANDLES');$('labSt').textContent='DONE';
+  }catch(e){
+    $('labSt').textContent='STOPPED';prog(String(e&&e.message||e).toUpperCase());
+    try{if(ws)ws.close();}catch(x){}
+  }finally{LAB.busy=false;}
+}
+function labRender(r){
+  const pc=v=>(v*100).toFixed(1)+'%';
+  const verdict=r.bh===0
+    ?'No test survives false discovery control. Out of '+r.m+' tests, '+pc(r.nom/r.m)+' look significant at p under 0.05, against '+pc(r.cNomMean)+' for the matched random control. That gap is the thing to read, and a small gap means chance.'
+    :r.bh+' of '+r.m+' tests survive false discovery control. The matched random control produced at most '+r.cBhMax+' in 5 replicates. Survivors still need re-testing on newer data before anything is built on them.';
+  setH('labSum','<div class="fb"><div class="fx"><span class="lab">SERIES / CANDLES</span><b>'+r.series+' / '+r.candles.toLocaleString('en-US')+'</b></div><div class="fx"><span class="lab">TESTS RUN</span><b>'+r.m+'</b></div><div class="fx"><span class="lab">P UNDER 0.05, REAL / RANDOM</span><b>'+pc(r.nom/r.m)+' / '+pc(r.cNomMean)+'</b></div><div class="fx o"><span class="lab">SURVIVE FDR, REAL / RANDOM MAX</span><b>'+r.bh+' / '+r.cBhMax+'</b></div></div><div class="lab" style="margin:8px 0;text-transform:none;letter-spacing:.02em;color:#cfe3f7">'+esc(verdict)+'</div>');
+  setH('labTf','<table><thead><tr><th>TF</th><th class="n">SERIES</th><th class="n">TESTS</th><th class="n">P&lt;.05 REAL</th><th class="n">P&lt;.05 RANDOM</th><th class="n">FDR REAL</th><th class="n">FDR RANDOM MAX</th></tr></thead><tbody>'+r.byTf.map(x=>'<tr><td>'+TFN[x.g]+'</td><td class="n">'+x.n+'</td><td class="n">'+x.m+'</td><td class="n '+(x.nom>x.cnom+0.03?'amb':'')+'">'+pc(x.nom)+'</td><td class="n">'+pc(x.cnom)+'</td><td class="n '+(x.bh>x.cbh?'pos':'')+'">'+x.bh+'</td><td class="n">'+x.cbh+'</td></tr>').join('')+'</tbody></table>');
+  setH('labTop','<table><thead><tr><th>INDEX</th><th>TF</th><th>TEST</th><th class="n">EFFECT</th><th class="n">Z</th><th class="n">P</th><th>FDR</th></tr></thead><tbody>'+r.top.map(t=>'<tr><td>'+shortOf(nameOf(t.sy))+'</td><td>'+t.tf+'</td><td>'+esc(t.test)+'</td><td class="n">'+t.eff+'</td><td class="n">'+t.z+'</td><td class="n">'+t.p.toExponential(1)+'</td><td class="'+(t.bh?'pos':'dm')+'">'+(t.bh?'SURVIVES':'NO')+'</td></tr>').join('')+'</tbody></table>');
+  $('labNote').textContent='Tests per series: drift, return autocorrelation lags 1 to 5, volatility clustering lags 1 to 3, skew, kurtosis, variance ratios at 2, 5 and 10, runs, up and down streak continuation, hour of day. They all use closes only. The random control has identical length, timestamps and volatility with independent steps. Timeframes share underlying candles, so tests overlap and the FDR count is approximate.';
+}
 /* ---------- loop and controls ---------- */
 let lastUi=0;
 function safe(fn){try{fn();}catch(e){if(!safe.once){safe.once=true;try{console.error(e);}catch(x){}}}}
@@ -1379,6 +1707,11 @@ function init(){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
   }
+  $('bSim').onclick=()=>{cfg.sim=!cfg.sim;$('bSim').textContent=cfg.sim?'SIM ON':'SIM OFF';$('bSim').classList.toggle('on',cfg.sim);connect();};
+  $('bMc').onclick=()=>mcNull();
+  $('labGo').onclick=()=>labRun();$('labStop').onclick=()=>{LAB.stop=true;};
+  $('labCopy').onclick=()=>{if(!LAB.res){$('labProg').textContent='RUN THE LAB FIRST';return;}const t=JSON.stringify(LAB.res,null,1);try{navigator.clipboard.writeText(t).then(()=>{$('labProg').textContent='COPIED TO CLIPBOARD';},()=>{window.prompt('COPY THIS',t);});}catch(e){window.prompt('COPY THIS',t);}};
+  try{const lr=LS.get('cse_lab',null);if(lr&&lr.byTf){LAB.res=lr;labRender(lr);$('labProg').textContent='LAST RUN '+clk(lr.ts);}}catch(e){}
   syncBtns();connect();requestAnimationFrame(frame);
 }
 init();
