@@ -323,11 +323,12 @@ body.chfull{overflow:hidden}
     <div class="lab" style="text-transform:none;letter-spacing:.02em;margin-bottom:8px">Pulls candle history for all 13 indices on all 12 Deriv timeframes and tests it for structure (autocorrelation, volatility clustering, variance ratios, runs, streaks, hour of day, drift). Every result sits next to a matched random control, and the verdict uses false discovery control so chance findings are not reported as patterns.</div>
     <div class="stabs">
       <button id="labGo" type="button">RUN LAB</button><button id="labStop" type="button">STOP</button>
-      <select id="labDepth" aria-label="Depth"><option value="1">QUICK, 5000 CANDLES EACH</option><option value="3">DEEP, UP TO 15000 ON SMALL TFS</option></select>
+      <select id="labDepth" aria-label="Depth"><option value="1">QUICK, 1000 CANDLES EACH</option><option value="3">DEEP, UP TO 8000 ON SMALL TFS, SLOW</option></select>
       <span class="sp"></span><button id="labCopy" type="button">COPY RESULTS</button>
     </div>
     <div class="lab" id="labProg" style="margin-bottom:6px">IDLE</div>
     <div id="labSum"></div>
+    <div id="labRep"></div>
     <div class="tw" id="labTf"></div>
     <div class="tw" id="labTop"></div>
     <div class="lab" id="labNote" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div>
@@ -1588,9 +1589,12 @@ async function labFetch(ws,sy,g,pages){
     for(const x of d.candles)got.set(+x.epoch,+x.close);
     end=+d.candles[0].epoch-1;
     await sleep(LAB.gap);
-    if(d.candles.length<5000||LAB.stop)break;
+    if(d.candles.length<500||LAB.stop)break;
   }
-  return [...got.entries()].sort((a,b)=>a[0]-b[0]).map(x=>({t:x[0],c:x[1]}));
+  const arr=[...got.entries()].sort((a,b)=>a[0]-b[0]).map(x=>({t:x[0],c:x[1]}));
+  /* keep only the latest unbroken stretch: a data gap would show up as a fake price jump in every test */
+  let from=0;for(let i=1;i<arr.length;i++)if(arr[i].t-arr[i-1].t>3*g)from=i;
+  return arr.slice(from);
 }
 async function labRun(){
   if(LAB.busy)return;
@@ -1605,7 +1609,7 @@ async function labRun(){
       for(const g of TFS){
         if(LAB.stop)throw new Error('STOPPED');
         k++;prog('FETCH '+k+' OF '+total+' / '+shortOf(nm)+' '+TFN[g]+' / '+series.length+' SERIES KEPT');
-        const pages=depth>1?(g<=300?3:g<=1800?2:1):1;
+        const pages=depth>1?(g<=300?8:g<=1800?4:2):1;
         const cd=await labFetch(ws,sy,g,pages);
         if(cd.length>=400)series.push({sy,g,t:cd.map(x=>x.t),c:cd.map(x=>x.c)});
       }
@@ -1620,6 +1624,26 @@ async function labRun(){
       for(let rp=0;rp<NR;rp++)for(const t of ctrlBattery(s.c,s.t,s.g,1000+si*31+rp)){t.sy=s.sy;t.g=s.g;ctrl[rp].push(t);}
     });
     if(!real.length)throw new Error('NO DATA RETURNED');
+    /* replication: test each series on its older half and its newer half separately */
+    const repOf=(ctrlMode)=>{
+      const A=new Map(),pairs=[];
+      series.forEach((s,si)=>{
+        const h=s.c.length>>1;if(h<300)return;
+        const fa=ctrlMode?ctrlBattery(s.c.slice(0,h),s.t.slice(0,h),s.g,7000+si):battery(s.c.slice(0,h),s.t.slice(0,h),s.g);
+        const fb=ctrlMode?ctrlBattery(s.c.slice(h),s.t.slice(h),s.g,9000+si):battery(s.c.slice(h),s.t.slice(h),s.g);
+        const mb=new Map(fb.map(t=>[t.name,t]));
+        for(const a of fa){const b=mb.get(a.name);if(b)pairs.push({g:s.g,za:a.z,zb:b.z,pa:a.p,pb:b.p});}
+      });
+      const stat=ps=>{
+        const n=ps.length;if(n<10)return {n,corr:0,disc:0,rep:0,exp:0};
+        let sa=0,sb=0;for(const q of ps){sa+=q.za;sb+=q.zb;}sa/=n;sb/=n;let c=0,va=0,vb=0;
+        for(const q of ps){c+=(q.za-sa)*(q.zb-sb);va+=(q.za-sa)**2;vb+=(q.zb-sb)**2;}
+        const d=ps.filter(q=>q.pa<0.05),r=d.filter(q=>q.pb<0.05&&Math.sign(q.zb)===Math.sign(q.za)).length;
+        return {n,corr:c/Math.sqrt(va*vb||1),disc:d.length,rep:r,exp:d.length*0.025};
+      };
+      return {all:stat(pairs),m1:stat(pairs.filter(q=>q.g===60))};
+    };
+    const repReal=repOf(false),repCtrl=repOf(true);
     const m=real.length,nom=real.filter(t=>t.p<0.05).length,bonf=real.filter(t=>t.p<0.05/m).length,bh=fdr(real,0.05);
     const cNom=ctrl.map(a=>a.filter(t=>t.p<0.05).length/a.length),cBh=ctrl.map(a=>fdr(a,0.05));
     const byTf=TFS.map(g=>{
@@ -1630,7 +1654,7 @@ async function labRun(){
         bh:rr.filter(t=>t.bh).length,cbh:Math.max(...cr.map(x=>x.filter(t=>t.bh).length))};
     }).filter(Boolean);
     const top=real.slice().sort((a,b)=>a.p-b.p).slice(0,15);
-    const res={ts:Date.now(),depth,series:series.length,candles,m,nom,bonf,bh,cNomMean:cNom.reduce((a,b)=>a+b,0)/NR,cBhMax:Math.max(...cBh),byTf,
+    const res={ts:Date.now(),rep:{real:repReal,ctrl:repCtrl},depth,series:series.length,candles,m,nom,bonf,bh,cNomMean:cNom.reduce((a,b)=>a+b,0)/NR,cBhMax:Math.max(...cBh),byTf,
       top:top.map(t=>({sy:t.sy,tf:TFN[t.g],test:t.name,eff:+t.eff.toFixed(4),z:+t.z.toFixed(2),p:+t.p.toExponential(2),bh:t.bh}))};
     LAB.res=res;LS.set('cse_lab',res);
     labRender(res);prog('DONE, '+series.length+' SERIES, '+candles.toLocaleString('en-US')+' CANDLES');$('labSt').textContent='DONE';
@@ -1645,6 +1669,9 @@ function labRender(r){
     ?'No test survives false discovery control. Out of '+r.m+' tests, '+pc(r.nom/r.m)+' look significant at p under 0.05, against '+pc(r.cNomMean)+' for the matched random control. That gap is the thing to read, and a small gap means chance.'
     :r.bh+' of '+r.m+' tests survive false discovery control. The matched random control produced at most '+r.cBhMax+' in 5 replicates. Survivors still need re-testing on newer data before anything is built on them.';
   setH('labSum','<div class="fb"><div class="fx"><span class="lab">SERIES / CANDLES</span><b>'+r.series+' / '+r.candles.toLocaleString('en-US')+'</b></div><div class="fx"><span class="lab">TESTS RUN</span><b>'+r.m+'</b></div><div class="fx"><span class="lab">P UNDER 0.05, REAL / RANDOM</span><b>'+pc(r.nom/r.m)+' / '+pc(r.cNomMean)+'</b></div><div class="fx o"><span class="lab">SURVIVE FDR, REAL / RANDOM MAX</span><b>'+r.bh+' / '+r.cBhMax+'</b></div></div><div class="lab" style="margin:8px 0;text-transform:none;letter-spacing:.02em;color:#cfe3f7">'+esc(verdict)+'</div>');
+  const rp=r.rep,rl=(o,c,lab)=>o&&o.n>=10?lab+': '+o.disc+' tests were significant in the older half and '+o.rep+' repeated in the same direction in the newer half, against about '+o.exp.toFixed(1)+' expected by chance. Correlation of z scores between halves '+o.corr.toFixed(3)+' (random control '+c.corr.toFixed(3)+').':'';
+  const repTxt=rp?[rl(rp.real.all,rp.ctrl.all,'ALL TIMEFRAMES'),rl(rp.real.m1,rp.ctrl.m1,'M1 ONLY')].filter(Boolean).join(' '):'';
+  setH('labRep',repTxt?'<div class="lab" style="margin:0 0 8px;text-transform:none;letter-spacing:.02em;color:#9fd0ff">REPLICATION. '+esc(repTxt)+'</div>':'');
   setH('labTf','<table><thead><tr><th>TF</th><th class="n">SERIES</th><th class="n">TESTS</th><th class="n">P&lt;.05 REAL</th><th class="n">P&lt;.05 RANDOM</th><th class="n">FDR REAL</th><th class="n">FDR RANDOM MAX</th></tr></thead><tbody>'+r.byTf.map(x=>'<tr><td>'+TFN[x.g]+'</td><td class="n">'+x.n+'</td><td class="n">'+x.m+'</td><td class="n '+(x.nom>x.cnom+0.03?'amb':'')+'">'+pc(x.nom)+'</td><td class="n">'+pc(x.cnom)+'</td><td class="n '+(x.bh>x.cbh?'pos':'')+'">'+x.bh+'</td><td class="n">'+x.cbh+'</td></tr>').join('')+'</tbody></table>');
   setH('labTop','<table><thead><tr><th>INDEX</th><th>TF</th><th>TEST</th><th class="n">EFFECT</th><th class="n">Z</th><th class="n">P</th><th>FDR</th></tr></thead><tbody>'+r.top.map(t=>'<tr><td>'+shortOf(nameOf(t.sy))+'</td><td>'+t.tf+'</td><td>'+esc(t.test)+'</td><td class="n">'+t.eff+'</td><td class="n">'+t.z+'</td><td class="n">'+t.p.toExponential(1)+'</td><td class="'+(t.bh?'pos':'dm')+'">'+(t.bh?'SURVIVES':'NO')+'</td></tr>').join('')+'</tbody></table>');
   $('labNote').textContent='Tests per series: drift, return autocorrelation lags 1 to 5, volatility clustering lags 1 to 3, skew, kurtosis, variance ratios at 2, 5 and 10, runs, up and down streak continuation, hour of day. They all use closes only. The random control has identical length, timestamps and volatility with independent steps. Timeframes share underlying candles, so tests overlap and the FDR count is approximate.';
