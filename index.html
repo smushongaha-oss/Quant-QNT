@@ -169,10 +169,10 @@ details[open].p summary::after{content:"-"}
 .seg button{margin-left:-1px;padding:3px 10px}
 .chbody{display:flex;gap:10px;align-items:stretch;min-height:0}
 .chside{width:205px;flex:none;overflow:hidden}
-@media(max-width:899px){.chbody{flex-direction:column}.chside{width:auto}#cvChart{height:360px;width:100%}}
-@media(max-width:699px){#cvChart{height:340px}}
+@media(max-width:899px){.chbody{flex-direction:column}.chside{width:auto}#cvChart{flex:none;height:360px;width:100%}.p-chart.full #cvChart{flex:none;width:100%;height:calc(100vh - 150px);height:calc(100dvh - 150px);min-height:260px}.p-chart.full .chside{display:none}}
+@media(max-width:699px){#cvChart{height:380px}}
 .p-chart.full{position:fixed;inset:0;z-index:40;grid-column:auto;overflow:auto;padding:10px;background:#03060b;padding-top:calc(env(safe-area-inset-top,0px) + 10px)}
-.p-chart.full #cvChart{height:calc(100vh - 170px);min-height:260px}
+.p-chart.full #cvChart{height:calc(100vh - 170px);height:calc(100dvh - 170px);min-height:260px}
 @media(max-height:520px){.p-chart.full #cvChart{height:calc(100vh - 110px)}.p-chart.full .chside{display:none}.p-chart.full .chbody{flex-direction:row}}
 body.chfull{overflow:hidden}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -949,11 +949,15 @@ function drawChart(){
   const act=S.sigs.slice().reverse().find(s=>s.res==='open'&&s.i!==undefined&&C[s.i]&&C[s.i].t===s.t);
   if(act){
     g.setLineDash([4,3]);g.textAlign='right';
-    for(const [lab,p,col] of [['SL',act.sl,K.neg],['ENTRY',act.entry,K.ink],['1R',act.tp[0],K.pos],['2R',act.tp[1],K.pos],['3R',act.tp[2],K.pos]]){
-      if(p<mn||p>mx)continue;const yy=y(p);g.strokeStyle=col;g.beginPath();g.moveTo(Math.max(0,x(act.i)),yy);g.lineTo(pw,yy);g.stroke();
-      g.fillStyle='rgba(3,6,11,.85)';const tw=g.measureText(lab).width+6;g.fillRect(pw-tw-2,yy-11,tw,11);g.fillStyle=col;g.fillText(lab,pw-5,yy-2);
+    const pl=[];
+    for(const [lab,p,col] of [['3R',act.tp[2],K.pos],['2R',act.tp[1],K.pos],['1R',act.tp[0],K.pos],['ENTRY',act.entry,K.ink],['SL',act.sl,K.neg]]){
+      if(p<mn||p>mx)continue;
+      const yy=y(p);g.strokeStyle=col;g.beginPath();g.moveTo(Math.max(0,x(act.i)),yy);g.lineTo(pw,yy);g.stroke();pl.push({lab,col,yy,ly:yy});
     }
     g.setLineDash([]);
+    pl.sort((a,b)=>a.yy-b.yy);
+    for(let i=1;i<pl.length;i++)if(pl[i].ly<pl[i-1].ly+13)pl[i].ly=pl[i-1].ly+13;
+    for(const q of pl){const tw=g.measureText(q.lab).width+8;g.fillStyle='rgba(3,6,11,.9)';g.fillRect(pw-tw-3,q.ly-11,tw,13);g.fillStyle=q.col;g.fillText(q.lab,pw-7,q.ly-1);}
   }
   g.restore();
   const lp=C[n-1].c,ly=y(lp);
