@@ -176,9 +176,17 @@ details[open].p summary::after{content:"-"}
 .p-chart.full #cvChart{height:auto;min-height:0;flex:1}
 @media(max-height:520px){.p-chart.full .chside{display:none}.p-chart.full .chbody{flex-direction:row}}
 body.chfull{overflow:hidden}
+.p-mkts{grid-column:span 12}
+.mklist{display:grid;gap:5px;max-height:380px;overflow:auto;grid-template-columns:1fr}
+@media(min-width:900px){.mklist{grid-template-columns:1fr 1fr}}
+.mkr{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:5px 8px;background:#07101a;border-left:3px solid var(--bd)}
+.mkr .mn b{display:block;font-weight:400;color:#fff;font-size:12px;text-transform:none;letter-spacing:.02em}
+.mkr .mn span{display:block;color:var(--dim2);font-size:9px}
+.mkr .g{color:var(--pos);font-size:10px}.mkr .neg{font-size:10px}
+.mkr button{padding:3px 8px;font-size:10.5px}
+.p-mkts input[type=text],.set input[type=number]{background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;letter-spacing:0;min-width:180px}
+.set input[type=number]{width:100%;text-transform:none}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-.p-lab{grid-column:span 12}
-.p-lab .tw{max-height:360px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -196,10 +204,9 @@ body.chfull{overflow:hidden}
     <div class="hs"><label>MUSCAT</label><b id="hClk">--:--:--</b></div>
     <div class="hs"><label>LINK</label><div class="st" id="st"><i></i><span>CONNECTING</span></div></div>
     <button id="bSnd" type="button">SND</button>
-    <button id="bSim" type="button">SIM OFF</button><button id="bMc" type="button">NULL TEST</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sStat">STATS</a><a href="#sLab">LAB</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
@@ -289,6 +296,20 @@ body.chfull{overflow:hidden}
     <div class="fb" id="fb"></div>
   </section>
 
+  <section class="p p-mkts" id="sMkts">
+    <div class="ph">MARKETS <span class="r" id="mkCount"></span></div>
+    <div class="stabs" id="mkTabs">
+      <button data-g="ALL" type="button">ALL</button><button data-g="FOREX" type="button">FOREX</button><button data-g="COMM" type="button">COMMODITIES</button><button data-g="IDX" type="button">INDICES</button><button data-g="CRYPTO" type="button">CRYPTO</button><button data-g="SYNTH" type="button">DERIVED</button>
+    </div>
+    <div class="stabs">
+      <input type="text" id="mkSearch" placeholder="SEARCH: EUR, GOLD, US 500" aria-label="Search instruments">
+      <button id="mkReal" type="button">SCAN REAL MARKETS</button><button id="mkVol" type="button">SCAN VOLATILITY INDICES</button>
+    </div>
+    <div class="lab" id="mkMsg" style="margin-bottom:6px;min-height:12px"></div>
+    <div class="mklist" id="mkList"></div>
+    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">The list comes from Deriv itself, so you only see what your connection offers. Derived indices are random number generated. Real markets are not, but they carry spread and commission, close at weekends and gap, so set a trading cost below before you read any expectancy. Up to 16 instruments can be scanned at once. Tap CHART to put one on the chart, and + SCAN to add it to the scanner, shell and map.</div>
+  </section>
+
   <section class="p p-stat" id="sStat">
     <div class="ph">WHAT ACTUALLY WORKS <span class="r" id="stSym"></span></div>
     <div class="stabs" id="stTabs">
@@ -314,24 +335,17 @@ body.chfull{overflow:hidden}
         <label for="tgchat" style="margin-top:8px">TELEGRAM CHAT ID</label><input type="text" id="tgchat" autocomplete="off" placeholder="-100123456789">
         <div class="row" style="margin-top:8px"><button id="tgtest" type="button">SEND TEST MESSAGE</button></div>
       </div>
-      <div class="lab" style="text-transform:none;letter-spacing:.02em">Alerts fire for any of the 13 indices, not only the one on the chart. Sound and notifications only work while this page is open in the foreground.</div>
+      <div>
+        <label for="sessSel">SESSION FILTER (REAL MARKETS ONLY)</label>
+        <select id="sessSel"><option value="all">ALL HOURS</option><option value="ln">LONDON + NEW YORK ONLY (11:00 TO 01:00 MUSCAT, WEEKDAYS)</option></select>
+      </div>
+      <div>
+        <label for="sprIn" id="sprLab">TRADING COST PER TRADE, IN PRICE UNITS</label>
+        <input type="number" id="sprIn" min="0" step="any" placeholder="0 FOR DERIVED INDICES">
+        <div class="lab" id="sprNote" style="margin-top:4px;text-transform:none;letter-spacing:.02em"></div>
+      </div>
+      <div class="lab" style="text-transform:none;letter-spacing:.02em">Alerts fire for any scanned instrument, not only the one on the chart. Sound and notifications only work while this page is open in the foreground.</div>
     </div>
-  </section>
-
-  <section class="p p-lab" id="sLab">
-    <div class="ph">PATTERN LAB <span class="r" id="labSt">IDLE</span></div>
-    <div class="lab" style="text-transform:none;letter-spacing:.02em;margin-bottom:8px">Pulls candle history for all 13 indices on all 12 Deriv timeframes and tests it for structure (autocorrelation, volatility clustering, variance ratios, runs, streaks, hour of day, drift). Every result sits next to a matched random control, and the verdict uses false discovery control so chance findings are not reported as patterns.</div>
-    <div class="stabs">
-      <button id="labGo" type="button">RUN LAB</button><button id="labStop" type="button">STOP</button>
-      <select id="labDepth" aria-label="Depth"><option value="1">QUICK, 1000 CANDLES EACH</option><option value="3">DEEP, UP TO 8000 ON SMALL TFS, SLOW</option></select>
-      <span class="sp"></span><button id="labCopy" type="button">COPY RESULTS</button>
-    </div>
-    <div class="lab" id="labProg" style="margin-bottom:6px">IDLE</div>
-    <div id="labSum"></div>
-    <div id="labRep"></div>
-    <div class="tw" id="labTf"></div>
-    <div class="tw" id="labTop"></div>
-    <div class="lab" id="labNote" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -345,6 +359,7 @@ body.chfull{overflow:hidden}
       <p><b>Trade plan.</b> Entry at the signal close, stop beyond the zone or wick plus 0.15 ATR, targets at 1R, 2R and 3R. Stops are checked before targets inside the same candle, so results lean pessimistic.</p>
       <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
       <p><b>The scanner and map.</b> All 13 Volatility indices stream over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
+      <p><b>Real markets.</b> Forex, gold, indices and crypto have spreads, commission and swaps, so enter your cost per trade in price units and the audit takes it off every trade. Candles after a weekend or session gap are skipped and kept out of the ATR. The session filter keeps alerts and stats to London and New York hours. Closed markets are marked and ranked last.</p>
       <p>Deriv synthetic indices are random number generated. Read the audit before you trust any score band, and ignore rows with fewer than 30 trades.</p>
     </div>
   </details>
@@ -358,7 +373,7 @@ const MAXP=[25,25,20,15,15];
 const RES_OK=r=>r==='sl'||r==='tp3';
 
 function smaArr(a,n){const o=new Array(a.length).fill(NaN);let s=0,c=0;for(let i=0;i<a.length;i++){const v=a[i];if(v===v){s+=v;c++;}if(i>=n){const u=a[i-n];if(u===u){s-=u;c--;}}if(i>=n-1&&c===n)o[i]=s/n;}return o;}
-function atrArr(C,n){const o=new Array(C.length).fill(NaN);let prev=0,sum=0;for(let i=0;i<C.length;i++){const tr=i===0?C[i].h-C[i].l:Math.max(C[i].h-C[i].l,Math.abs(C[i].h-C[i-1].c),Math.abs(C[i].l-C[i-1].c));if(i<n){sum+=tr;if(i===n-1){prev=sum/n;o[i]=prev;}}else{prev=(prev*(n-1)+tr)/n;o[i]=prev;}}return o;}
+function atrArr(C,n,gap){const o=new Array(C.length).fill(NaN);let prev=0,sum=0;for(let i=0;i<C.length;i++){let tr=i===0?C[i].h-C[i].l:Math.max(C[i].h-C[i].l,Math.abs(C[i].h-C[i-1].c),Math.abs(C[i].l-C[i-1].c));if(gap&&gap[i]&&i>=n&&prev>0)tr=Math.min(tr,prev*1.5);if(i<n){sum+=tr;if(i===n-1){prev=sum/n;o[i]=prev;}}else{prev=(prev*(n-1)+tr)/n;o[i]=prev;}}return o;}
 function rsiArr(cl,n){const o=new Array(cl.length).fill(NaN);let ag=0,al=0;for(let i=1;i<cl.length;i++){const d=cl[i]-cl[i-1],g=Math.max(d,0),l=Math.max(-d,0);if(i<=n){ag+=g;al+=l;if(i===n){ag/=n;al/=n;o[i]=al===0?100:100-100/(1+ag/al);}}else{ag=(ag*(n-1)+g)/n;al=(al*(n-1)+l)/n;o[i]=al===0?100:100-100/(1+ag/al);}}return o;}
 function stochArr(r,n){const o=new Array(r.length).fill(NaN);for(let i=n-1;i<r.length;i++){let mn=Infinity,mx=-Infinity,ok=true;for(let k=i-n+1;k<=i;k++){const v=r[k];if(v!==v){ok=false;break;}if(v<mn)mn=v;if(v>mx)mx=v;}if(ok)o[i]=mx===mn?0.5:(r[i]-mn)/(mx-mn);}return o;}
 function swingsOf(C,n){const o=[];for(let k=n;k<C.length-n;k++){let hi=true,lo=true;for(let d=1;d<=n;d++){if(!(C[k].h>C[k-d].h&&C[k].h>=C[k+d].h))hi=false;if(!(C[k].l<C[k-d].l&&C[k].l<=C[k+d].l))lo=false;if(!hi&&!lo)break;}if(hi)o.push({k,conf:k+n,type:'H',price:C[k].h});if(lo)o.push({k,conf:k+n,type:'L',price:C[k].l});}return o;}
@@ -455,6 +470,7 @@ function momRegime(X,i,d){
 function watchOf(X,i,px){
   const {A,Z,T,HT}=X;const a=A[i];
   if(!(a>0)||i<30)return null;
+  if(X.gap&&(X.gap[i]||X.gap[i-1]))return null;
   let best=null;
   for(const z of Z){
     if(z.born>=i||z.dead<=i)continue;
@@ -475,6 +491,7 @@ function evalBar(X,i,minScore){
   const {C,A,Z,T,SLa,SHa,HT,s10,s20,K,D,avgA}=X;
   const c=C[i],a=A[i];
   if(!(a>0)||i<30)return null;
+  if(X.gap&&(X.gap[i]||X.gap[i-1]||X.gap[i-2]||X.gap[i-3]))return null;
   let best=null;
   for(const z of Z){
     if(z.born>=i||z.dead<=i)continue;
@@ -529,57 +546,64 @@ function analyze(X,logMin){
 }
 
 function buildX(C,H,tf){
-  const A=atrArr(C,14),sc=scan(C,swingsOf(C,3),A);
+  const gapC=C.map((c,i)=>i>0&&c.t-C[i-1].t>2*tf),gapH=H.map((c,i)=>i>0&&c.t-H[i-1].t>2*3600);
+  const A=atrArr(C,14,gapC),sc=scan(C,swingsOf(C,3),A);
   const cl=C.map(x=>x.c),rs=rsiArr(cl,14),st=stochArr(rs,14),K=smaArr(st,3),D=smaArr(K,3);
   const s10=smaArr(cl,10),s20=smaArr(cl,20),avgA=smaArr(A,50);
-  const AH=atrArr(H,14),scH=scan(H,swingsOf(H,3),AH);
+  const AH=atrArr(H,14,gapH),scH=scan(H,swingsOf(H,3),AH);
   const HT=new Int8Array(C.length);
   let hp=-1;
   for(let i=0;i<C.length;i++){const ct=C[i].t+tf;while(hp+1<H.length&&H[hp+1].t+3600<=ct)hp++;HT[i]=hp>=0?scH.T[hp]:0;}
-  return {C,A,Z:sc.Z,T:sc.T,SLa:sc.SLa,SHa:sc.SHa,HT,s10,s20,K,D,avgA};
+  return {C,A,Z:sc.Z,T:sc.T,SLa:sc.SLa,SHa:sc.SHa,HT,s10,s20,K,D,avgA,gap:gapC};
 }
 
+let COST=0;
 function statOf(list,k){
   const r=list.filter(s=>RES_OK(s.res)),n=r.length;
   const w=[1,2,3].map(x=>r.filter(s=>s.reached>=x).length);
-  return {n,w,e:n?(w[k-1]*k-(n-w[k-1]))/n:0,open:list.length-n};
+  let tot=0;
+  for(const s of r){const c=COST>0&&s.risk>0?COST/s.risk:0;tot+=(s.reached>=k?k:-1)-c;}
+  return {n,w,e:n?tot/n:0,open:list.length-n};
 }
 
 
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
-const SYMS=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','Volatility 75 (1s)'],['R_100','Volatility 100'],['1HZ100V','Volatility 100 (1s)'],['R_50','Volatility 50'],['1HZ50V','Volatility 50 (1s)'],['R_25','Volatility 25'],['1HZ25V','Volatility 25 (1s)'],['R_10','Volatility 10'],['1HZ10V','Volatility 10 (1s)'],['1HZ15V','Volatility 15 (1s)'],['1HZ30V','Volatility 30 (1s)']];
+const DEF=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','Volatility 75 (1s)'],['R_100','Volatility 100'],['1HZ100V','Volatility 100 (1s)'],['R_50','Volatility 50'],['1HZ50V','Volatility 50 (1s)'],['R_25','Volatility 25'],['1HZ25V','Volatility 25 (1s)'],['R_10','Volatility 10'],['1HZ10V','Volatility 10 (1s)'],['1HZ15V','Volatility 15 (1s)'],['1HZ30V','Volatility 30 (1s)']];
+const SYMS=DEF.map(x=>x.slice());
+const MAXW=16;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90},LS.get('cse_set',{}));
+const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90,watch:null,mk:'ALL',spr:{},sess:'all'},LS.get('cse_set',{}));
 if(cfg.tf!==60&&cfg.tf!==300)cfg.tf=60;
-try{const q=new URLSearchParams(location.search).get('sym');if(q&&SYMS.some(s=>s[0]===q))cfg.sym=q;}catch(e){}
+if(!cfg.spr||typeof cfg.spr!=='object')cfg.spr={};
+try{const q=new URLSearchParams(location.search).get('sym');if(q&&/^[A-Za-z0-9_.]+$/.test(q))cfg.sym=q;}catch(e){}
 const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 const K={pos:'#2fe38a',neg:'#ff4d5e',amb:'#f5a524',blu:'#4aa8ff',cy:'#37d6ff',yel:'#e7d54a',dim:'#6f8296',grid:'#101c2a',ink:'#d7e6f5',vio:'#b18cff',org:'#ff8f6b'};
 const nameOf=sy=>(SYMS.find(x=>x[0]===sy)||[sy,sy])[1];
-const shortOf=nm=>nm.replace('Volatility ','V').replace(' (1s)',' 1S');
+const shortOf=nm=>nm.replace('Volatility ','V').replace(' (1s)',' 1S').slice(0,14);
 const tfName=()=>cfg.tf===60?'M1':'M5';
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const tz={timeZone:'Asia/Muscat',hour12:false};
 const clk=ms=>new Date(ms).toLocaleTimeString('en-GB',tz);
 const clkS=sec=>new Date(sec*1000).toLocaleTimeString('en-GB',tz);
-const arcKey=()=>(cfg.sim?'cse_sim_':'cse_arch_')+cfg.sym+'_'+cfg.tf;
+const arcKey=()=>'cse_arch_'+cfg.sym+'_'+cfg.tf;
 const pct=(w,n)=>n?Math.round(100*w/n):0;
 
 /* ---------- state ---------- */
 const EPS=[
-  {n:'NEW API',u:'wss://api.derivws.com/trading/v1/options/ws/public'},
-  {n:'LEGACY DERIVWS',u:'wss://ws.derivws.com/websockets/v3?app_id=1089'},
-  {n:'LEGACY BINARY',u:'wss://ws.binaryws.com/websockets/v3?app_id=1089'}
+  {n:'NEW API',u:'wss://api.derivws.com/trading/v1/options/ws/public',legacy:false},
+  {n:'LEGACY DERIVWS',u:'wss://ws.derivws.com/websockets/v3?app_id=1089',legacy:true},
+  {n:'LEGACY BINARY',u:'wss://ws.binaryws.com/websockets/v3?app_id=1089',legacy:true}
 ];
 const CNT=[[1500,400],[500,300],[200,200]];
-const S={ws:null,gen:0,C:[],H:[],X:null,sigs:[],dp:2,first:true,sessionFrom:0,seen:new Set(),arch:{},ping:null,ac:null,rid:0,rmap:{},seenS:new Set(),toastSym:null,ci:0,tries:0,ep:0,got:false,lastMsg:0,D:null,dirty:true,tickAt:{}};
+const S={ws:null,gen:0,C:[],H:[],X:null,sigs:[],dp:2,first:true,sessionFrom:0,seen:new Set(),arch:{},ping:null,ac:null,rid:0,rmap:{},seenS:new Set(),toastSym:null,ci:0,tries:0,ep:0,got:false,lastMsg:0,D:null,dirty:true,tickAt:{},cat:{},names:{},subd:new Set()};
 const SC={},R={},PULSE={},WL=[];
 let SCN=[];
 
 function wlog(dir,type,txt,cls){WL.push({t:Date.now(),dir,type,txt,cls:cls||''});if(WL.length>80)WL.shift();S.wd=true;}
 function setStatus(t,c){const e=$('st');e.className='st '+(c||'');e.lastChild.textContent=t.toUpperCase();}
-function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);clearInterval(S.simT);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
+function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
 function histReq(ws,sym,g,cnt){
   const id=++S.rid;S.rmap[id]={sym,g};
   wlog('&#9654;','HISTORY',sym+' G'+g+' N'+cnt,'s');
@@ -601,7 +625,7 @@ function tickInto(arr,g,ep,p){
   if(be>last.t){arr.push({t:be,o:p,h:p,l:p,c:p});if(arr.length>2000)arr.shift();return true;}
   return false;
 }
-function detectDp(C){let m=2;for(let i=Math.max(0,C.length-60);i<C.length;i++){const s=String(C[i].c),k=s.indexOf('.');if(k>=0)m=Math.max(m,s.length-k-1);}return Math.min(m,4);}
+function detectDp(C){let m=2;for(let i=Math.max(0,C.length-60);i<C.length;i++){const s=String(C[i].c),k=s.indexOf('.');if(k>=0)m=Math.max(m,s.length-k-1);}return Math.min(m,5);}
 const fp=(sy,p)=>p==null||p!==p?'-':p.toFixed(sy===cfg.sym?S.dp:((R[sy]&&R[sy].dp)||2));
 function scanRecompute(sy){const st=SC[sy];if(!st||st.C.length<90||st.H.length<30)return;setResult(sy,buildX(st.C,st.H,cfg.tf),st.C,true);}
 function setResult(sy,X,C,alertOn){
@@ -616,7 +640,7 @@ function setResult(sy,X,C,alertOn){
       if(!r.seeded)S.seenS.add(key);
       else if(!S.seenS.has(key)){
         S.seenS.add(key);r.la=r.la||{};
-        if(ev.score>=cfg.thr&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
+        if(ev.score>=cfg.thr&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
       }
     }
   }
@@ -627,17 +651,14 @@ function setFocus(sy){
   if(sy===cfg.sym)return;
   const old=cfg.sym;
   SC[old]=(S.C.length>=90&&S.H.length>=30)?{C:S.C.slice(-600),H:S.H.slice(-250)}:{C:[],H:[]};
-  cfg.sym=sy;persist();$('sym').value=sy;delete SC[sy];
+  cfg.sym=sy;persist();delete SC[sy];
   S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.arch=LS.get(arcKey(),{});
-  if(S.ws&&S.ws.readyState===1){
-    S.ci=0;focusReq(S.ws);
-    if(!SC[old].C.length){histReq(S.ws,old,cfg.tf,500);histReq(S.ws,old,3600,200);}
-  }else connect();
-  S.dirty=true;
+  updateCost();syncSyms();
+  if(S.ws&&S.ws.readyState===1){S.ci=0;focusReq(S.ws);}else connect();
+  buildSelect();S.dirty=true;
 }
 function connect(retry){
   stop();
-  if(cfg.sim){simStart();return;}
   if(!retry){S.tries=0;S.ep=0;S.ci=0;}
   const my=S.gen,ep=EPS[S.ep%EPS.length];
   S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;
@@ -653,11 +674,12 @@ function connect(retry){
     if(my!==S.gen)return;
     S.lastMsg=Date.now();setStatus('LOADING');wlog('&#8226;','SYS','SOCKET OPEN','d');
     focusReq(ws);
-    SYMS.forEach(([sy])=>{try{ws.send(JSON.stringify({ticks:sy,subscribe:1}));}catch(e){}});
+    S.subd=new Set();SYMS.forEach(([sy])=>ensureTicks(sy));
     wlog('&#9654;','TICKS','SUBSCRIBE x'+SYMS.length,'s');
+    try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}
     lightReqs(ws,my,false);
     S.ping=setInterval(()=>{try{ws.send(JSON.stringify({ping:1}));}catch(e){}},30000);
-    S.h1t=setInterval(()=>{if(S.C.length)histReq(ws,cfg.sym,3600,CNT[S.ci][1]);lightReqs(ws,my,true);},300000);
+    S.h1t=setInterval(()=>{if(S.C.length)histReq(ws,cfg.sym,3600,CNT[S.ci][1]);lightReqs(ws,my,true);try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}},300000);
     S.stale=setInterval(()=>{if(Date.now()-S.lastMsg>45000){try{ws.close();}catch(e){}}},10000);
   };
   ws.onmessage=ev=>{
@@ -666,6 +688,7 @@ function connect(retry){
     let d;try{d=JSON.parse(ev.data);}catch(e){return;}
     if(d.error){
       const er=d.echo_req||{};
+      if(er.active_symbols){wlog('&#9664;','ERROR','MARKET LIST: '+String(d.error.message||'').slice(0,50),'e');return;}
       if(er.ticks&&er.ticks!==cfg.sym)return;
       const meta=S.rmap[d.req_id]||{sym:er.ticks_history};
       wlog('&#9664;','ERROR',String(d.error.message||'error').slice(0,60),'e');
@@ -674,6 +697,7 @@ function connect(retry){
       setStatus(String(d.error.message||'API ERROR').slice(0,40),'err');return;
     }
     S.got=true;
+    if(d.msg_type==='active_symbols'){buildCatalog(d.active_symbols||[]);return;}
     if(d.msg_type==='candles'&&Array.isArray(d.candles)){
       const er=d.echo_req||{},meta=S.rmap[d.req_id]||{sym:er.ticks_history,g:er.granularity};
       const arr=d.candles.map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close}));
@@ -708,7 +732,136 @@ function connect(retry){
     setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,10000));
   };
 }
-document.addEventListener('visibilitychange',()=>{if(!cfg.sim&&!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000))connect(true);});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000))connect(true);});
+
+
+/* ---------- markets: catalog, watchlist, sessions, cost ---------- */
+const GN={FOREX:'FOREX',COMM:'COMMODITIES',IDX:'STOCK INDICES',CRYPTO:'CRYPTO',SYNTH:'DERIVED (RANDOM)',OTHER:'OTHER'};
+const DEF_NAMES={};DEF.forEach(d=>{DEF_NAMES[d[0]]=d[1];});
+const nameFor=sy=>S.names[sy]||DEF_NAMES[sy]||sy;
+function grpOf(sy,market){
+  const m=String(market||'').toLowerCase();
+  if(/synth|derived/.test(m))return 'SYNTH';
+  if(/forex|fx/.test(m))return 'FOREX';
+  if(/commod|metal|energ/.test(m))return 'COMM';
+  if(/crypto/.test(m))return 'CRYPTO';
+  if(/indic/.test(m))return 'IDX';
+  if(/^frx/.test(sy))return 'FOREX';
+  if(/^cry/i.test(sy))return 'CRYPTO';
+  if(/^OTC_/.test(sy))return 'IDX';
+  if(/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy))return 'SYNTH';
+  return 'OTHER';
+}
+const grpFor=sy=>S.cat[sy]?S.cat[sy].grp:grpOf(sy,'');
+const is247=sy=>{const g=grpFor(sy);return g==='SYNTH'||g==='CRYPTO';};
+const isClosed=sy=>!!(S.cat[sy]&&S.cat[sy].open===false);
+function inSession(t,sy){
+  if(cfg.sess==='all'||is247(sy||cfg.sym))return true;
+  const d=new Date(t*1000),dow=d.getUTCDay(),h=d.getUTCHours()+d.getUTCMinutes()/60;
+  if(dow===0||dow===6)return false;
+  return h>=7&&h<21;
+}
+const sessFilter=l=>(cfg.sess==='all'||is247(cfg.sym))?l:l.filter(s=>inSession(s.t,cfg.sym));
+function updateCost(){
+  COST=+(cfg.spr[cfg.sym])||0;
+  const i=$('sprIn');if(!i)return;
+  if(document.activeElement!==i)i.value=COST||'';
+  $('sprLab').textContent='TRADING COST PER TRADE FOR '+shortOf(nameFor(cfg.sym))+', IN PRICE UNITS';
+  const a=S.X&&S.X.A?S.X.A[S.X.A.length-2]:0;
+  $('sprNote').textContent=a>0?('CURRENT ATR IS '+a.toPrecision(4)+'. A COST OF '+(COST/a).toFixed(2)+' ATR IS TAKEN OFF EVERY TRADE.'):'';
+}
+function rebuildSyms(){
+  const w=((cfg.watch&&cfg.watch.length)?cfg.watch:DEF.map(d=>d[0])).slice(0,MAXW);
+  if(!w.includes(cfg.sym))w.push(cfg.sym);
+  SYMS.splice(0,SYMS.length,...w.map(sy=>[sy,nameFor(sy)]));
+}
+function ensureTicks(sy){
+  if(!S.ws||S.ws.readyState!==1||S.subd.has(sy))return;
+  S.subd.add(sy);try{S.ws.send(JSON.stringify({ticks:sy,subscribe:1}));}catch(e){}
+}
+function syncSyms(){
+  const before=new Set(SYMS.map(x=>x[0]));
+  rebuildSyms();
+  const now=new Set(SYMS.map(x=>x[0]));
+  let removed=false;
+  before.forEach(sy=>{if(!now.has(sy)){removed=true;delete SC[sy];delete R[sy];delete PULSE[sy];}});
+  now.forEach(sy=>{if(sy!==cfg.sym&&!SC[sy])SC[sy]={C:[],H:[]};});
+  MP.nodes=[];
+  const ws=S.ws;
+  if(ws&&ws.readyState===1){
+    if(removed){try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){}S.subd=new Set();}
+    let k=0;
+    SYMS.forEach(([sy])=>{
+      ensureTicks(sy);
+      const st=SC[sy];
+      if(sy!==cfg.sym&&st&&!st.C.length&&Date.now()-(st.req||0)>10000){
+        st.req=Date.now();
+        setTimeout(()=>{if(ws.readyState===1&&SC[sy]){histReq(ws,sy,cfg.tf,500);histReq(ws,sy,3600,200);}},300+(k++)*140);
+      }
+    });
+  }
+  S.dirty=true;
+}
+function buildCatalog(list){
+  const cat={};
+  for(const a of list){
+    const sy=a.underlying_symbol||a.symbol;
+    if(!sy||a.is_trading_suspended)continue;
+    const mk=a.market||a.market_display_name||'';
+    cat[sy]={sy,name:a.display_name||sy,market:mk,grp:grpOf(sy,mk),open:a.exchange_is_open===undefined?true:!!a.exchange_is_open};
+  }
+  S.cat=cat;
+  for(const sy in cat)S.names[sy]=cat[sy].name;
+  SYMS.forEach(x=>{x[1]=nameFor(x[0]);});
+  wlog('&#9664;','MARKETS',Object.keys(cat).length+' INSTRUMENTS','');
+  buildSelect();renderMarkets();updateCost();S.dirty=true;
+}
+function buildSelect(){
+  const sel=$('sym'),items=Object.values(S.cat);
+  let html='';
+  if(!items.length){
+    html=DEF.map(s=>'<option value="'+s[0]+'">'+esc(s[1].toUpperCase())+'</option>').join('');
+    if(!DEF.some(s=>s[0]===cfg.sym))html='<option value="'+esc(cfg.sym)+'">'+esc(nameFor(cfg.sym).toUpperCase())+'</option>'+html;
+  }else{
+    for(const g of ['FOREX','COMM','IDX','CRYPTO','SYNTH','OTHER']){
+      const l=items.filter(x=>x.grp===g).sort((a,b)=>a.name.localeCompare(b.name));
+      if(!l.length)continue;
+      html+='<optgroup label="'+GN[g]+'">'+l.map(x=>'<option value="'+esc(x.sy)+'">'+esc(x.name.toUpperCase())+(x.open?'':' (CLOSED)')+'</option>').join('')+'</optgroup>';
+    }
+    if(!S.cat[cfg.sym])html='<option value="'+esc(cfg.sym)+'">'+esc(nameFor(cfg.sym).toUpperCase())+'</option>'+html;
+  }
+  if(sel._h!==html){sel.innerHTML=html;sel._h=html;}
+  sel.value=cfg.sym;
+}
+function renderMarkets(){
+  const items=Object.values(S.cat);
+  if(!items.length){setH('mkList','<div class="dm" style="padding:8px">THE MARKET LIST ARRIVES A FEW SECONDS AFTER CONNECTING.</div>');$('mkCount').textContent='';return;}
+  const q=(($('mkSearch').value)||'').trim().toLowerCase();
+  const l=items.filter(x=>(cfg.mk==='ALL'||x.grp===cfg.mk)&&(!q||(x.name+' '+x.sy).toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  const watch=new Set((cfg.watch&&cfg.watch.length)?cfg.watch:DEF.map(d=>d[0]));
+  $('mkCount').textContent=l.length+' SHOWN / SCANNING '+watch.size+' OF '+MAXW;
+  setH('mkList',l.slice(0,150).map(x=>{const w=watch.has(x.sy);return '<div class="mkr"><div class="mn"><b>'+esc(x.name)+'</b><span>'+esc(x.sy)+' / '+GN[x.grp]+'</span></div><span class="'+(x.open?'g':'neg')+'">'+(x.open?'OPEN':'CLOSED')+'</span><button type="button" data-a="chart" data-sy="'+esc(x.sy)+'">CHART</button><button type="button" data-a="watch" data-sy="'+esc(x.sy)+'" class="'+(w?'on':'')+'">'+(w?'- SCAN':'+ SCAN')+'</button></div>';}).join('')+(l.length>150?'<div class="dm" style="padding:6px">SHOWING THE FIRST 150. USE SEARCH TO NARROW.</div>':''));
+}
+function mkApplyWatch(list){cfg.watch=list;persist();syncSyms();renderMarkets();}
+function toggleWatch(sy){
+  const cur=((cfg.watch&&cfg.watch.length)?cfg.watch:DEF.map(d=>d[0])).slice();
+  const i=cur.indexOf(sy);
+  if(i>=0)cur.splice(i,1);
+  else{if(cur.length>=MAXW){$('mkMsg').textContent='THE SCANNER IS FULL ('+MAXW+'). REMOVE ONE FIRST.';return;}cur.push(sy);}
+  if(!cur.length){$('mkMsg').textContent='KEEP AT LEAST ONE INSTRUMENT.';return;}
+  $('mkMsg').textContent='';mkApplyWatch(cur);
+}
+function realPreset(){
+  const items=Object.values(S.cat).filter(x=>x.grp!=='SYNTH'&&x.grp!=='OTHER');
+  if(!items.length){$('mkMsg').textContent='NO REAL MARKETS LISTED YET. WAIT A MOMENT, OR THEY MAY NOT BE OFFERED ON THIS CONNECTION.';return;}
+  const pats=[/^EUR\/USD$/i,/^GBP\/USD$/i,/^USD\/JPY$/i,/^AUD\/USD$/i,/gold|xau/i,/(us|u\.s\.)\s*500|s&p/i,/wall street|us\s*30|dow/i,/btc|bitcoin/i];
+  const pick=[];
+  for(const p of pats){const f=items.find(x=>p.test(x.name)&&!pick.includes(x.sy));if(f)pick.push(f.sy);}
+  if(!pick.length){$('mkMsg').textContent='NO MATCH FOUND. USE SEARCH AND + SCAN TO ADD INSTRUMENTS.';return;}
+  $('mkMsg').textContent='SCANNING '+pick.length+' REAL-MARKET INSTRUMENTS.';
+  mkApplyWatch(pick);setFocus(pick[0]);
+}
+function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}
 
 /* ---------- focus recompute and derived data ---------- */
 function recompute(){
@@ -726,7 +879,7 @@ function recompute(){
   const store={};S.sigs.filter(s=>s.src==='live').slice(-500).forEach(s=>{store[s.key]=s;});
   S.arch=store;LS.set(arcKey(),store);
   if(S.first){S.sigs.forEach(s=>S.seen.add(s.key));S.first=false;}
-  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(s.score>=cfg.thr&&s.src==='live')alertSig(s,cfg.sym);}}}
+  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(s.score>=cfg.thr&&s.src==='live'&&inSession(s.t,cfg.sym))alertSig(s,cfg.sym);}}}
   derive();S.dirty=true;
 }
 function derive(){
@@ -742,7 +895,7 @@ function derive(){
       if(i===last)D.cp=nm;
     }
   }
-  const sg=S.sigs;
+  const sg=sessFilter(S.sigs);
   D.all=[1,2,3].map(k=>statOf(sg,k));
   D.bands=[['85+',s=>s.score>=85],['70-84',s=>s.score>=70&&s.score<85],['55-69',s=>s.score>=55&&s.score<70],['40-54',s=>s.score<55]].map(([lab,f])=>{const l=sg.filter(f);return {lab,s1:statOf(l,1),s2:statOf(l,2),s3:statOf(l,3)};});
   D.avg=sg.length?Math.round(sg.reduce((a,s)=>a+s.score,0)/sg.length):0;
@@ -774,7 +927,7 @@ function alertSig(s,sy){
   t.classList.add('show');clearTimeout(alertSig.h);alertSig.h=setTimeout(()=>t.classList.remove('show'),12000);
   beep();
   try{if('Notification' in window&&Notification.permission==='granted')new Notification((s.d===1?'Buy ':'Sell ')+nameOf(sy)+' ('+s.score+')',{body:s.pat+' at '+s.kind});}catch(e){}
-  if(cfg.tok&&cfg.chat&&!cfg.sim){
+  if(cfg.tok&&cfg.chat){
     const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\nEntry '+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent(txt)).catch(()=>{});
   }
@@ -783,6 +936,7 @@ function alertSig(s,sy){
 /* ---------- scanner states ---------- */
 function stateOf(sy){
   const r=R[sy],m={mode:'load',rank:-5,val:0,side:0,txt:'LOADING',hb:0,tr:0,sig:null,w:null,dist:0};
+  if(isClosed(sy))return {mode:'none',rank:-2,val:0,side:0,txt:'MARKET CLOSED',hb:0,tr:0,sig:null,w:null,dist:0,closed:true};
   if(!r||!r.ready){if(r&&r.err)m.txt='UNAVAILABLE';return m;}
   m.hb=r.hb;m.tr=r.tr;m.w=r.w;
   const age=r.sig?Math.round((r.lastT-r.sig.t)/cfg.tf):99;
@@ -820,7 +974,7 @@ function renderAudit(){
   const s2=D.all[1],big=$('auBig');
   if(s2.n){big.textContent=(s2.e>=0?'+':'')+s2.e.toFixed(2)+'R';big.className='big '+(s2.e>=0?'pos':'neg');}
   else{big.textContent='--';big.className='big dm';}
-  $('auSub').textContent='AVERAGE R PER TRADE, FIXED 2R TARGET, SAME STOP';
+  $('auSub').textContent='AVERAGE R PER TRADE, FIXED 2R TARGET, SAME STOP'+(COST>0?', AFTER COST':'');
   const n=s2.n;
   setH('auGrid',[['TRADES',n],['HIT 1R',pct(D.all[0].w[0],D.all[0].n)+'%'],['HIT 2R',pct(D.all[1].w[1],n)+'%'],['HIT 3R',pct(D.all[2].w[2],D.all[2].n)+'%'],['AVG SCORE',D.avg],['OPEN',s2.open]].map(x=>'<div><span class="lab">'+x[0]+'</span><b>'+x[1]+'</b></div>').join(''));
   $('auRisk').textContent=n<30?'SAMPLE: NOISE ('+n+' OF 30)':'SAMPLE: READABLE ('+n+')';
@@ -1000,7 +1154,7 @@ function drawTimeline(){
   for(const v of [0,25,50,75,100]){g.beginPath();g.moveTo(0,y(v));g.lineTo(pw,y(v));g.stroke();g.fillText(String(v),pw+5,y(v)+3);}
   // H1 bias ribbon
   for(let i=0;i<N;i++){g.fillStyle=L[i].hb===1?'rgba(47,227,138,.5)':L[i].hb===-1?'rgba(255,77,94,.5)':'rgba(111,130,150,.35)';g.fillRect(i*bw,Hh-bot+8,bw+0.5,4);}
-  g.fillStyle=K.dim;g.fillText('H1 BIAS',2,Hh-3);
+  g.fillStyle=K.dim;g.textAlign='left';g.fillText('H1',pw+5,Hh-bot+15);
   // alert level
   g.setLineDash([4,4]);g.strokeStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(0,y(cfg.thr));g.lineTo(pw,y(cfg.thr));g.stroke();g.setLineDash([]);
   // signal stems
@@ -1182,7 +1336,7 @@ function renderVerdict(){
   setH('ring',svg);
   const t=X&&n?X.T[n-1]:0,h=X&&n?X.HT[n-1]:0;
   const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
-  setH('vchips','<span class="vchip">H1 BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>');
+  setH('vchips','<span class="vchip">H1 BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
   setH('vparts',VPN.map((nm,k)=>'<li><i class="sw" style="background:'+VPC[k]+'"></i><div class="nm">'+nm.toUpperCase()+'<span>'+VPD[k].toUpperCase()+'</span></div><div class="pt">'+(Math.round(parts[k]*10)/10)+'/'+MAXP[k]+'</div></li>').join(''));
 }
 
@@ -1200,7 +1354,7 @@ function renderScanList(){
     }else if(st.mode==='watch'){
       cls=st.side===1?'b':'s';num=st.val;cap='POTENTIAL';
       txt=(st.side===1?'Demand ':'Supply ')+st.w.kind+', '+(st.dist<0.05?'price inside the zone':st.dist.toFixed(1)+' ATR away');
-    }else if(st.mode==='none'){txt='No zone near price';num='-';}
+    }else if(st.mode==='none'){txt=st.closed?'Market closed':'No zone near price';num='-';}
     else if(r&&r.err)txt='Unavailable';
     const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
     const meta=r&&r.ready?'H1 '+w(r.hb)+', '+tfName()+' '+w(r.tr):'';
@@ -1223,21 +1377,14 @@ function groupBy(list,tab){
 function renderStats2(){
   $('stSym').textContent=shortOf(nameOf(cfg.sym))+' / '+tfName();
   const k=+cfg.tgt;
-  let list=S.sigs;
+  let list=sessFilter(S.sigs);
   if(cfg.src==='live')list=list.filter(s=>s.src==='live');else if(cfg.src==='bt')list=list.filter(s=>s.src==='bt');
   const rows=groupBy(list,cfg.tab),all=statOf(list,k);
   if(!rows.length){setH('stBox','<div class="dm" style="padding:8px">NOTHING LOGGED FOR THIS FILTER YET</div>');$('stNote').textContent='';return;}
-  const vs=l=>{
-    if(S.C.length<200)return '-';
-    const d=diffOf(ciOf(l,k),ciOf(randBase(l,S.C,10,mulberry32(1)),k));
-    if(!d)return '-';
-    return '<span class="'+(d.d>0?'pos':'neg')+'">'+fmtR(d.d)+(Math.abs(d.z)>=2?' *':'')+'</span>';
-  };
-  const line=(label,st,bold,l)=>'<tr'+(bold?' style="color:#fff"':'')+'><td>'+label+'</td><td class="n">'+st.n+'</td><td class="n">'+(st.n?pct(st.w[0],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[1],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[2],st.n)+'%':'-')+'</td><td class="n '+(st.n&&st.e>0?'pos':st.n&&st.e<0?'neg':'')+'">'+(st.n?(st.e>0?'+':'')+st.e.toFixed(2)+'R':'-')+'</td><td class="n">'+vs(l)+'</td></tr>';
+  const line=(label,st,bold)=>'<tr'+(bold?' style="color:#fff"':'')+'><td>'+label+'</td><td class="n">'+st.n+'</td><td class="n">'+(st.n?pct(st.w[0],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[1],st.n)+'%':'-')+'</td><td class="n">'+(st.n?pct(st.w[2],st.n)+'%':'-')+'</td><td class="n '+(st.n&&st.e>0?'pos':st.n&&st.e<0?'neg':'')+'">'+(st.n?(st.e>0?'+':'')+st.e.toFixed(2)+'R':'-')+'</td></tr>';
   const head={score:'SCORE',pat:'CANDLE',kind:'ZONE TYPE',side:'SIDE'}[cfg.tab];
-  setH('stBox','<table><thead><tr><th>'+head+'</th><th class="n">TRADES</th><th class="n">HIT 1R</th><th class="n">HIT 2R</th><th class="n">HIT 3R</th><th class="n">EXP AT '+k+'R</th><th class="n">VS RANDOM</th></tr></thead><tbody>'+rows.map(([lab,l])=>line(lab,statOf(l,k),false,l)).join('')+line('ALL',all,true,list)+'</tbody></table>');
-  const cb=S.C.length>=200?ciOf(randBase(list,S.C,10,mulberry32(1)),k):null;
-  $('stNote').textContent=(all.open?all.open+' still open or expired are left out. ':'')+(all.n<30?'Under 30 resolved trades: treat these numbers as noise. ':'')+'Expectancy is average R per trade with a fixed '+k+'R target and the same stop. '+(cb?'Random entries with identical stops on this same history average '+fmtR(cb.m)+'. ':'')+'VS RANDOM is the signal result minus that random-timing result, and a star marks about 2 standard errors. Stars are not corrected for the many slices, so expect some by luck.';
+  setH('stBox','<table><thead><tr><th>'+head+'</th><th class="n">TRADES</th><th class="n">HIT 1R</th><th class="n">HIT 2R</th><th class="n">HIT 3R</th><th class="n">EXP AT '+k+'R</th></tr></thead><tbody>'+rows.map(([lab,l])=>line(lab,statOf(l,k))).join('')+line('ALL',all,true)+'</tbody></table>');
+  $('stNote').textContent=(all.open?all.open+' still open or expired are left out. ':'')+(all.n<30?'Under 30 resolved trades: treat these numbers as noise. ':'')+'Expectancy is average R per trade with a fixed '+k+'R target and the same stop.'+(COST>0?' A cost of '+COST+' price units per trade is included.':'')+(cfg.sess!=='all'&&!is247(cfg.sym)?' Session filter is on.':'');
 }
 
 /* ---------- constellation map ---------- */
@@ -1320,6 +1467,7 @@ function mpDraw(now){
 }
 function mpFrame(now){
   if(!mpFit())return;
+  if(!MP.nodes.length&&MP.W)mpInit();
   const dt=Math.min(2.5,(now-(MP.last||now))/16.67);MP.last=now;
   mpPhysics(dt,Math.floor(now/16));
   mpDraw(now);
@@ -1348,334 +1496,6 @@ function mpBind(){
   $('mpGo').onclick=()=>{if(MP.sel){setFocus(MP.sel);window.scrollTo({top:0,behavior:'smooth'});}};
 }
 
-/* ---------- SIM: seeded random-walk feed + null test ---------- */
-/*SIMPURE-START*/
-const YEAR=365*24*3600;
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-function makeGauss(rng){let sp=null;return function(){if(sp!==null){const v=sp;sp=null;return v;}let u=0;while(u===0)u=rng();const w=rng(),m=Math.sqrt(-2*Math.log(u)),a=6.283185307179586*w;sp=m*Math.sin(a);return m*Math.cos(a);};}
-const volOf=sy=>{const m=sy.match(/^R_(\d+)$/)||sy.match(/^1HZ(\d+)V$/);return m?+m[1]/100:0.5;};
-/* geometric random walk: no drift, constant volatility, independent steps */
-function makeSim(vol,dt,seed,start,t0){
-  const g=makeGauss(mulberry32(seed)),sig=vol*Math.sqrt(dt/YEAR),mu=-0.5*sig*sig;
-  const s={p:start,t:t0,dt,next(){s.p*=Math.exp(mu+sig*g());s.t+=dt;return Math.round(s.p*1000)/1000;}};
-  return s;
-}
-/* run the walk for `secs` seconds and build one candle array per granularity */
-function simHist(sim,secs,tfs){
-  const outs=tfs.map(()=>[]),n=Math.round(secs/sim.dt);
-  for(let i=0;i<n;i++){
-    const p=sim.next(),t=sim.t;
-    for(let k=0;k<tfs.length;k++){
-      const g=tfs[k],o=outs[k],be=Math.floor(t/g)*g,l=o[o.length-1];
-      if(l&&l.t===be){l.c=p;if(p>l.h)l.h=p;if(p<l.l)l.l=p;}else o.push({t:be,o:p,h:p,l:p,c:p});
-    }
-  }
-  return outs;
-}
-/* mean R per resolved trade at target k, with a 95% interval */
-function ciOf(list,k){
-  const r=list.filter(s=>RES_OK(s.res)),n=r.length;if(n<2)return null;
-  let sum=0,sq=0;for(const s of r){const v=s.reached>=k?k:-1;sum+=v;sq+=v*v;}
-  const m=sum/n,sd=Math.sqrt(Math.max(0,sq/n-m*m)),se=sd/Math.sqrt(n);
-  return {n,m,sd,lo:m-1.96*se,hi:m+1.96*se};
-}
-/* random-timing control: same stop distance as each real signal, random bar, random side, same resolver */
-function randBase(sigs,C,reps,rng){
-  const n=C.length,out=[];if(n<200)return out;
-  for(const s of sigs){
-    if(!(s.risk>0))continue;
-    for(let q=0;q<reps;q++){
-      const i=40+Math.floor(rng()*(n-191)),d=rng()<0.5?1:-1,e=C[i].c;
-      const b={i,t:C[i].t,d,score:s.score,pat:s.pat,kind:s.kind,entry:e,risk:s.risk,sl:e-d*s.risk,tp:[1,2,3].map(k=>e+d*k*s.risk),res:'open',reached:0,closedT:0,src:'rb'};
-      resolveSig(b,C,n-2);out.push(b);
-    }
-  }
-  return out;
-}
-function diffOf(a,b){if(!a||!b)return null;const d=a.m-b.m,se=Math.sqrt(a.sd*a.sd/a.n+b.sd*b.sd/b.n);return {d,z:se>0?d/se:0};}
-function fmtR(v){return (v>=0?'+':'')+v.toFixed(2)+'R';}
-/*SIMPURE-END*/
-
-let SIMS={};
-cfg.simSpeed=10; /* simulated seconds per real second */
-function simStart(){
-  const seed0=(cfg.simSeed|0)||12345;
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.rmap={};S.seenS=new Set();
-  Object.keys(SC).forEach(k=>delete SC[k]);Object.keys(R).forEach(k=>delete R[k]);
-  S.arch=LS.get(arcKey(),{});
-  const now=Math.floor(Date.now()/1000);SIMS={};
-  SYMS.forEach(([sy],j)=>{
-    const dt=sy.startsWith('1HZ')?1:2,focus=sy===cfg.sym,nC=focus?1500:500,nH=120;
-    const secs=Math.max(nC*cfg.tf,nH*3600),t0=Math.floor((now-secs)/3600)*3600;
-    const sim=makeSim(volOf(sy),dt,seed0+j*7919,1000+j*137,t0);
-    const [C,H]=simHist(sim,secs,[cfg.tf,3600]);
-    SIMS[sy]={sim,acc:0};
-    if(focus){S.C=C.slice(-nC);S.H=H.slice(-nH);}else SC[sy]={C:C.slice(-600),H:H.slice(-250)};
-  });
-  setStatus('SIM x'+cfg.simSpeed,'live');wlog('&#8226;','SIM','RANDOM WALK FEED, SEED '+seed0,'a');
-  recompute();
-  SYMS.forEach(([sy])=>{if(sy!==cfg.sym)scanRecompute(sy);});
-  S.simT=setInterval(simStep,250);
-}
-function simStep(){
-  SYMS.forEach(([sy])=>{
-    const q=SIMS[sy];if(!q)return;
-    q.acc+=cfg.simSpeed*0.25/q.sim.dt;
-    while(q.acc>=1){
-      q.acc--;
-      const pr=q.sim.next(),e2=q.sim.t,r=R[sy]||(R[sy]={});
-      r.px=pr;PULSE[sy]=1;
-      if(sy===cfg.sym){
-        if(!S.C.length||!S.H.length)continue;
-        const nw=tickInto(S.C,cfg.tf,e2,pr);tickInto(S.H,3600,e2,pr);
-        if(nw)recompute();
-      }else{
-        const st=SC[sy];if(!st||!st.C.length||!st.H.length)continue;
-        const nw=tickInto(st.C,cfg.tf,e2,pr);tickInto(st.H,3600,e2,pr);
-        if(nw)scanRecompute(sy);
-      }
-    }
-  });
-}
-/* Run the engine over many simulated series. Real edge would show up as expectancy above the null band. */
-function mcNull(o){
-  const say=(t,c)=>{wlog('&#8226;','MC',t,c||'');try{console.log('[MC] '+t);}catch(e){}};
-  if(mcNull.busy){say('ALREADY RUNNING','e');return;}
-  o=Object.assign({runs:40,vol:volOf(cfg.sym),dt:cfg.sym.startsWith('1HZ')?1:2,tf:cfg.tf,nC:1500,nH:150,seed:777},o||{});
-  mcNull.busy=true;
-  const pool=[],poolB=[],perRun=[];let r=0;
-  say('NULL TEST '+o.runs+' RUNS, VOL '+o.vol+', '+(o.tf===60?'M1':'M5')+', STARTING');
-  const finish=()=>{
-    mcNull.busy=false;
-    say('POOLED '+pool.length+' SIGNALS, '+statOf(pool,2).n+' RESOLVED, ABOUT '+Math.round(pool.length/o.runs)+' PER RUN');
-    const fair=[0.5,1/3,0.25];
-    for(const k of [1,2,3]){const c=ciOf(pool,k),h=statOf(pool,k);if(c)say('TARGET '+k+'R HIT '+pct(h.w[k-1],h.n)+'% (COIN FLIP '+Math.round(100*fair[k-1])+'%) EXP '+fmtR(c.m)+' 95% '+fmtR(c.lo)+' TO '+fmtR(c.hi));}
-    if(perRun.length>2){
-      const m=perRun.reduce((a,b)=>a+b,0)/perRun.length,sd=Math.sqrt(perRun.reduce((a,b)=>a+(b-m)*(b-m),0)/(perRun.length-1));
-      say('ONE RUN, EXP AT 2R: MEAN '+fmtR(m)+' SD '+fmtR(sd)+' (LUCK ALONE MOVES A SINGLE AUDIT THIS FAR)');
-    }
-    const dAll=diffOf(ciOf(pool,2),ciOf(poolB,2));
-    if(dAll)say('RANDOM TIMING, SAME STOPS: EXP AT 2R '+fmtR(ciOf(poolB,2).m)+'. SIGNALS MINUS RANDOM '+fmtR(dAll.d)+' ('+dAll.z.toFixed(1)+' SE)');
-    [['85+',s=>s.score>=85],['70-84',s=>s.score>=70&&s.score<85],['55-69',s=>s.score>=55&&s.score<70],['40-54',s=>s.score<55]].forEach(([lab,f])=>{
-      const a=ciOf(pool.filter(f),2),b=ciOf(poolB.filter(f),2),d=diffOf(a,b);
-      if(a&&d)say('BAND '+lab+' N'+a.n+' EXP '+fmtR(a.m)+' VS RANDOM '+fmtR(d.d)+' ('+d.z.toFixed(1)+' SE)');
-    });
-    say('WITH 4 BANDS, ONE ABOVE 2 SE IS EXPECTED BY CHANCE ABOUT 1 TIME IN 5');
-    const real=ciOf(S.sigs,2),nul=ciOf(pool,2);
-    if(real&&nul&&real.n>=10){const z=(real.m-nul.m)/(nul.sd/Math.sqrt(real.n));say('THIS AUDIT '+fmtR(real.m)+' OVER '+real.n+' TRADES IS '+z.toFixed(1)+' SE FROM THE NULL','a');}
-  };
-  const one=()=>{
-    if(r>=o.runs){finish();return;}
-    const secs=Math.max(o.nC*o.tf,o.nH*3600),t0=Math.floor((1.7e9-secs)/3600)*3600;
-    const sim=makeSim(o.vol,o.dt,o.seed+r*104729,1000,t0);
-    const [C0,H0]=simHist(sim,secs,[o.tf,3600]);
-    const C=C0.slice(-o.nC),H=H0.slice(-o.nH);
-    const sg=analyze(buildX(C,H,o.tf),40),st=statOf(sg,2);
-    if(st.n>=10)perRun.push(st.e);
-    for(const s of sg)pool.push(s);
-    for(const s of randBase(sg,C,3,mulberry32(o.seed+r*7+1)))poolB.push(s);
-    r++;if(r%10===0)say('RUN '+r+' OF '+o.runs+', '+pool.length+' SIGNALS');
-    setTimeout(one,0);
-  };
-  setTimeout(one,0);
-}
-window.mcNull=mcNull;
-
-/* ---------- PATTERN LAB: all indices, all timeframes, tested against a matched random control ---------- */
-/*LABPURE-START*/
-function erfcc(x){const z=Math.abs(x),t=1/(1+0.5*z);const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));return x>=0?r:2-r;}
-const pTwo=z=>erfcc(Math.abs(z)/Math.SQRT2);
-function acf(x,k){const n=x.length;let m=0;for(const v of x)m+=v;m/=n;let c0=0,ck=0;for(let i=0;i<n;i++){const d=x[i]-m;c0+=d*d;if(i>=k)ck+=d*(x[i-k]-m);}return c0>0?ck/c0:0;}
-/* every test uses closes only. Each returns a z score (or p) against "independent steps, constant volatility, no drift" */
-function battery(cl,tt,g){
-  const r=[],rt=[];
-  for(let i=1;i<cl.length;i++)if(cl[i]>0&&cl[i-1]>0){r.push(Math.log(cl[i]/cl[i-1]));rt.push(tt[i]);}
-  const n=r.length,out=[];if(n<300)return out;
-  const add=(name,z,eff,p)=>{if(z===z&&isFinite(z))out.push({name,z,eff,p:p===undefined?pTwo(z):p});};
-  const sq=Math.sqrt(n);let m=0;for(const v of r)m+=v;m/=n;
-  let v2=0;for(const v of r)v2+=(v-m)*(v-m);v2/=n-1;const sd=Math.sqrt(v2);if(!(sd>0))return out;
-  add('DRIFT',m/sd*sq,m/sd);
-  for(let k=1;k<=5;k++){const a=acf(r,k);add('AC'+k,a*sq,a);}
-  const ab=r.map(Math.abs);
-  for(let k=1;k<=3;k++){const a=acf(ab,k);add('VOL AC'+k,a*sq,a);}
-  let s3=0,s4=0;for(const v of r){const d=(v-m)/sd;s3+=d*d*d;s4+=d*d*d*d;}s3/=n;s4=s4/n-3;
-  add('SKEW',s3/Math.sqrt(6/n),s3);add('KURT',s4/Math.sqrt(24/n),s4);
-  const P=new Float64Array(n+1);for(let i=0;i<n;i++)P[i+1]=P[i]+r[i];
-  for(const q of [2,5,10]){
-    let s=0;for(let t=q;t<=n;t++){const d=P[t]-P[t-q]-q*m;s+=d*d;}
-    const vr=(s/(q*(n-q+1)*(1-q/n)))/v2;
-    add('VR'+q,(vr-1)/Math.sqrt(2*(2*q-1)*(q-1)/(3*q*n)),vr);
-  }
-  const sg=[],st=[];
-  for(let i=0;i<n;i++){if(r[i]>0){sg.push(1);st.push(rt[i]);}else if(r[i]<0){sg.push(-1);st.push(rt[i]);}}
-  const N=sg.length;
-  if(N>=300){
-    let n1=0;for(const v of sg)if(v>0)n1++;const n2=N-n1;let runs=1;for(let i=1;i<N;i++)if(sg[i]!==sg[i-1])runs++;
-    const mu=2*n1*n2/N+1,vr2=(mu-1)*(mu-2)/(N-1);if(vr2>0)add('RUNS',(runs-mu)/Math.sqrt(vr2),runs/mu-1);
-    const pu=n1/N;
-    for(const dir of [1,-1]){
-      for(let k=1;k<=3;k++){
-        let cA=0,hA=0,cB=0,hB=0;
-        for(let i=k;i<N;i++){
-          let all=true;for(let j=1;j<=k;j++)if(sg[i-j]!==dir){all=false;break;}
-          if(all){cA++;if(sg[i]===dir)hA++;}else{cB++;if(sg[i]===dir)hB++;}
-        }
-        if(cA>=30&&cB>=30){const p=(hA+hB)/(cA+cB),se=Math.sqrt(p*(1-p)*(1/cA+1/cB));if(se>0)add((dir===1?'UP':'DOWN')+' STREAK '+k,(hA/cA-hB/cB)/se,hA/cA);}
-      }
-    }
-    if(g<=3600){
-      const xs=new Array(24).fill(0),ns=new Array(24).fill(0);
-      for(let i=0;i<N;i++){const h=Math.floor((st[i]%86400)/3600);ns[h]++;if(sg[i]>0)xs[h]++;}
-      let chi=0,df=-1;for(let h=0;h<24;h++)if(ns[h]>=20){chi+=Math.pow(xs[h]-ns[h]*pu,2)/(ns[h]*pu*(1-pu));df++;}
-      if(df>=10){const z=(Math.cbrt(chi/df)-(1-2/(9*df)))/Math.sqrt(2/(9*df));add('HOUR OF DAY',z,chi/df,0.5*erfcc(z/Math.SQRT2));}
-    }
-  }
-  return out;
-}
-/* Benjamini-Hochberg false discovery control; flags t.bh and returns the count that survive */
-function fdr(tests,q){
-  const m=tests.length,idx=tests.map((t,i)=>i).sort((a,b)=>tests[a].p-tests[b].p);let kmax=-1;
-  for(let i=0;i<m;i++)if(tests[idx[i]].p<=(i+1)/m*q)kmax=i;
-  tests.forEach(t=>{t.bh=false;});for(let i=0;i<=kmax;i++)tests[idx[i]].bh=true;return kmax+1;
-}
-/* matched control: same length, same timestamps, same volatility, independent normal steps, zero drift */
-function ctrlBattery(cl,tt,g,seed){
-  const r=[];for(let i=1;i<cl.length;i++)if(cl[i]>0&&cl[i-1]>0)r.push(Math.log(cl[i]/cl[i-1]));
-  if(r.length<2)return [];
-  let m=0;for(const v of r)m+=v;m/=r.length;let v2=0;for(const v of r)v2+=(v-m)*(v-m);const sd=Math.sqrt(v2/(r.length-1));
-  const gs=makeGauss(mulberry32(seed)),c=new Array(cl.length);c[0]=1000;
-  for(let i=1;i<cl.length;i++)c[i]=c[i-1]*Math.exp(sd*gs());
-  return battery(c,tt,g);
-}
-/*LABPURE-END*/
-
-const TFS=[60,120,180,300,600,900,1800,3600,7200,14400,28800,86400];
-const TFN={60:'M1',120:'M2',180:'M3',300:'M5',600:'M10',900:'M15',1800:'M30',3600:'H1',7200:'H2',14400:'H4',28800:'H8',86400:'D1'};
-const LAB={busy:false,stop:false,id:0,gap:700,res:null};
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function labSocket(){
-  return new Promise((res,rej)=>{
-    let i=0;
-    const next=()=>{
-      if(i>=EPS.length)return rej(new Error('NO ENDPOINT REACHABLE'));
-      const ep=EPS[(S.ep+i++)%EPS.length];let ws,done=false;
-      try{ws=new WebSocket(ep.u);}catch(e){return next();}
-      const to=setTimeout(()=>{if(!done){done=true;try{ws.close();}catch(e){}next();}},8000);
-      ws.onopen=()=>{if(done)return;done=true;clearTimeout(to);res(ws);};
-      ws.onerror=()=>{if(done)return;done=true;clearTimeout(to);try{ws.close();}catch(e){}next();};
-    };
-    next();
-  });
-}
-function labReq(ws,msg){
-  return new Promise(res=>{
-    const id=++LAB.id;
-    const to=setTimeout(()=>{ws.removeEventListener('message',h);res({error:{message:'timeout'}});},20000);
-    function h(ev){let d;try{d=JSON.parse(ev.data);}catch(e){return;}if(d.req_id!==id)return;clearTimeout(to);ws.removeEventListener('message',h);res(d);}
-    ws.addEventListener('message',h);
-    try{ws.send(JSON.stringify(Object.assign({req_id:id},msg)));}catch(e){clearTimeout(to);ws.removeEventListener('message',h);res({error:{message:'send failed'}});}
-  });
-}
-async function labFetch(ws,sy,g,pages){
-  const got=new Map();let end='latest';
-  for(let p=0;p<pages;p++){
-    let d=null;
-    for(let tr=0;tr<4;tr++){
-      d=await labReq(ws,{ticks_history:sy,adjust_start_time:1,count:5000,end,granularity:g,style:'candles'});
-      if(d.error&&/rate/i.test(String(d.error.code||'')+' '+String(d.error.message||''))){await sleep(12000);continue;}
-      break;
-    }
-    if(!d||d.error||!Array.isArray(d.candles)||!d.candles.length)break;
-    for(const x of d.candles)got.set(+x.epoch,+x.close);
-    end=+d.candles[0].epoch-1;
-    await sleep(LAB.gap);
-    if(d.candles.length<500||LAB.stop)break;
-  }
-  const arr=[...got.entries()].sort((a,b)=>a[0]-b[0]).map(x=>({t:x[0],c:x[1]}));
-  /* keep only the latest unbroken stretch: a data gap would show up as a fake price jump in every test */
-  let from=0;for(let i=1;i<arr.length;i++)if(arr[i].t-arr[i-1].t>3*g)from=i;
-  return arr.slice(from);
-}
-async function labRun(){
-  if(LAB.busy)return;
-  LAB.busy=true;LAB.stop=false;
-  const depth=+$('labDepth').value,NR=5,prog=t=>{$('labProg').textContent=t;};
-  let ws=null;
-  try{
-    $('labSt').textContent='RUNNING';prog('CONNECTING');
-    ws=await labSocket();
-    const total=SYMS.length*TFS.length,series=[];let k=0;
-    for(const [sy,nm] of SYMS){
-      for(const g of TFS){
-        if(LAB.stop)throw new Error('STOPPED');
-        k++;prog('FETCH '+k+' OF '+total+' / '+shortOf(nm)+' '+TFN[g]+' / '+series.length+' SERIES KEPT');
-        const pages=depth>1?(g<=300?8:g<=1800?4:2):1;
-        const cd=await labFetch(ws,sy,g,pages);
-        if(cd.length>=400)series.push({sy,g,t:cd.map(x=>x.t),c:cd.map(x=>x.c)});
-      }
-    }
-    try{ws.close();}catch(e){}ws=null;
-    prog('ANALYSING '+series.length+' SERIES');await sleep(30);
-    const real=[],ctrl=[];for(let i=0;i<NR;i++)ctrl.push([]);
-    let candles=0;
-    series.forEach((s,si)=>{
-      candles+=s.c.length;
-      for(const t of battery(s.c,s.t,s.g)){t.sy=s.sy;t.g=s.g;real.push(t);}
-      for(let rp=0;rp<NR;rp++)for(const t of ctrlBattery(s.c,s.t,s.g,1000+si*31+rp)){t.sy=s.sy;t.g=s.g;ctrl[rp].push(t);}
-    });
-    if(!real.length)throw new Error('NO DATA RETURNED');
-    /* replication: test each series on its older half and its newer half separately */
-    const repOf=(ctrlMode)=>{
-      const A=new Map(),pairs=[];
-      series.forEach((s,si)=>{
-        const h=s.c.length>>1;if(h<300)return;
-        const fa=ctrlMode?ctrlBattery(s.c.slice(0,h),s.t.slice(0,h),s.g,7000+si):battery(s.c.slice(0,h),s.t.slice(0,h),s.g);
-        const fb=ctrlMode?ctrlBattery(s.c.slice(h),s.t.slice(h),s.g,9000+si):battery(s.c.slice(h),s.t.slice(h),s.g);
-        const mb=new Map(fb.map(t=>[t.name,t]));
-        for(const a of fa){const b=mb.get(a.name);if(b)pairs.push({g:s.g,za:a.z,zb:b.z,pa:a.p,pb:b.p});}
-      });
-      const stat=ps=>{
-        const n=ps.length;if(n<10)return {n,corr:0,disc:0,rep:0,exp:0};
-        let sa=0,sb=0;for(const q of ps){sa+=q.za;sb+=q.zb;}sa/=n;sb/=n;let c=0,va=0,vb=0;
-        for(const q of ps){c+=(q.za-sa)*(q.zb-sb);va+=(q.za-sa)**2;vb+=(q.zb-sb)**2;}
-        const d=ps.filter(q=>q.pa<0.05),r=d.filter(q=>q.pb<0.05&&Math.sign(q.zb)===Math.sign(q.za)).length;
-        return {n,corr:c/Math.sqrt(va*vb||1),disc:d.length,rep:r,exp:d.length*0.025};
-      };
-      return {all:stat(pairs),m1:stat(pairs.filter(q=>q.g===60))};
-    };
-    const repReal=repOf(false),repCtrl=repOf(true);
-    const m=real.length,nom=real.filter(t=>t.p<0.05).length,bonf=real.filter(t=>t.p<0.05/m).length,bh=fdr(real,0.05);
-    const cNom=ctrl.map(a=>a.filter(t=>t.p<0.05).length/a.length),cBh=ctrl.map(a=>fdr(a,0.05));
-    const byTf=TFS.map(g=>{
-      const rr=real.filter(t=>t.g===g);if(!rr.length)return null;
-      const cr=ctrl.map(a=>a.filter(t=>t.g===g));
-      return {g,n:series.filter(s=>s.g===g).length,m:rr.length,nom:rr.filter(t=>t.p<0.05).length/rr.length,
-        cnom:cr.reduce((a,x)=>a+x.filter(t=>t.p<0.05).length/Math.max(1,x.length),0)/NR,
-        bh:rr.filter(t=>t.bh).length,cbh:Math.max(...cr.map(x=>x.filter(t=>t.bh).length))};
-    }).filter(Boolean);
-    const top=real.slice().sort((a,b)=>a.p-b.p).slice(0,15);
-    const res={ts:Date.now(),rep:{real:repReal,ctrl:repCtrl},depth,series:series.length,candles,m,nom,bonf,bh,cNomMean:cNom.reduce((a,b)=>a+b,0)/NR,cBhMax:Math.max(...cBh),byTf,
-      top:top.map(t=>({sy:t.sy,tf:TFN[t.g],test:t.name,eff:+t.eff.toFixed(4),z:+t.z.toFixed(2),p:+t.p.toExponential(2),bh:t.bh}))};
-    LAB.res=res;LS.set('cse_lab',res);
-    labRender(res);prog('DONE, '+series.length+' SERIES, '+candles.toLocaleString('en-US')+' CANDLES');$('labSt').textContent='DONE';
-  }catch(e){
-    $('labSt').textContent='STOPPED';prog(String(e&&e.message||e).toUpperCase());
-    try{if(ws)ws.close();}catch(x){}
-  }finally{LAB.busy=false;}
-}
-function labRender(r){
-  const pc=v=>(v*100).toFixed(1)+'%';
-  const verdict=r.bh===0
-    ?'No test survives false discovery control. Out of '+r.m+' tests, '+pc(r.nom/r.m)+' look significant at p under 0.05, against '+pc(r.cNomMean)+' for the matched random control. That gap is the thing to read, and a small gap means chance.'
-    :r.bh+' of '+r.m+' tests survive false discovery control. The matched random control produced at most '+r.cBhMax+' in 5 replicates. Survivors still need re-testing on newer data before anything is built on them.';
-  setH('labSum','<div class="fb"><div class="fx"><span class="lab">SERIES / CANDLES</span><b>'+r.series+' / '+r.candles.toLocaleString('en-US')+'</b></div><div class="fx"><span class="lab">TESTS RUN</span><b>'+r.m+'</b></div><div class="fx"><span class="lab">P UNDER 0.05, REAL / RANDOM</span><b>'+pc(r.nom/r.m)+' / '+pc(r.cNomMean)+'</b></div><div class="fx o"><span class="lab">SURVIVE FDR, REAL / RANDOM MAX</span><b>'+r.bh+' / '+r.cBhMax+'</b></div></div><div class="lab" style="margin:8px 0;text-transform:none;letter-spacing:.02em;color:#cfe3f7">'+esc(verdict)+'</div>');
-  const rp=r.rep,rl=(o,c,lab)=>o&&o.n>=10?lab+': '+o.disc+' tests were significant in the older half and '+o.rep+' repeated in the same direction in the newer half, against about '+o.exp.toFixed(1)+' expected by chance. Correlation of z scores between halves '+o.corr.toFixed(3)+' (random control '+c.corr.toFixed(3)+').':'';
-  const repTxt=rp?[rl(rp.real.all,rp.ctrl.all,'ALL TIMEFRAMES'),rl(rp.real.m1,rp.ctrl.m1,'M1 ONLY')].filter(Boolean).join(' '):'';
-  setH('labRep',repTxt?'<div class="lab" style="margin:0 0 8px;text-transform:none;letter-spacing:.02em;color:#9fd0ff">REPLICATION. '+esc(repTxt)+'</div>':'');
-  setH('labTf','<table><thead><tr><th>TF</th><th class="n">SERIES</th><th class="n">TESTS</th><th class="n">P&lt;.05 REAL</th><th class="n">P&lt;.05 RANDOM</th><th class="n">FDR REAL</th><th class="n">FDR RANDOM MAX</th></tr></thead><tbody>'+r.byTf.map(x=>'<tr><td>'+TFN[x.g]+'</td><td class="n">'+x.n+'</td><td class="n">'+x.m+'</td><td class="n '+(x.nom>x.cnom+0.03?'amb':'')+'">'+pc(x.nom)+'</td><td class="n">'+pc(x.cnom)+'</td><td class="n '+(x.bh>x.cbh?'pos':'')+'">'+x.bh+'</td><td class="n">'+x.cbh+'</td></tr>').join('')+'</tbody></table>');
-  setH('labTop','<table><thead><tr><th>INDEX</th><th>TF</th><th>TEST</th><th class="n">EFFECT</th><th class="n">Z</th><th class="n">P</th><th>FDR</th></tr></thead><tbody>'+r.top.map(t=>'<tr><td>'+shortOf(nameOf(t.sy))+'</td><td>'+t.tf+'</td><td>'+esc(t.test)+'</td><td class="n">'+t.eff+'</td><td class="n">'+t.z+'</td><td class="n">'+t.p.toExponential(1)+'</td><td class="'+(t.bh?'pos':'dm')+'">'+(t.bh?'SURVIVES':'NO')+'</td></tr>').join('')+'</tbody></table>');
-  $('labNote').textContent='Tests per series: drift, return autocorrelation lags 1 to 5, volatility clustering lags 1 to 3, skew, kurtosis, variance ratios at 2, 5 and 10, runs, up and down streak continuation, hour of day. They all use closes only. The random control has identical length, timestamps and volatility with independent steps. Timeframes share underlying candles, so tests overlap and the FDR count is approximate.';
-}
 /* ---------- loop and controls ---------- */
 let lastUi=0;
 function safe(fn){try{fn();}catch(e){if(!safe.once){safe.once=true;try{console.error(e);}catch(x){}}}}
@@ -1690,11 +1510,10 @@ function frame(now){
   if(VIS.map)safe(()=>mpFrame(now));
   requestAnimationFrame(frame);
 }
-function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;LS.set('cse_set',all);}
+function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;all.watch=cfg.watch;all.mk=cfg.mk;all.spr=cfg.spr;all.sess=cfg.sess;LS.set('cse_set',all);}
 function syncBtns(){$('b1').classList.toggle('on',cfg.tf===60);$('b5').classList.toggle('on',cfg.tf===300);$('bSnd').textContent=cfg.snd?'SND ON':'SND OFF';$('hThr').textContent=cfg.thr;$('thr').value=cfg.thr;$('thrv').textContent=cfg.thr;$('sndChk').checked=cfg.snd;}
 function init(){
-  $('sym').innerHTML=SYMS.map(s=>'<option value="'+s[0]+'">'+s[1].toUpperCase()+'</option>').join('');
-  $('sym').value=cfg.sym;
+  rebuildSyms();buildSelect();updateCost();
   $('sym').onchange=e=>setFocus(e.target.value);
   $('b1').onclick=()=>{if(cfg.tf===60)return;cfg.tf=60;persist();syncBtns();connect();};
   $('b5').onclick=()=>{if(cfg.tf===300)return;cfg.tf=300;persist();syncBtns();connect();};
@@ -1724,6 +1543,14 @@ function init(){
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('Confluence engine test message')).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
   };
   mpBind();
+  $('mkTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===cfg.mk));
+  $('mkTabs').onclick=e=>{const b=e.target.closest('button[data-g]');if(!b)return;cfg.mk=b.dataset.g;persist();$('mkTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderMarkets();};
+  $('mkSearch').oninput=renderMarkets;
+  $('mkList').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;if(b.dataset.a==='chart'){setFocus(b.dataset.sy);window.scrollTo({top:0,behavior:'smooth'});}else toggleWatch(b.dataset.sy);};
+  $('mkReal').onclick=realPreset;$('mkVol').onclick=volPreset;
+  $('sessSel').value=cfg.sess;
+  $('sessSel').onchange=e=>{cfg.sess=e.target.value;persist();if(S.X)derive();S.dirty=true;};
+  $('sprIn').onchange=e=>{cfg.spr[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)derive();S.dirty=true;};
   const syncView=()=>document.querySelectorAll('#chView button').forEach(b=>b.classList.toggle('on',+b.dataset.v===cfg.view));
   syncView();
   $('chView').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;cfg.view=+b.dataset.v;persist();syncView();drawChart();};
@@ -1734,11 +1561,6 @@ function init(){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
   }
-  $('bSim').onclick=()=>{cfg.sim=!cfg.sim;$('bSim').textContent=cfg.sim?'SIM ON':'SIM OFF';$('bSim').classList.toggle('on',cfg.sim);connect();};
-  $('bMc').onclick=()=>mcNull();
-  $('labGo').onclick=()=>labRun();$('labStop').onclick=()=>{LAB.stop=true;};
-  $('labCopy').onclick=()=>{if(!LAB.res){$('labProg').textContent='RUN THE LAB FIRST';return;}const t=JSON.stringify(LAB.res,null,1);try{navigator.clipboard.writeText(t).then(()=>{$('labProg').textContent='COPIED TO CLIPBOARD';},()=>{window.prompt('COPY THIS',t);});}catch(e){window.prompt('COPY THIS',t);}};
-  try{const lr=LS.get('cse_lab',null);if(lr&&lr.byTf){LAB.res=lr;labRender(lr);$('labProg').textContent='LAST RUN '+clk(lr.ts);}}catch(e){}
   syncBtns();connect();requestAnimationFrame(frame);
 }
 init();
