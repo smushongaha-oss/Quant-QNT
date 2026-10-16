@@ -186,6 +186,11 @@ body.chfull{overflow:hidden}
 .mkr button{padding:3px 8px;font-size:10.5px}
 .p-mkts input[type=text],.set input[type=number]{background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;letter-spacing:0;min-width:180px}
 .set input[type=number]{width:100%;text-transform:none}
+html,body{overflow-x:hidden;max-width:100%}
+.p{overflow:hidden}
+select{max-width:100%;text-overflow:ellipsis}
+.set select{width:100%}
+.mkr .mn{min-width:0}.mkr .mn b,.mkr .mn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -336,8 +341,8 @@ body.chfull{overflow:hidden}
         <div class="row" style="margin-top:8px"><button id="tgtest" type="button">SEND TEST MESSAGE</button></div>
       </div>
       <div>
-        <label for="sessSel">SESSION FILTER (REAL MARKETS ONLY)</label>
-        <select id="sessSel"><option value="all">ALL HOURS</option><option value="ln">LONDON + NEW YORK ONLY (11:00 TO 01:00 MUSCAT, WEEKDAYS)</option></select>
+        <label for="sessSel">SESSION FILTER FOR REAL MARKETS. LONDON + NEW YORK IS 11:00 TO 01:00 MUSCAT, WEEKDAYS</label>
+        <select id="sessSel"><option value="all">ALL HOURS</option><option value="ln">LONDON + NEW YORK ONLY</option></select>
       </div>
       <div>
         <label for="sprIn" id="sprLab">TRADING COST PER TRADE, IN PRICE UNITS</label>
@@ -738,7 +743,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S
 /* ---------- markets: catalog, watchlist, sessions, cost ---------- */
 const GN={FOREX:'FOREX',COMM:'COMMODITIES',IDX:'STOCK INDICES',CRYPTO:'CRYPTO',SYNTH:'DERIVED (RANDOM)',OTHER:'OTHER'};
 const DEF_NAMES={};DEF.forEach(d=>{DEF_NAMES[d[0]]=d[1];});
-const nameFor=sy=>S.names[sy]||DEF_NAMES[sy]||sy;
+const nameFor=sy=>S.names[sy]||DEF_NAMES[sy]||prettySym(sy);
 function grpOf(sy,market){
   const m=String(market||'').toLowerCase();
   if(/synth|derived/.test(m))return 'SYNTH';
@@ -802,13 +807,31 @@ function syncSyms(){
   }
   S.dirty=true;
 }
+
+function prettySym(sy){
+  let m;
+  if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]==='XAU'?'Gold/'+m[2]:m[1]==='XAG'?'Silver/'+m[2]:m[1]+'/'+m[2];
+  if((m=/^cry([A-Z]{3,5})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];
+  if((m=/^R_(\d+)$/.exec(sy)))return 'Volatility '+m[1];
+  if((m=/^1HZ(\d+)V$/.exec(sy)))return 'Volatility '+m[1]+' (1s)';
+  const idx={OTC_SPC:'US 500',OTC_DJI:'Wall Street 30',OTC_NDX:'US Tech 100',OTC_FTSE:'UK 100',OTC_GDAXI:'Germany 40',OTC_N225:'Japan 225',OTC_AS51:'Australia 200',OTC_FCHI:'France 40',OTC_HSI:'Hong Kong 50',OTC_AEX:'Netherlands 25',OTC_IBEX35:'Spain 35',OTC_SX5E:'Euro 50',OTC_SSMI:'Swiss 20'};
+  if(idx[sy])return idx[sy];
+  return sy.replace(/^(frx|cry|OTC_)/,'');
+}
+function pickName(a,sy){
+  if(DEF_NAMES[sy])return DEF_NAMES[sy];
+  for(const k of [a.display_name,a.underlying_symbol_name,a.symbol_name,a.name,a.underlying_name]){
+    if(typeof k==='string'&&k.trim()&&k.trim()!==sy)return k.trim().replace(/\s+Index$/i,'');
+  }
+  return prettySym(sy);
+}
 function buildCatalog(list){
   const cat={};
   for(const a of list){
     const sy=a.underlying_symbol||a.symbol;
     if(!sy||a.is_trading_suspended)continue;
     const mk=a.market||a.market_display_name||'';
-    cat[sy]={sy,name:a.display_name||sy,market:mk,grp:grpOf(sy,mk),open:a.exchange_is_open===undefined?true:!!a.exchange_is_open};
+    cat[sy]={sy,name:pickName(a,sy),market:mk,grp:grpOf(sy,mk),open:a.exchange_is_open===undefined?true:!!a.exchange_is_open};
   }
   S.cat=cat;
   for(const sy in cat)S.names[sy]=cat[sy].name;
