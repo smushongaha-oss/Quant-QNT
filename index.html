@@ -191,6 +191,14 @@ html,body{overflow-x:hidden;max-width:100%}
 select{max-width:100%;text-overflow:ellipsis}
 .set select{width:100%}
 .mkr .mn{min-width:0}.mkr .mn b,.mkr .mn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan{display:none;flex-wrap:wrap;gap:6px;margin:0 0 7px;font-size:11.5px}
+.plan.on{display:flex}
+.plan span{border:1px solid var(--bd);padding:3px 8px;background:#06101a;white-space:nowrap;color:var(--dim)}
+.plan b{font-weight:400;color:#fff;font-family:var(--o);font-size:12px}
+.plan .side{font-weight:700;color:#03060b}
+.plan .side.b{background:var(--pos);border-color:var(--pos)}.plan .side.s{background:var(--neg);border-color:var(--neg)}
+.plan .sl{border-color:#7a2630;background:#1c0a0e;color:#ff8d98}
+.plan .tp{border-color:#1f6b45;background:#07180f;color:#7defb4}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -221,6 +229,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div class="seg" id="chView"><button data-v="60" type="button">60</button><button data-v="90" type="button">90</button><button data-v="150" type="button">150</button><button data-v="220" type="button">220</button></div>
       <button id="chFull" type="button">FULL SCREEN</button>
     </div>
+    <div class="plan" id="planBar"></div>
     <div class="chbody">
       <canvas id="cvChart"></canvas>
       <div class="chside"><div class="ph" style="margin-top:2px">ZONE LADDER <span class="r" id="zlR"></span></div><div class="zl" id="zl"></div></div>
@@ -289,7 +298,7 @@ select{max-width:100%;text-overflow:ellipsis}
   <section class="p p-tape" id="sTape">
     <div class="ph">EXECUTION TAPE <span class="r">SIGNALS FOR THE CHOSEN INDEX, NEWEST FIRST</span></div>
     <div class="tpw">
-      <div class="tw"><table><thead><tr><th>TIME</th><th>SIDE</th><th>PATTERN</th><th>ZONE</th><th class="n">SCORE</th><th class="n">ENTRY</th><th class="n">STOP</th><th>RESULT</th></tr></thead><tbody id="tape"></tbody></table></div>
+      <div class="tw"><table><thead><tr><th>TIME</th><th>SIDE</th><th>PATTERN</th><th>ZONE</th><th class="n">SCORE</th><th class="n">ENTRY</th><th class="n">STOP</th><th class="n">TP1</th><th class="n">TP2</th><th class="n">TP3</th><th>RESULT</th></tr></thead><tbody id="tape"></tbody></table></div>
       <div><div class="ph" style="margin-bottom:4px">BOOK <span class="r">BY SCORE</span></div><div class="hm" id="heat"></div></div>
     </div>
     <div class="fb" id="ft"></div>
@@ -1043,7 +1052,7 @@ function renderFills(){
 }
 function renderTape(){
   const l=S.sigs.slice(-16).reverse();
-  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkS(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(s.score>=cfg.thr?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
+  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkS(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(s.score>=cfg.thr?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="n">'+fp(cfg.sym,s.tp[0])+'</td><td class="n">'+fp(cfg.sym,s.tp[1])+'</td><td class="n">'+fp(cfg.sym,s.tp[2])+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
   const D=S.D;
   if(!D){setH('heat','');setH('ft','');return;}
   setH('heat',D.bands.map(b=>{
@@ -1093,9 +1102,24 @@ function fit(cv){
   const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
   return {g,w,h};
 }
+function renderPlan(act){
+  const el=$('planBar');if(!el)return;
+  if(!act){if(el.className!=='plan'){el.className='plan';}setH('planBar','');return;}
+  const f=v=>v.toFixed(S.dp),rk=act.risk,d=act.d;
+  const h='<span class="side '+(d===1?'b':'s')+'">OPEN '+(d===1?'BUY':'SELL')+' '+act.score+'</span>'
+   +'<span>ENTRY <b>'+f(act.entry)+'</b></span>'
+   +'<span class="sl">STOP LOSS <b>'+f(act.sl)+'</b></span>'
+   +'<span class="tp">TP1 <b>'+f(act.tp[0])+'</b> 1R</span>'
+   +'<span class="tp">TP2 <b>'+f(act.tp[1])+'</b> 2R</span>'
+   +'<span class="tp">TP3 <b>'+f(act.tp[2])+'</b> 3R</span>'
+   +'<span>RISK <b>'+f(rk)+'</b> ('+(rk/act.entry*100).toFixed(2)+'%)'+(COST>0?', COST '+(COST/rk).toFixed(2)+'R':'')+'</span>';
+  el.className='plan on';setH('planBar',h);
+}
 function drawChart(){
   const f=fit($('cvChart'));if(!f)return;
   const {g,w:W,h:Hh}=f,C=S.C,X=S.X;
+  const act=S.sigs.slice().reverse().find(s=>s.res==='open'&&s.i!==undefined&&C[s.i]&&C[s.i].t===s.t);
+  renderPlan(act);
   $('chT').textContent=nameOf(cfg.sym).toUpperCase()+' / '+tfName();
   g.font='11px "Share Tech Mono",monospace';
   if(!X||C.length<20){g.fillStyle=K.dim;g.textAlign='center';g.fillText('LOADING CANDLES',W/2,Hh/2);return;}
@@ -1107,7 +1131,16 @@ function drawChart(){
   const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
   g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
   const lyT=y(C[n-1].c);
-  for(let k=0;k<=4;k++){const p=mn+(mx-mn)*k/4,yy=y(p);g.beginPath();g.moveTo(0,yy);g.lineTo(pw,yy);g.stroke();if(Math.abs(yy-lyT)>11)g.fillText(p.toFixed(S.dp),pw+4,yy+3);}
+  const planL=[];
+  if(act){
+    for(const [lab,p,col] of [['TP3',act.tp[2],K.pos],['TP2',act.tp[1],K.pos],['TP1',act.tp[0],K.pos],['ENTRY',act.entry,K.ink],['STOP',act.sl,K.neg]]){
+      if(p<mn||p>mx)continue;
+      planL.push({lab,p,col,yy:y(p),ly:y(p)});
+    }
+    planL.sort((a,b)=>a.yy-b.yy);
+    for(let i=1;i<planL.length;i++)if(planL[i].ly<planL[i-1].ly+15)planL[i].ly=planL[i-1].ly+15;
+  }
+  for(let k=0;k<=4;k++){const p=mn+(mx-mn)*k/4,yy=y(p);g.beginPath();g.moveTo(0,yy);g.lineTo(pw,yy);g.stroke();if(Math.abs(yy-lyT)>11&&!planL.some(q=>Math.abs(q.ly-yy)<13))g.fillText(p.toFixed(S.dp),pw+4,yy+3);}
   g.save();g.beginPath();g.rect(0,top,pw,ph);g.clip();
   const lastPx=C[n-1].c;
   const zs=X.Z.filter(z=>z.born<n&&z.dead===Infinity&&z.hi>=mn&&z.lo<=mx).sort((p1,p2)=>Math.abs((p1.lo+p1.hi)/2-lastPx)-Math.abs((p2.lo+p2.hi)/2-lastPx)).slice(0,12);
@@ -1144,20 +1177,22 @@ function drawChart(){
     if(s.d===1){g.moveTo(xx,yy-5);g.lineTo(xx-4,yy+2);g.lineTo(xx+4,yy+2);}else{g.moveTo(xx,yy+5);g.lineTo(xx-4,yy-2);g.lineTo(xx+4,yy-2);}
     g.fill();const tyy=s.d===1?yy+12:yy-6;g.fillStyle='rgba(3,6,11,.8)';g.fillRect(xx-8,tyy-8,16,10);g.fillStyle=col;g.fillText(s.score,xx,tyy);
   }
-  const act=S.sigs.slice().reverse().find(s=>s.res==='open'&&s.i!==undefined&&C[s.i]&&C[s.i].t===s.t);
   if(act){
-    g.setLineDash([4,3]);g.textAlign='right';
-    const pl=[];
-    for(const [lab,p,col] of [['3R',act.tp[2],K.pos],['2R',act.tp[1],K.pos],['1R',act.tp[0],K.pos],['ENTRY',act.entry,K.ink],['SL',act.sl,K.neg]]){
-      if(p<mn||p>mx)continue;
-      const yy=y(p);g.strokeStyle=col;g.beginPath();g.moveTo(Math.max(0,x(act.i)),yy);g.lineTo(pw,yy);g.stroke();pl.push({lab,col,yy,ly:yy});
-    }
-    g.setLineDash([]);
-    pl.sort((a,b)=>a.yy-b.yy);
-    for(let i=1;i<pl.length;i++)if(pl[i].ly<pl[i-1].ly+13)pl[i].ly=pl[i-1].ly+13;
-    for(const q of pl){const tw=g.measureText(q.lab).width+8;g.fillStyle='rgba(3,6,11,.9)';g.fillRect(pw-tw-3,q.ly-11,tw,13);g.fillStyle=q.col;g.fillText(q.lab,pw-7,q.ly-1);}
+    const x0=Math.max(0,x(act.i)),ye=y(act.entry),ys=y(act.sl),yt=y(act.tp[2]);
+    g.fillStyle='rgba(255,77,94,.10)';g.fillRect(x0,Math.min(ye,ys),pw-x0,Math.abs(ys-ye));
+    g.fillStyle='rgba(47,227,138,.08)';g.fillRect(x0,Math.min(ye,yt),pw-x0,Math.abs(yt-ye));
+    g.setLineDash([4,3]);g.lineWidth=1.2;
+    for(const q of planL){g.strokeStyle=q.col;g.beginPath();g.moveTo(x0,q.yy);g.lineTo(pw,q.yy);g.stroke();}
+    g.setLineDash([]);g.textAlign='right';g.font='bold 11px "Share Tech Mono",monospace';
+    for(const q of planL){const tw=g.measureText(q.lab).width+8;g.fillStyle='rgba(3,6,11,.92)';g.fillRect(pw-tw-3,q.ly-11,tw,14);g.fillStyle=q.col;g.fillText(q.lab,pw-7,q.ly);}
+    g.font='11px "Share Tech Mono",monospace';
   }
   g.restore();
+  if(planL.length){
+    g.textAlign='left';g.font='bold 11px "Share Tech Mono",monospace';
+    for(const q of planL){g.fillStyle=q.col;g.fillRect(pw,q.ly-9,axis,17);g.fillStyle='#03060b';g.fillText(q.p.toFixed(S.dp),pw+3,q.ly+3);}
+    g.font='11px "Share Tech Mono",monospace';
+  }
   const lp=C[n-1].c,ly=y(lp);
   g.setLineDash([2,3]);g.strokeStyle='rgba(215,230,245,.5)';g.beginPath();g.moveTo(0,ly);g.lineTo(pw,ly);g.stroke();g.setLineDash([]);
   g.fillStyle=K.amb;g.fillRect(pw,ly-8,axis,16);g.fillStyle='#120a00';g.textAlign='left';g.fillText(lp.toFixed(S.dp),pw+3,ly+3);
@@ -1359,7 +1394,7 @@ function renderVerdict(){
   setH('ring',svg);
   const t=X&&n?X.T[n-1]:0,h=X&&n?X.HT[n-1]:0;
   const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
-  setH('vchips','<span class="vchip">H1 BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
+  setH('vchips','<span class="vchip">H1 BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
   setH('vparts',VPN.map((nm,k)=>'<li><i class="sw" style="background:'+VPC[k]+'"></i><div class="nm">'+nm.toUpperCase()+'<span>'+VPD[k].toUpperCase()+'</span></div><div class="pt">'+(Math.round(parts[k]*10)/10)+'/'+MAXP[k]+'</div></li>').join(''));
 }
 
