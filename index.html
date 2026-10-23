@@ -199,15 +199,14 @@ select{max-width:100%;text-overflow:ellipsis}
 .plan .side.b{background:var(--pos);border-color:var(--pos)}.plan .side.s{background:var(--neg);border-color:var(--neg)}
 .plan .sl{border-color:#7a2630;background:#1c0a0e;color:#ff8d98}
 .plan .tp{border-color:#1f6b45;background:#07180f;color:#7defb4}
-.p-tune{grid-column:span 12}
-.tnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
-.tnstat{font-size:12px;margin:6px 0 8px;text-transform:none;letter-spacing:.02em;color:#a8bccf}
-.tnstat b{font-weight:400;color:#fff}
-.tnlog{font-size:10.5px;color:var(--dim);max-height:150px;overflow:auto}
-.tnlog div{padding:3px 0;border-bottom:1px solid #0b1522;text-transform:none;letter-spacing:.02em}
-.p-tune .fb{grid-template-columns:repeat(4,1fr)}
-@media(max-width:699px){.p-tune .fb{grid-template-columns:1fr 1fr}}
-button:disabled{cursor:not-allowed}
+.p-learn{grid-column:span 12}
+.lrg{display:grid;grid-template-columns:minmax(240px,1fr) 2fr;gap:14px;margin-top:6px}
+.lrg .fb{margin-top:0;grid-template-columns:repeat(3,1fr)}
+@media(max-width:899px){.lrg{grid-template-columns:1fr}}
+@media(max-width:699px){.lrg .fb{grid-template-columns:1fr 1fr}}
+.lrm{font-size:11px;color:#a8bccf;text-transform:none;letter-spacing:.02em;margin:8px 0;line-height:1.5}
+.lrl{display:grid;gap:5px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.lrl .fc span{text-transform:none;letter-spacing:.02em}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -215,7 +214,7 @@ button:disabled{cursor:not-allowed}
 <header class="hd">
   <div class="logo">FAT</div>
   <div class="ttl"><div class="t1">FOCUS AUTO TRADERS <b>//</b> CONFLUENCE ENGINE</div><div class="t2">13 VOLATILITY INDICES / ZONE + STRUCTURE + CANDLE + MOMENTUM + REGIME</div></div>
-  <div class="chip">SCORES OUT OF 100 / SELF-AUDITED</div>
+  <div class="chip">SCORES OUT OF 100 / SELF-AUDITED / SELF-IMPROVING</div>
   <div class="hst">
     <div class="hs"><label>INDEX</label><select id="sym" aria-label="Index"></select></div>
     <div class="hs"><label>TF</label><div><span id="tfBar"><button data-tf="60" type="button">M1</button><button data-tf="300" type="button">M5</button><button data-tf="900" type="button">M15</button><button data-tf="3600" type="button">H1</button></span></div></div>
@@ -228,7 +227,7 @@ button:disabled{cursor:not-allowed}
     <button id="bSnd" type="button">SND</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sTune">TUNER</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sLearn">LEARN</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
@@ -371,17 +370,16 @@ button:disabled{cursor:not-allowed}
     </div>
   </section>
 
-  <section class="p p-tune" id="sTune">
-    <div class="ph">SELF-IMPROVEMENT <span class="r" id="tnSym"></span></div>
-    <div class="tnrow">
-      <div><label class="lab" for="tnMode">MODE</label><br><select id="tnMode"><option value="off">OFF</option><option value="suggest">SUGGEST ONLY</option><option value="auto">AUTO, GUARDED</option></select></div>
-      <button id="tnRun" type="button">RUN CHECK NOW</button><button id="tnApply" type="button">APPLY PROPOSAL</button><button id="tnReset" type="button">RESET TO DEFAULTS</button>
+  <section class="p p-learn" id="sLearn">
+    <div class="ph">SELF-IMPROVE <span class="r" id="lrKey">-</span><span class="lv" id="lrState">NEUTRAL</span></div>
+    <div class="stabs">
+      <button id="lrOn" type="button">LEARNING ON</button><button id="lrAuto" type="button">AUTO ALERT LEVEL OFF</button><button id="lrRun" type="button">RUN NOW</button><button id="lrReset" type="button">RESET TO NEUTRAL</button>
+      <span class="sp"></span>
+      <button id="lrExp" type="button">EXPORT DATA</button><button id="lrImp" type="button">IMPORT DATA</button><input type="file" id="lrFile" accept="application/json" hidden>
     </div>
-    <div class="tnstat" id="tnStat"></div>
-    <div class="fb" id="tnGrid"></div>
-    <div class="ph" style="margin-top:10px">TUNER LOG</div>
-    <div class="tnlog" id="tnLog"></div>
-    <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">This page can re-weight the five score parts and pick its own alert level from the signals it has logged for this instrument and timeframe. A change is only adopted if it beats the default scoring on trades it was not fitted on, using a walk-forward test over at least 120 resolved signals. After it is adopted, the live results are watched, and it switches back to the defaults if they turn out worse. It never changes entries, stops or targets, only which signals alert you. On the random Derived indices there is nothing real to learn, so the usual and correct answer is "no reliable improvement".</div>
+    <div class="lab" id="lrMsg" style="min-height:12px;margin-bottom:4px;text-transform:none;letter-spacing:.02em"></div>
+    <div id="lrBody"></div>
+    <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">The engine keeps every resolved candidate it has ever seen, scored with neutral weights. Every few minutes it searches for better weights on the older 70 percent of that history, then tests them on the newest 30 percent it did not tune on. New settings are adopted only if they are profitable on that unseen slice, beat the current settings by at least 0.10R and at least 2 standard errors, and at least 30 test trades exist. After adoption it keeps comparing the learned weights with neutral on trades that came afterwards and reverts if they trail. On derived indices outcomes are random, so expect it to stay neutral most of the time. That is the guard working, not a fault.</div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -394,10 +392,10 @@ button:disabled{cursor:not-allowed}
       <p><b>Regime (15).</b> ATR compared with its 50 bar average. Normal volatility scores full marks, dead or spiking markets score low.</p>
       <p><b>Trade plan.</b> Entry at the signal close, stop beyond the zone or wick plus 0.15 ATR, targets at 1R, 2R and 3R. Stops are checked before targets inside the same candle, so results lean pessimistic.</p>
       <p><b>Timeframes.</b> Pick M1, M5, M15 or H1 as the entry timeframe. The bias timeframe above it is H1 for M1, M5 and M15, and H4 when you trade H1. Slower timeframes give fewer signals, so the audit fills up more slowly: H1 history covers about 25 days, M15 about 8 days, M5 about 3 days and M1 about 1 day.</p>
-            <p><b>Self-improvement.</b> The tuner tries small changes to the five score weights, the alert level and a bias-aligned-only rule. It fits them on older trades and keeps them only if they also win on newer trades it never saw, then keeps watching the live results and undoes itself if they turn worse. It needs at least 120 resolved signals for the instrument and timeframe.</p>
-      <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
+            <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
       <p><b>The scanner and map.</b> All 13 Volatility indices stream over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
       <p><b>Real markets.</b> Forex, gold, indices and crypto have spreads, commission and swaps, so enter your cost per trade in price units and the audit takes it off every trade. Candles after a weekend or session gap are skipped and kept out of the ATR. The session filter keeps alerts and stats to London and New York hours. Closed markets are marked and ranked last.</p>
+      <p><b>Self-improve.</b> Score weights for zone, structure, candle, momentum and regime start at 1.00 and can move between 0.50 and 1.50. The alert level can move between 50 and 90. The search runs on the older 70 percent of resolved candidates and must prove itself on the newest 30 percent, with a penalty for straying from neutral. Changes need to be profitable on the unseen slice, beat the current settings by 0.10R and 2 standard errors, rest on 30 test trades, and are held for 6 hours. After adoption a forward check compares learned against neutral on newer trades and reverts on failure. Tick AUTO ALERT LEVEL to let the learned level move your alert slider. Data lives in this browser, so use EXPORT DATA to keep it.</p>
       <p>Deriv synthetic indices are random number generated. Read the audit before you trust any score band, and ignore rows with fewer than 30 trades.</p>
     </div>
   </details>
@@ -408,6 +406,8 @@ button:disabled{cursor:not-allowed}
 <script>
 
 const MAXP=[25,25,20,15,15];
+const NEUT=[1,1,1,1,1];
+function wScore(p,w){w=w||NEUT;let num=0,den=0;for(let i=0;i<5;i++){num+=w[i]*p[i];den+=w[i]*MAXP[i];}return den>0?100*num/den:0;}
 const RES_OK=r=>r==='sl'||r==='tp3';
 
 function smaArr(a,n){const o=new Array(a.length).fill(NaN);let s=0,c=0;for(let i=0;i<a.length;i++){const v=a[i];if(v===v){s+=v;c++;}if(i>=n){const u=a[i-n];if(u===u){s-=u;c--;}}if(i>=n-1&&c===n)o[i]=s/n;}return o;}
@@ -518,7 +518,7 @@ function watchOf(X,i,px){
     if(dist>2.5)continue;
     const zp=zoneScore(X,z,i,d).zp,mr=momRegime(X,i,d);
     const hp=HT[i]===d?10:HT[i]===0?4:0,tp=T[i]===d?7:0;
-    const pot=Math.round(zp+hp+tp+mr.mp+mr.rp);
+    const ww=X.w||NEUT;const pot=Math.round(100*(ww[0]*zp+ww[1]*(hp+tp)+ww[3]*mr.mp+ww[4]*mr.rp)/(ww[0]*25+ww[1]*25+ww[2]*20+ww[3]*15+ww[4]*15));
     const rk=pot-6*dist;
     if(!best||rk>best.rk)best={d,pot,rk,kind:z.kind,lo:z.lo,hi:z.hi,zp,st:hp+tp,mp:mr.mp,rp:mr.rp};
   }
@@ -545,7 +545,7 @@ function evalBar(X,i,minScore){
     const cp=Math.max(0,20*pat.s-pat.pen);
     const mr=momRegime(X,i,d);const mp=mr.mp,rp=mr.rp;
     const parts=[zp,sp,cp,mp,rp].map(v=>Math.round(v*10)/10);
-    const score=Math.round(zp+sp+cp+mp+rp);
+    const score=Math.round(wScore([zp,sp,cp,mp,rp],X.w));
     if(score<minScore)continue;
     if(best&&score<=best.score)continue;
     const entry=c.c;
@@ -570,12 +570,12 @@ function resolveSig(s,C,last){
   s.res=(s.i+150<=last)?'exp':'open';
 }
 
-function analyze(X,logMin){
+function analyze(X,logMin,noSpace){
   const out=[],n=X.C.length,last={'1':-99,'-1':-99};
   for(let i=40;i<=n-2;i++){
     const s=evalBar(X,i,logMin);
     if(!s)continue;
-    if(i-last[s.d]<8)continue;
+    if(!noSpace&&i-last[s.d]<8)continue;
     last[s.d]=i;
     resolveSig(s,X.C,n-2);
     out.push(s);
@@ -583,7 +583,7 @@ function analyze(X,logMin){
   return out;
 }
 
-function buildX(C,H,tf,htf){
+function buildX(C,H,tf,htf,w){
   htf=htf||3600;
   const gapC=C.map((c,i)=>i>0&&c.t-C[i-1].t>2*tf),gapH=H.map((c,i)=>i>0&&c.t-H[i-1].t>2*htf);
   const A=atrArr(C,14,gapC),sc=scan(C,swingsOf(C,3),A);
@@ -593,7 +593,7 @@ function buildX(C,H,tf,htf){
   const HT=new Int8Array(C.length);
   let hp=-1;
   for(let i=0;i<C.length;i++){const ct=C[i].t+tf;while(hp+1<H.length&&H[hp+1].t+htf<=ct)hp++;HT[i]=hp>=0?scH.T[hp]:0;}
-  return {C,A,Z:sc.Z,T:sc.T,SLa:sc.SLa,SHa:sc.SHa,HT,s10,s20,K,D,avgA,gap:gapC};
+  return {C,A,Z:sc.Z,T:sc.T,SLa:sc.SLa,SHa:sc.SHa,HT,s10,s20,K,D,avgA,gap:gapC,w:w||null};
 }
 
 let COST=0;
@@ -606,62 +606,6 @@ function statOf(list,k){
 }
 
 
-
-/* ---- tuner core: re-weights the score and picks an alert level, judged only on unseen trades ---- */
-const WG=[0.5,1,1.5],TG=[50,55,60,65,70,75,80,85,90];
-const WCOMBOS=[];for(const a of WG)for(const b of WG)for(const c of WG)for(const d of WG)for(const e of WG)WCOMBOS.push([a,b,c,d,e]);
-const netR=(s,k)=>(s.reached>=k?k:-1)-(COST>0&&s.risk>0?COST/s.risk:0);
-function scoreW(p,w){let nu=0,de=0;for(let i=0;i<5;i++){nu+=p[i]*w[i];de+=MAXP[i]*w[i];}return 100*nu/de;}
-function rstat(a){
-  const n=a.length;if(!n)return {n:0,mean:0,sd:0,t:0};
-  let s=0;for(const v of a)s+=v;const m=s/n;
-  let q=0;for(const v of a)q+=(v-m)*(v-m);
-  const sd=n>1?Math.sqrt(q/(n-1)):0;
-  return {n,mean:m,sd,t:sd>0?m/(sd/Math.sqrt(n)):0};
-}
-function searchBest(items,minN){
-  let best=null;const N=items.length,sc=new Float64Array(N);
-  for(const w of WCOMBOS){
-    const de=MAXP[0]*w[0]+MAXP[1]*w[1]+MAXP[2]*w[2]+MAXP[3]*w[3]+MAXP[4]*w[4];
-    for(let j=0;j<N;j++){const p=items[j].parts;sc[j]=100*(p[0]*w[0]+p[1]*w[1]+p[2]*w[2]+p[3]*w[3]+p[4]*w[4])/de;}
-    for(const T of TG)for(let al=0;al<2;al++){
-      let n=0,s=0,s2=0;
-      for(let j=0;j<N;j++){const it=items[j];if(sc[j]<T)continue;if(al&&it.hb!==it.d)continue;n++;s+=it.r;s2+=it.r*it.r;}
-      if(n<minN)continue;
-      const m=s/n,sd=Math.sqrt(Math.max(0,s2/n-m*m)),lcb=m-sd/Math.sqrt(n);
-      if(!best||lcb>best.lcb)best={w,T,al,n,mean:m,lcb};
-    }
-  }
-  return best;
-}
-function walkForward(sigs,k,base){
-  const items=sigs.filter(s=>RES_OK(s.res)&&s.parts).sort((a,b)=>a.t-b.t).map(s=>({parts:s.parts,hb:s.hb,d:s.d,score:s.score,r:netR(s,k)}));
-  const N=items.length,out={N,ok:false,enough:N>=120,reason:''};
-  if(N<120){out.reason='NEED 120 RESOLVED SIGNALS, HAVE '+N;return out;}
-  const B=6,bs=Math.floor(N/B),blocks=[];
-  for(let b=0;b<B;b++)blocks.push(items.slice(b*bs,b===B-1?N:(b+1)*bs));
-  const tunedR=[],baseR=[];
-  for(let f=2;f<B;f++){
-    const train=[].concat(...blocks.slice(0,f)),test=blocks[f];
-    const fit=searchBest(train,Math.max(15,Math.round(train.length*0.12)));
-    for(const it of test){
-      const bp=it.score>=base;
-      if(bp)baseR.push(it.r);
-      if(fit){if((!fit.al||it.hb===it.d)&&scoreW(it.parts,fit.w)>=fit.T)tunedR.push(it.r);}
-      else if(bp)tunedR.push(it.r);
-    }
-  }
-  const T=rstat(tunedR),Bs=rstat(baseR);
-  out.oos={nT:T.n,meanT:T.mean,tT:T.t,nB:Bs.n,meanB:Bs.mean};
-  if(T.n<30){out.reason='TOO FEW UNSEEN TRADES TO JUDGE ('+T.n+' OF 30 NEEDED)';return out;}
-  if(T.mean<=0){out.reason='TUNED RESULTS ARE NOT POSITIVE ON UNSEEN TRADES';return out;}
-  if(T.mean-Bs.mean<0.10){out.reason='NO RELIABLE IMPROVEMENT OVER THE DEFAULT SCORING';return out;}
-  if(T.t<1.28){out.reason='THE IMPROVEMENT IS NOT STATISTICALLY CONVINCING YET';return out;}
-  const fit=searchBest(items,Math.max(15,Math.round(N*0.12)));
-  if(!fit){out.reason='NO SETTING HAD ENOUGH TRADES';return out;}
-  out.ok=true;out.params=fit;return out;
-}
-
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
@@ -669,7 +613,7 @@ const DEF=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','V
 const SYMS=DEF.map(x=>x.slice());
 const MAXW=16;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90,tmode:'auto',watch:null,mk:'ALL',spr:{},sess:'all'},LS.get('cse_set',{}));
+const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90,watch:null,mk:'ALL',spr:{},sess:'all',learn:true,autothr:false},LS.get('cse_set',{}));
 if(![60,300,900,3600].includes(cfg.tf))cfg.tf=60;
 const htfOf=tf=>tf>=3600?14400:3600;
 let HTF=htfOf(cfg.tf);
@@ -732,20 +676,20 @@ function tickInto(arr,g,ep,p){
 }
 function detectDp(C){let m=2;for(let i=Math.max(0,C.length-60);i<C.length;i++){const s=String(C[i].c),k=s.indexOf('.');if(k>=0)m=Math.max(m,s.length-k-1);}return Math.min(m,5);}
 const fp=(sy,p)=>p==null||p!==p?'-':p.toFixed(sy===cfg.sym?S.dp:((R[sy]&&R[sy].dp)||2));
-function scanRecompute(sy){const st=SC[sy];if(!st||st.C.length<90||st.H.length<30)return;setResult(sy,buildX(st.C,st.H,cfg.tf,HTF),st.C,true);}
+function scanRecompute(sy){const st=SC[sy];if(!st||st.C.length<90||st.H.length<30)return;setResult(sy,buildX(st.C,st.H,cfg.tf,HTF,LRN.wFor(sy)),st.C,true);}
 function setResult(sy,X,C,alertOn){
   const n=C.length,r=R[sy]||(R[sy]={});
   const ev=evalBar(X,n-2,0);
   r.px=C[n-1].c;r.a=X.A[n-2];r.hb=X.HT[n-2];r.tr=X.T[n-2];r.lastT=C[n-2].t;r.dp=detectDp(C);
   r.w=watchOf(X,n-2,r.px);r.ready=true;r.err=null;
   if(ev){
-    r.sig={score:ev.score,d:ev.d,t:ev.t,pat:ev.pat,kind:ev.kind,entry:ev.entry,sl:ev.sl,tp:ev.tp,parts:ev.parts,hb:ev.hb};
+    r.sig={score:ev.score,d:ev.d,t:ev.t,pat:ev.pat,kind:ev.kind,entry:ev.entry,sl:ev.sl,tp:ev.tp};
     if(alertOn){
       const key=sy+'_'+ev.key;
       if(!r.seeded)S.seenS.add(key);
       else if(!S.seenS.has(key)){
         S.seenS.add(key);r.la=r.la||{};
-        if(passes(ev,sy)&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
+        if(ev.score>=cfg.thr&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
       }
     }
   }
@@ -757,7 +701,7 @@ function setFocus(sy){
   const old=cfg.sym;
   SC[old]=(S.C.length>=90&&S.H.length>=30)?{C:S.C.slice(-600),H:S.H.slice(-250)}:{C:[],H:[]};
   cfg.sym=sy;persist();delete SC[sy];
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.tuneN=null;S.tuneRes=null;S.arch=LS.get(arcKey(),{});
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.arch=LS.get(arcKey(),{});
   updateCost();syncSyms();
   if(S.ws&&S.ws.readyState===1){S.ci=0;focusReq(S.ws);}else connect();
   buildSelect();S.dirty=true;
@@ -766,7 +710,7 @@ function connect(retry){
   stop();
   if(!retry){S.tries=0;S.ep=0;S.ci=0;}
   const my=S.gen,ep=EPS[S.ep%EPS.length];
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;S.tuneN=null;S.tuneRes=null;
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;
   S.rmap={};S.seenS=new Set();
   Object.keys(SC).forEach(k=>delete SC[k]);Object.keys(R).forEach(k=>delete R[k]);
   SYMS.forEach(([sy])=>{if(sy!==cfg.sym)SC[sy]={C:[],H:[]};});
@@ -986,95 +930,12 @@ function realPreset(){
 }
 function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}
 
-
-/* ---------- self-improvement (guarded tuner) ---------- */
-const TUNE=LS.get('cse_tune',{});
-let TLOG=LS.get('cse_tunelog',[]);
-const tkey=()=>cfg.sym+'_'+cfg.tf;
-const tuneOn=()=>{const x=TUNE[tkey()];return !!(x&&x.on);};
-function passes(s,sy){
-  const tn=TUNE[sy+'_'+cfg.tf];
-  if(tn&&tn.on&&s.parts){if(tn.al&&s.hb!==s.d)return false;return scoreW(s.parts,tn.w)>=tn.T;}
-  return s.score>=cfg.thr;
-}
-const rr=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
-const wTxt=w=>'ZONE x'+w[0]+' STRUCTURE x'+w[1]+' CANDLE x'+w[2]+' MOMENTUM x'+w[3]+' REGIME x'+w[4];
-function saveTune(){LS.set('cse_tune',TUNE);LS.set('cse_tunelog',TLOG.slice(-40));}
-function tlog(m){TLOG.push({t:Math.floor(Date.now()/1000),m:nameFor(cfg.sym)+' '+tfName()+': '+m});if(TLOG.length>40)TLOG=TLOG.slice(-40);saveTune();}
-function applyTune(res,how){
-  const p=res.params;
-  TUNE[tkey()]={on:true,w:p.w,T:p.T,al:p.al,at:Math.floor(Date.now()/1000),k:+cfg.tgt||2,n:res.N,oos:res.oos};
-  tlog(how+' APPLIED. '+wTxt(p.w)+', ALERT AT '+p.T+(p.al?', BIAS-ALIGNED ONLY':'')+'. UNSEEN TRADES: '+rr(res.oos.meanT)+' OVER '+res.oos.nT+' VS '+rr(res.oos.meanB)+' DEFAULT');
-  if(S.X)derive();S.dirty=true;
-}
-function tuneRun(manual){
-  if(S.tuning)return;
-  S.tuning=true;
-  try{
-    const res=walkForward(S.sigs,+cfg.tgt||2,cfg.thr);
-    S.tuneRes=res;S.tuneN=res.N;S.tuneRunAt=Math.floor(Date.now()/1000);
-    const cur=TUNE[tkey()];
-    if(res.ok){
-      if(cfg.tmode==='auto'&&!manual)applyTune(res,'AUTO');
-      else if(manual&&cfg.tmode!=='off'&&cfg.tmode==='auto')applyTune(res,'AUTO');
-      else tlog('PROPOSAL READY. '+wTxt(res.params.w)+', ALERT AT '+res.params.T);
-    }else if(cur&&cur.on&&res.enough){
-      delete TUNE[tkey()];saveTune();tlog('TUNING REMOVED. '+res.reason);
-      if(S.X)derive();
-    }
-  }catch(e){tlog('TUNER ERROR');}
-  finally{S.tuning=false;S.dirty=true;}
-}
-function guardCheck(){
-  const tn=TUNE[tkey()];if(!tn||!tn.on)return;
-  const k=tn.k||2,L=S.sigs.filter(s=>RES_OK(s.res)&&s.t>=tn.at&&s.parts);
-  const tuned=L.filter(s=>passes(s,cfg.sym)).map(s=>netR(s,k)),base=L.filter(s=>s.score>=cfg.thr).map(s=>netR(s,k));
-  if(tuned.length<15)return;
-  const mt=rstat(tuned).mean,mb=base.length>=15?rstat(base).mean:null;
-  if(mt<-0.25||(mb!==null&&mt<mb-0.15)){
-    delete TUNE[tkey()];saveTune();tlog('REVERTED TO DEFAULT. LIVE TUNED RESULT '+rr(mt)+' OVER '+tuned.length+' TRADES'+(mb!==null?' VS '+rr(mb)+' DEFAULT':''));
-    if(S.X)derive();S.dirty=true;
-  }
-}
-function tuneTick(){
-  guardCheck();
-  if(cfg.tmode==='off'||S.tuning)return;
-  const N=S.sigs.filter(s=>RES_OK(s.res)).length;
-  if(N>=120&&(S.tuneN==null||N-S.tuneN>=20))setTimeout(()=>tuneRun(false),80);
-}
-function renderTune(){
-  const key=tkey(),tn=TUNE[key],res=S.tuneRes;
-  $('tnSym').textContent=shortOf(nameFor(cfg.sym))+' / '+tfName();
-  const N=S.sigs.filter(s=>RES_OK(s.res)).length;
-  let stat;
-  if(tn&&tn.on)stat='<b class="pos">TUNED ALERTS ARE ACTIVE.</b> SCORES ARE RE-WEIGHTED AND ALERTS FOLLOW THE TUNED LEVEL.';
-  else if(res&&res.ok)stat='<b class="amb">A PROPOSAL IS READY.</b> PRESS APPLY PROPOSAL TO USE IT.';
-  else if(res)stat='<b>USING THE DEFAULT SCORING.</b> '+esc(res.reason||'');
-  else stat='<b>USING THE DEFAULT SCORING.</b> '+(N<120?'WAITING FOR 120 RESOLVED SIGNALS ('+N+' SO FAR).':'THE FIRST CHECK RUNS SHORTLY.');
-  setH('tnStat',stat);
-  const p=tn&&tn.on?tn:(res&&res.ok?res.params:null),o=(tn&&tn.on&&tn.oos)?tn.oos:(res?res.oos:null);
-  const box=(l,v,c)=>'<div class="fx '+(c||'')+'"><span class="lab">'+l+'</span><b>'+v+'</b></div>';
-  setH('tnGrid',[
-    box('SCORING',tn&&tn.on?'TUNED':'DEFAULT',tn&&tn.on?'o':''),
-    box('ALERT AT',p?p.T:cfg.thr,''),
-    box('BIAS-ALIGNED ONLY',p?(p.al?'YES':'NO'):'NO',''),
-    box('UNSEEN TRADES, TUNED',o&&o.nT?rr(o.meanT)+' / N'+o.nT:'-',''),
-    box('UNSEEN TRADES, DEFAULT',o&&o.nB?rr(o.meanB)+' / N'+o.nB:'-',''),
-    box('LAST CHECK',S.tuneRunAt?dtM(S.tuneRunAt):'NEVER',''),
-    box('WEIGHTS',p?'Z'+p.w[0]+' S'+p.w[1]+' C'+p.w[2]+' M'+p.w[3]+' R'+p.w[4]:'ALL x1',''),
-    box('SIGNALS CHECKED',N,'')
-  ].join(''));
-  $('tnApply').disabled=!(res&&res.ok&&!(tn&&tn.on));
-  $('tnApply').style.opacity=$('tnApply').disabled?0.4:1;
-  setH('tnLog',TLOG.slice(-8).reverse().map(e=>'<div>'+dtM(e.t)+' '+esc(e.m)+'</div>').join('')||'<div class="dm">NO EVENTS YET</div>');
-}
-
 /* ---------- focus recompute and derived data ---------- */
 function recompute(){
   const C=S.C,H=S.H;
   if(C.length<90||H.length<30)return;
   S.dp=detectDp(C);
-  const X=buildX(C,H,cfg.tf,HTF);S.X=X;
+  const X=buildX(C,H,cfg.tf,HTF,LRN.wFor(cfg.sym));S.X=X;
   setResult(cfg.sym,X,C,false);
   if(S.first)S.sessionFrom=C[C.length-2].t;
   const fresh=analyze(X,40),arch=S.arch,fk=new Set();
@@ -1085,15 +946,15 @@ function recompute(){
   const store={};S.sigs.filter(s=>s.src==='live').slice(-500).forEach(s=>{store[s.key]=s;});
   S.arch=store;LS.set(arcKey(),store);
   if(S.first){S.sigs.forEach(s=>S.seen.add(s.key));S.first=false;}
-  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(passes(s,cfg.sym)&&s.src==='live'&&inSession(s.t,cfg.sym))alertSig(s,cfg.sym);}}}
-  derive();S.dirty=true;tuneTick();
+  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(s.score>=cfg.thr&&s.src==='live'&&inSession(s.t,cfg.sym))alertSig(s,cfg.sym);}}}
+  derive();S.dirty=true;
 }
 function derive(){
   const X=S.X,C=S.C,n=C.length,last=n-2,D={tl:[],inp:{zone:[],str:[],cand:[],mom:[],reg:[],pot:[]},cp:''};
   const from=Math.max(40,last-119);
   for(let i=from;i<=last;i++){
     const ev=evalBar(X,i,0),w=watchOf(X,i,C[i].c),a=X.A[i];
-    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i],hot:ev?passes(ev,cfg.sym):false});
+    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i]});
     if(i>last-60){
       let cs=0,nm='';
       for(const d of [1,-1]){const p=patternAt(C,i,d,a);if(p&&p.s>=0.5){const v=Math.max(0,20*p.s-p.pen);if(v>cs){cs=v;nm=p.name;}}}
@@ -1147,7 +1008,7 @@ function stateOf(sy){
   m.hb=r.hb;m.tr=r.tr;m.w=r.w;
   const age=r.sig?Math.round((r.lastT-r.sig.t)/cfg.tf):99;
   if(r.sig&&age<=2&&r.sig.score>=40){
-    const hot=passes(r.sig,sy);
+    const hot=r.sig.score>=cfg.thr;
     m.mode=hot?'sig':'setup';m.rank=(hot?3000:2000)+r.sig.score-age*5;m.val=r.sig.score;m.side=r.sig.d;m.sig=r.sig;
     m.txt=(r.sig.d===1?'BUY':'SELL')+(hot?' SIGNAL ':' SETUP ')+r.sig.score;
   }else if(r.w){
@@ -1180,7 +1041,7 @@ function renderAudit(){
   const s2=D.all[1],big=$('auBig');
   if(s2.n){big.textContent=(s2.e>=0?'+':'')+s2.e.toFixed(2)+'R';big.className='big '+(s2.e>=0?'pos':'neg');}
   else{big.textContent='--';big.className='big dm';}
-  $('auSub').textContent='AVERAGE R PER TRADE, FIXED 2R TARGET, SAME STOP'+(COST>0?', AFTER COST':'');
+  $('auSub').textContent='AVERAGE R PER TRADE, FIXED 2R TARGET, SAME STOP'+(COST>0?', AFTER COST':'')+(LRN.wFor(cfg.sym)?' / LEARNED WEIGHTS':'');
   const n=s2.n;
   setH('auGrid',[['TRADES',n],['HIT 1R',pct(D.all[0].w[0],D.all[0].n)+'%'],['HIT 2R',pct(D.all[1].w[1],n)+'%'],['HIT 3R',pct(D.all[2].w[2],D.all[2].n)+'%'],['AVG SCORE',D.avg],['OPEN',s2.open]].map(x=>'<div><span class="lab">'+x[0]+'</span><b>'+x[1]+'</b></div>').join(''));
   $('auRisk').textContent=n<30?'SAMPLE: NOISE ('+n+' OF 30)':'SAMPLE: READABLE ('+n+')';
@@ -1222,18 +1083,18 @@ function resTxt(s){
 }
 function renderFills(){
   const l=S.sigs.slice(-12).reverse();
-  setH('fills',l.length?l.map(s=>{const [t]=resTxt(s);return '<div class="fc '+(s.d===1?'up':'dn')+(passes(s,cfg.sym)?' hot':'')+'"><b>'+(s.d===1?'BUY ':'SELL ')+s.score+' / '+t+'</b><span>'+s.pat+' AT '+s.kind+' / '+clkM(s.t+cfg.tf)+'</span></div>';}).join(''):'<div class="fc"><span>NO SIGNALS YET</span></div>');
+  setH('fills',l.length?l.map(s=>{const [t]=resTxt(s);return '<div class="fc '+(s.d===1?'up':'dn')+(s.score>=cfg.thr?' hot':'')+'"><b>'+(s.d===1?'BUY ':'SELL ')+s.score+' / '+t+'</b><span>'+s.pat+' AT '+s.kind+' / '+clkM(s.t+cfg.tf)+'</span></div>';}).join(''):'<div class="fc"><span>NO SIGNALS YET</span></div>');
 }
 function renderTape(){
   const l=S.sigs.slice(-16).reverse();
-  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkL(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(passes(s,cfg.sym)?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="n">'+fp(cfg.sym,s.tp[0])+'</td><td class="n">'+fp(cfg.sym,s.tp[1])+'</td><td class="n">'+fp(cfg.sym,s.tp[2])+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
+  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkL(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(s.score>=cfg.thr?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="n">'+fp(cfg.sym,s.tp[0])+'</td><td class="n">'+fp(cfg.sym,s.tp[1])+'</td><td class="n">'+fp(cfg.sym,s.tp[2])+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
   const D=S.D;
   if(!D){setH('heat','');setH('ft','');return;}
   setH('heat',D.bands.map(b=>{
     const n=b.s2.n,w=[b.s1,b.s2,b.s3].map((x,i)=>pct(x.w[i],x.n));
     return '<div class="hr"><div class="lab"><span>'+b.lab+'</span><span>N'+n+'</span></div><div class="hb">'+w.map((v,i)=>'<div><i style="width:'+v+'%;background:'+['#2a6fb8','#2fe38a','#e7d54a'][i]+'"></i></div>').join('')+'</div><div class="lab"><span>1R</span><span>2R</span><span>3R</span></div></div>';
   }).join(''));
-  const last=S.sigs[S.sigs.length-1],ge=S.sigs.filter(s=>passes(s,cfg.sym)).length,h1=D.all[0];
+  const last=S.sigs[S.sigs.length-1],ge=S.sigs.filter(s=>s.score>=cfg.thr).length,h1=D.all[0];
   setH('ft',[
     ['LAST SIGNAL',last?(last.d===1?'BUY ':'SELL ')+last.score+' @ '+fp(cfg.sym,last.entry):'-',''],
     ['AVG / MEDIAN SCORE',D.avg+' / '+D.med,''],
@@ -1392,7 +1253,7 @@ function drawTimeline(){
   // signal stems
   for(let i=0;i<N;i++){
     const p=L[i];if(!p.score)continue;
-    const hot=!!p.hot,col=p.d===1?'47,227,138':'255,77,94';
+    const hot=p.score>=cfg.thr,col=p.d===1?'47,227,138':'255,77,94';
     g.strokeStyle='rgba('+col+','+(hot?0.9:0.35)+')';g.lineWidth=hot?1.6:1;g.beginPath();g.moveTo(x(i),y(0));g.lineTo(x(i),y(p.score));g.stroke();
     g.fillStyle=hot?K.amb:'rgba(245,165,36,.6)';g.beginPath();g.arc(x(i),y(p.score),hot?2.6:1.7,0,6.283);g.fill();
   }
@@ -1560,7 +1421,7 @@ function renderVerdict(){
   const sd=ev?ev.d:watch?watch.w.d:0;
   const col=!sd?'#6f8296':sd===1?K.pos:K.neg;
   let verdict='NO ZONE NEAR',sub='WAITING FOR PRICE TO APPROACH A ZONE';
-  if(ev){const side=ev.d===1?'BUY':'SELL';verdict=passes(ev,cfg.sym)?side+' SIGNAL':total>=40?side+' SETUP':'WEAK '+side+' TOUCH';sub=ev.pat+' AT '+ev.kind;}
+  if(ev){const side=ev.d===1?'BUY':'SELL';verdict=total>=cfg.thr?side+' SIGNAL':total>=40?side+' SETUP':'WEAK '+side+' TOUCH';sub=ev.pat+' AT '+ev.kind;}
   else if(watch){verdict=watch.w.d===1?'WATCHING FOR A BUY':'WATCHING FOR A SELL';sub=watch.w.kind+', '+(watch.dist<0.05?'PRICE INSIDE':watch.dist.toFixed(1)+' ATR AWAY')+', POTENTIAL';}
   svg+='<text x="120" y="126" text-anchor="middle" font-family="Orbitron,monospace" font-size="44" font-weight="700" fill="'+(ev?'#ffffff':watch?'#9fb6cc':'#44566a')+'">'+(ev||watch?total:'--')+'</text>';
   svg+='<text x="120" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="13" fill="'+col+'">'+verdict+'</text>';
@@ -1568,7 +1429,7 @@ function renderVerdict(){
   setH('ring',svg);
   const t=X&&n?X.T[n-1]:0,h=X&&n?X.HT[n-1]:0;
   const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
-  setH('vchips','<span class="vchip">'+HN()+' BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(tuneOn()?'<span class="vchip up">TUNED ALERTS</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
+  setH('vchips','<span class="vchip">'+HN()+' BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
   setH('vparts',VPN.map((nm,k)=>'<li><i class="sw" style="background:'+VPC[k]+'"></i><div class="nm">'+nm.toUpperCase()+'<span>'+VPD[k].toUpperCase()+'</span></div><div class="pt">'+(Math.round(parts[k]*10)/10)+'/'+MAXP[k]+'</div></li>').join(''));
 }
 
@@ -1728,6 +1589,253 @@ function mpBind(){
   $('mpGo').onclick=()=>{if(MP.sel){setFocus(MP.sel);window.scrollTo({top:0,behavior:'smooth'});}};
 }
 
+/* ---------- self-improve: walk-forward learning of score weights and alert level ---------- */
+const LRN=(()=>{
+  const GRID=[0.5,0.75,1,1.25,1.5],THRS=[50,55,60,65,70,75,80,85,90];
+  const MIN_ROWS=300,MIN_TRAIN_N=80,MIN_TEST=30,MIN_GAIN=0.10,MIN_Z=2,LAMBDA=0.03,COOL=6*3600*1000,CAP=2500;
+  const NEU=[1,1,1,1,1],NAMES=['ZONE','STRUCTURE','CANDLE','MOMENTUM','REGIME'];
+  const st=LS.get('cse_learn',null)||{v:1,keys:{}};
+  if(!st.keys||typeof st.keys!=='object')st.keys={};
+  const info={},sets={},seen={};
+  let ix=0,busy=false;
+  const keyOf=sy=>grpFor(sy)+'_'+cfg.tf;
+  const goodW=w=>Array.isArray(w)&&w.length===5&&w.every(v=>typeof v==='number'&&v>=0.5&&v<=1.5);
+  const fmt=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
+  function ks(key){return st.keys[key]||(st.keys[key]={w:null,thr:null,prevThr:null,t0:0,lastPromo:0,lastPromoN:0,log:[]});}
+  function wFor(sy){if(!cfg.learn)return null;const k=st.keys[keyOf(sy)];return k&&goodW(k.w)?k.w:null;}
+  function save(){LS.set('cse_learn',st);}
+  function log(k,ev,txt){k.log.unshift({at:Date.now(),ev,txt});if(k.log.length>12)k.log.length=12;wlog('&#8226;','LEARN',ev+' '+txt,'a');}
+
+  /* dataset: every resolved candidate scored with neutral weights, so weights can be re-tried on it later */
+  function rowsOf(key){
+    if(!sets[key]){
+      const m=sets[key]=new Map(),raw=LS.get('cse_lset_'+key,[]);
+      if(Array.isArray(raw))for(const r of raw){if(Array.isArray(r)&&r.length===10)m.set(r[0]+'|'+r[1]+'|'+r[2],{sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9]});}
+    }
+    return sets[key];
+  }
+  function saveRows(key){
+    const m=sets[key];let a=[...m.values()].sort((x,y)=>x.t-y.t);
+    if(a.length>CAP){a=a.slice(a.length-CAP);m.clear();a.forEach(o=>m.set(o.sy+'|'+o.t+'|'+o.d,o));}
+    LS.set('cse_lset_'+key,a.map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk]));
+  }
+  function collect(sy){
+    const foc=sy===cfg.sym,C=foc?S.C:(SC[sy]&&SC[sy].C),H=foc?S.H:(SC[sy]&&SC[sy].H);
+    if(!C||!H||C.length<120||H.length<30)return 0;
+    const lt=C[C.length-2].t,sk=sy+'|'+cfg.tf;
+    if(seen[sk]&&lt-seen[sk]<5*cfg.tf)return 0;
+    seen[sk]=lt;
+    let cs;
+    try{cs=analyze(buildX(C,H,cfg.tf,HTF,null),0,true);}catch(e){return 0;}
+    const key=keyOf(sy),m=rowsOf(key);let add=0;
+    for(const s of cs){
+      if(!RES_OK(s.res))continue;
+      const id=sy+'|'+s.t+'|'+s.d;
+      if(m.has(id))continue;
+      m.set(id,{sy,t:s.t,d:s.d,p:s.parts.map(v=>Math.round(v*10)/10),r:s.reached,rk:+s.risk.toPrecision(5)});add++;
+    }
+    if(add)saveRows(key);
+    return add;
+  }
+
+  /* selection and scoring on the dataset */
+  const rOf=(o,k)=>(o.r>=k?k:-1)-(o.rk>0?(cfg.spr[o.sy]||0)/o.rk:0);
+  function pick(rows,w,thr,tf){
+    const last={},out=[];
+    for(const o of rows){
+      if(Math.round(wScore(o.p,w))<thr)continue;
+      const kk=o.sy+'|'+o.d;
+      if(last[kk]!==undefined&&o.t-last[kk]<8*tf)continue;
+      last[kk]=o.t;out.push(o);
+    }
+    return out;
+  }
+  function stat(list,k){
+    const n=list.length;
+    if(!n)return {n:0,mean:0,sd:0,lcb:-9};
+    let s=0,q=0;for(const o of list){const v=rOf(o,k);s+=v;q+=v*v;}
+    const mean=s/n,sd=Math.sqrt(Math.max(0,q/n-mean*mean));
+    return {n,mean,sd,lcb:n>1?mean-sd/Math.sqrt(n):-9};
+  }
+  function objective(rows,w,thr,k,tf){
+    const s=stat(pick(rows,w,thr,tf),k);
+    if(s.n<MIN_TRAIN_N)return {v:-9,s};
+    let dev=0;for(let i=0;i<5;i++)dev+=Math.abs(w[i]-1);
+    return {v:s.lcb-LAMBDA*dev,s};
+  }
+  function optimise(rows,k,tf){
+    let w=NEU.slice(),bt=70,bo=objective(rows,w,bt,k,tf);
+    for(const t of THRS){const o=objective(rows,w,t,k,tf);if(o.v>bo.v){bo=o;bt=t;}}
+    for(let pass=0;pass<3;pass++){
+      let moved=false;
+      for(let i=0;i<5;i++){
+        for(const g of GRID){
+          if(g===w[i])continue;
+          const w2=w.slice();w2[i]=g;
+          for(const t of THRS){const o=objective(rows,w2,t,k,tf);if(o.v>bo.v+1e-9){bo=o;w=w2;bt=t;moved=true;}}
+        }
+      }
+      if(!moved)break;
+    }
+    return {w,thr:bt,obj:bo};
+  }
+
+  /* champion / challenger decision */
+  function applyAll(){
+    if(S.C.length)recompute();
+    SYMS.forEach(([sy])=>{if(sy!==cfg.sym)scanRecompute(sy);});
+    syncBtns();S.dirty=true;
+  }
+  function decide(sy0,force){
+    const key=keyOf(sy0),m=rowsOf(key),k=ks(key),tf=cfg.tf,kt=cfg.tgt||2;
+    const rows=[...m.values()].sort((a,b)=>a.t-b.t),N=rows.length;
+    const inf=info[key]={N,at:Date.now(),kt,msg:'',chal:null,cur:null,neu:null,fwd:null};
+    if(N<MIN_ROWS){inf.msg='GATHERING DATA: '+N+' OF '+MIN_ROWS+' RESOLVED CANDIDATES';return inf;}
+    const cut=Math.floor(N*0.7),train=rows.slice(0,cut),test=rows.slice(cut);
+    const curW=goodW(k.w)?k.w:NEU,curThr=k.thr!=null?k.thr:cfg.thr;
+    inf.ntr=train.length;inf.nte=test.length;
+    const ch=optimise(train,kt,tf);
+    const tCh=stat(pick(test,ch.w,ch.thr,tf),kt),tCur=stat(pick(test,curW,curThr,tf),kt),tNeu=stat(pick(test,NEU,70,tf),kt);
+    inf.chal={w:ch.w,thr:ch.thr,train:ch.obj.s,test:tCh};inf.cur={w:curW,thr:curThr,test:tCur};inf.neu=tNeu;
+    /* forward check: after adoption, did the learned weights beat neutral on trades they had never seen */
+    if(goodW(k.w)&&k.t0){
+      const f=rows.filter(o=>o.t>k.t0),pt=k.prevThr!=null?k.prevThr:70;
+      inf.fwd={c:stat(pick(f,k.w,curThr,tf),kt),n:stat(pick(f,NEU,pt,tf),kt)};
+      if(inf.fwd.c.n>=MIN_TEST&&inf.fwd.n.n>=MIN_TEST&&inf.fwd.c.mean<inf.fwd.n.mean-MIN_GAIN){
+        log(k,'REVERTED','LEARNED WEIGHTS TRAILED NEUTRAL ON NEW TRADES: '+fmt(inf.fwd.c.mean)+' VS '+fmt(inf.fwd.n.mean)+' OVER '+inf.fwd.c.n+' AND '+inf.fwd.n.n);
+        k.w=null;k.thr=k.prevThr;k.t0=0;k.lastPromo=Date.now();k.lastPromoN=N;
+        if(cfg.autothr&&k.thr!=null){cfg.thr=k.thr;persist();}
+        save();inf.msg='REVERTED TO NEUTRAL WEIGHTS';applyAll();return inf;
+      }
+    }
+    const same=ch.w.every((v,i)=>v===curW[i])&&ch.thr===curThr;
+    const gain=tCh.mean-tCur.mean;
+    const se=Math.sqrt(tCh.sd*tCh.sd/Math.max(1,tCh.n)+tCur.sd*tCur.sd/Math.max(1,tCur.n)),z=se>0?gain/se:0;
+    inf.z=z;
+    const cool=Date.now()-k.lastPromo>=COOL&&N-k.lastPromoN>=30;
+    let why='';
+    if(same)why='THE BEST SETTINGS FOUND MATCH THE CURRENT ONES';
+    else if(tCh.n<MIN_TEST)why='TEST SAMPLE TOO SMALL ('+tCh.n+' OF '+MIN_TEST+')';
+    else if(!(tCh.mean>0))why='CHALLENGER IS NOT PROFITABLE ON UNSEEN DATA ('+fmt(tCh.mean)+')';
+    else if(gain<MIN_GAIN)why='GAIN OF '+fmt(gain)+' IS UNDER THE '+MIN_GAIN.toFixed(2)+'R BAR';
+    else if(z<MIN_Z)why='GAIN OF '+fmt(gain)+' IS NOT SIGNIFICANT (Z '+z.toFixed(1)+', NEEDS '+MIN_Z+')';
+    else if(!cool)why='COOLDOWN, NEEDS 6 HOURS AND 30 NEW CANDIDATES SINCE THE LAST CHANGE';
+    if(why){inf.msg='HELD: '+why;return inf;}
+    k.prevThr=curThr;k.w=ch.w.every(v=>v===1)?null:ch.w;k.thr=ch.thr;k.t0=rows[rows.length-1].t;k.lastPromo=Date.now();k.lastPromoN=N;
+    log(k,'PROMOTED','UNSEEN '+fmt(tCh.mean)+' VS '+fmt(tCur.mean)+' OVER '+tCh.n+' TRADES / WEIGHTS '+ch.w.join(' ')+' / LEVEL '+ch.thr);
+    if(cfg.autothr){cfg.thr=ch.thr;persist();}
+    save();inf.msg='PROMOTED NEW SETTINGS';applyAll();
+    return inf;
+  }
+  function decideAll(force){
+    const gs=new Map();
+    SYMS.forEach(([sy])=>{const g=grpFor(sy);if(!gs.has(g))gs.set(g,sy);});
+    gs.forEach(sy=>{try{decide(sy,force);}catch(e){}});
+    S.dirty=true;
+  }
+  function tick(){
+    if(!cfg.learn||busy||document.hidden||!SYMS.length)return;
+    busy=true;
+    try{
+      const sy=SYMS[ix%SYMS.length][0];ix++;
+      collect(sy);
+      if(ix%SYMS.length===0)decideAll(false);
+    }catch(e){}
+    busy=false;
+  }
+  function run(){
+    Object.keys(seen).forEach(k=>delete seen[k]);
+    SYMS.forEach(([sy],i)=>setTimeout(()=>{try{collect(sy);}catch(e){}},i*60));
+    setTimeout(()=>decideAll(true),SYMS.length*60+120);
+    $('lrMsg').textContent='RUNNING A FULL CYCLE';
+  }
+  function reset(){
+    Object.keys(st.keys).forEach(key=>{const k=st.keys[key];if(k.w||k.thr!=null)log(k,'RESET','BACK TO NEUTRAL WEIGHTS');k.w=null;k.thr=null;k.prevThr=null;k.t0=0;k.lastPromo=0;k.lastPromoN=0;});
+    save();$('lrMsg').textContent='';applyAll();
+  }
+
+  /* export and import of the dataset (rows only, never the champion, so imported data is re-judged here) */
+  function setKeys(){
+    const a=new Set(Object.keys(sets));
+    try{for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.indexOf('cse_lset_')===0)a.add(n.slice(9));}}catch(e){}
+    return [...a];
+  }
+  function exportData(){
+    const sd={};
+    setKeys().forEach(key=>{sd[key]=[...rowsOf(key).values()].map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk]);});
+    const blob=new Blob([JSON.stringify({app:'confluence-brain',v:1,exported:Date.now(),state:st,sets:sd})],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='confluence-brain.json';document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  }
+  function importData(e){
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    const fr=new FileReader();
+    fr.onload=()=>{
+      let nr=0;
+      try{
+        const j=JSON.parse(String(fr.result));
+        if(!j||j.app!=='confluence-brain'||j.v!==1||!j.sets)throw new Error('bad');
+        for(const key of Object.keys(j.sets)){
+          if(!/^[A-Z]+_\d+$/.test(key)||!Array.isArray(j.sets[key]))continue;
+          const m=rowsOf(key);let add=0;
+          for(const r of j.sets[key]){
+            if(!Array.isArray(r)||r.length!==10)continue;
+            if(typeof r[0]!=='string'||!/^[A-Za-z0-9_.]+$/.test(r[0]))continue;
+            if(!r.slice(1).every(v=>typeof v==='number'&&isFinite(v)))continue;
+            if(r[2]!==1&&r[2]!==-1)continue;
+            if(!r.slice(3,8).every(v=>v>=0&&v<=30)||!(r[8]>=0&&r[8]<=3)||!(r[9]>0))continue;
+            const id=r[0]+'|'+r[1]+'|'+r[2];
+            if(!m.has(id)){m.set(id,{sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9]});add++;}
+          }
+          if(add){saveRows(key);nr+=add;}
+        }
+        $('lrMsg').textContent='IMPORTED '+nr+' NEW CANDIDATES. THEY ARE RE-JUDGED HERE, NOT TRUSTED.';
+        decideAll(true);
+      }catch(er){$('lrMsg').textContent='IMPORT FAILED: NOT A CONFLUENCE BRAIN FILE';}
+      e.target.value='';
+    };
+    fr.readAsText(f);
+  }
+
+  /* panel */
+  function render(){
+    const key=keyOf(cfg.sym),k=st.keys[key]||null,inf=info[key]||null,g=key.split('_')[0];
+    $('lrKey').textContent=(g==='SYNTH'?'DERIVED':g)+' / '+tfName();
+    $('lrState').textContent=!cfg.learn?'OFF':(k&&goodW(k.w)?'LEARNED':'NEUTRAL');
+    $('lrOn').textContent=cfg.learn?'LEARNING ON':'LEARNING OFF';$('lrOn').classList.toggle('on',!!cfg.learn);
+    $('lrAuto').textContent=cfg.autothr?'AUTO ALERT LEVEL ON':'AUTO ALERT LEVEL OFF';$('lrAuto').classList.toggle('on',!!cfg.autothr);
+    const W=k&&goodW(k.w)?k.w:NEU;
+    const bars=NAMES.map((n,i)=>'<div class="lr" style="grid-template-columns:86px 1fr 48px"><span>'+n+'</span><div class="bar"><i style="width:'+Math.round(W[i]/1.5*100)+'%"></i></div><span>x'+W[i].toFixed(2)+'</span></div>').join('');
+    const tx=s=>s&&s.n?fmt(s.mean)+' / N'+s.n:'-';
+    const box=(l,v,c)=>'<div class="fx '+(c||'')+'"><span class="lab">'+l+'</span><b>'+v+'</b></div>';
+    const fw=inf&&inf.fwd?(inf.fwd.c.n?fmt(inf.fwd.c.mean)+' VS '+(inf.fwd.n.n?fmt(inf.fwd.n.mean):'-')+' NEUTRAL':'WAITING'):(k&&goodW(k.w)?'WAITING':'-');
+    const boxes=[
+      box('RESOLVED CANDIDATES',inf?inf.N:'-'),
+      box('SUGGESTED ALERT LEVEL',k&&k.thr!=null?k.thr:'-','o'),
+      box('NEUTRAL, UNSEEN DATA',inf?tx(inf.neu):'-'),
+      box('CURRENT, UNSEEN DATA',inf&&inf.cur?tx(inf.cur.test):'-'),
+      box('CHALLENGER, UNSEEN DATA',inf&&inf.chal?tx(inf.chal.test):'-','o'),
+      box('FORWARD CHECK',fw)
+    ].join('');
+    const chw=inf&&inf.chal?'CHALLENGER WEIGHTS '+inf.chal.w.map(v=>v.toFixed(2)).join(' / ')+' AT LEVEL '+inf.chal.thr+'. ':'';
+    const msg=inf?inf.msg+(inf.at?' ('+clk(inf.at)+')':''):'FIRST CYCLE STARTS A FEW SECONDS AFTER THE HISTORY LOADS.';
+    const lg=(k&&k.log?k.log:[]).slice(0,6).map(l=>'<div class="fc '+(l.ev==='PROMOTED'?'up':l.ev==='REVERTED'?'dn':'')+'"><b>'+esc(l.ev)+' / '+clk(l.at)+'</b><span>'+esc(l.txt)+'</span></div>').join('');
+    setH('lrBody','<div class="lrg"><div><div class="lab" style="margin-bottom:4px">ACTIVE SCORE WEIGHTS</div><div class="lad">'+bars+'</div></div><div><div class="fb">'+boxes+'</div></div></div><div class="lrm">'+esc(chw+msg)+'</div>'+(lg?'<div class="lrl">'+lg+'</div>':''));
+  }
+  function bind(){
+    $('lrOn').onclick=()=>{cfg.learn=!cfg.learn;persist();applyAll();};
+    $('lrAuto').onclick=()=>{
+      cfg.autothr=!cfg.autothr;
+      if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
+      persist();syncBtns();S.dirty=true;
+    };
+    $('lrRun').onclick=run;$('lrReset').onclick=reset;
+    $('lrExp').onclick=exportData;$('lrImp').onclick=()=>$('lrFile').click();$('lrFile').onchange=importData;
+    setInterval(tick,12000);setTimeout(tick,8000);
+  }
+  return {wFor,bind,render,_t:{rowsOf,pick,stat,optimise,collect,decide,keyOf,st}};
+})();
+
 /* ---------- loop and controls ---------- */
 let lastUi=0;
 function safe(fn){try{fn();}catch(e){if(!safe.once){safe.once=true;try{console.error(e);}catch(x){}}}}
@@ -1735,21 +1843,21 @@ function frame(now){
   if(now-lastUi>500||S.dirty){
     lastUi=now;
     safe(computeScan);safe(renderHeader);safe(renderTickers);safe(renderCaps);safe(renderScanList);safe(mpRefresh);
-    if(S.dirty){S.dirty=false;[renderAudit,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,renderTune,drawChart,drawTimeline,drawFunnel].forEach(safe);}
+    if(S.dirty){S.dirty=false;[renderAudit,LRN.render,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawTimeline,drawFunnel].forEach(safe);}
     if(S.wd){S.wd=false;safe(renderWire);}
   }
   if(VIS.shell)safe(()=>drawShell(now));
   if(VIS.map)safe(()=>mpFrame(now));
   requestAnimationFrame(frame);
 }
-function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;all.watch=cfg.watch;all.mk=cfg.mk;all.spr=cfg.spr;all.sess=cfg.sess;all.tmode=cfg.tmode;LS.set('cse_set',all);}
+function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;all.watch=cfg.watch;all.mk=cfg.mk;all.spr=cfg.spr;all.sess=cfg.sess;all.learn=cfg.learn;all.autothr=cfg.autothr;LS.set('cse_set',all);}
 function syncBtns(){document.querySelectorAll('#tfBar button').forEach(b=>b.classList.toggle('on',+b.dataset.tf===cfg.tf));$('bSnd').textContent=cfg.snd?'SND ON':'SND OFF';$('hThr').textContent=cfg.thr;$('thr').value=cfg.thr;$('thrv').textContent=cfg.thr;$('sndChk').checked=cfg.snd;}
 function init(){
   rebuildSyms();buildSelect();updateCost();
   $('sym').onchange=e=>setFocus(e.target.value);
   $('tfBar').onclick=e=>{const b=e.target.closest('button[data-tf]');if(!b)return;const v=+b.dataset.tf;if(v===cfg.tf)return;cfg.tf=v;HTF=htfOf(v);persist();syncBtns();connect();};
-  $('tM').onclick=()=>{cfg.thr=Math.max(40,cfg.thr-5);persist();syncBtns();S.dirty=true;};
-  $('tP').onclick=()=>{cfg.thr=Math.min(95,cfg.thr+5);persist();syncBtns();S.dirty=true;};
+  $('tM').onclick=()=>{cfg.autothr=false;cfg.thr=Math.max(40,cfg.thr-5);persist();syncBtns();S.dirty=true;};
+  $('tP').onclick=()=>{cfg.autothr=false;cfg.thr=Math.min(95,cfg.thr+5);persist();syncBtns();S.dirty=true;};
   $('bSnd').onclick=()=>{cfg.snd=!cfg.snd;persist();syncBtns();if(cfg.snd)beep();};
   $('toast').onclick=()=>{if(S.toastSym){setFocus(S.toastSym);$('toast').classList.remove('show');}};
   window.addEventListener('resize',()=>{S.dirty=true;});
@@ -1760,7 +1868,7 @@ function init(){
   $('stSrc').value=cfg.src;$('stTgt').value=String(cfg.tgt);
   $('stSrc').onchange=e=>{cfg.src=e.target.value;persist();renderStats2();};
   $('stTgt').onchange=e=>{cfg.tgt=+e.target.value;persist();renderStats2();};
-  $('thr').oninput=e=>{cfg.thr=+e.target.value;persist();syncBtns();S.dirty=true;};
+  $('thr').oninput=e=>{cfg.autothr=false;cfg.thr=+e.target.value;persist();syncBtns();S.dirty=true;};
   $('sndChk').onchange=e=>{cfg.snd=e.target.checked;persist();syncBtns();if(cfg.snd)beep();};
   $('notif').onclick=()=>{try{Notification.requestPermission().then(p=>{$('notif').textContent=p==='granted'?'NOTIFICATIONS ON':'NOTIFICATIONS BLOCKED';});}catch(e){$('notif').textContent='NOT SUPPORTED HERE';}};
   if('Notification' in window&&Notification.permission==='granted')$('notif').textContent='NOTIFICATIONS ON';
@@ -1774,11 +1882,6 @@ function init(){
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('Confluence engine test message')).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
   };
   mpBind();
-  $('tnMode').value=cfg.tmode;
-  $('tnMode').onchange=e=>{cfg.tmode=e.target.value;persist();S.tuneN=null;S.dirty=true;if(cfg.tmode!=='off')tuneTick();};
-  $('tnRun').onclick=()=>tuneRun(true);
-  $('tnApply').onclick=()=>{if(S.tuneRes&&S.tuneRes.ok)applyTune(S.tuneRes,'MANUAL');};
-  $('tnReset').onclick=()=>{if(TUNE[tkey()]){delete TUNE[tkey()];tlog('RESET TO DEFAULT SCORING');if(S.X)derive();}S.dirty=true;};
   $('mkTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===cfg.mk));
   $('mkTabs').onclick=e=>{const b=e.target.closest('button[data-g]');if(!b)return;cfg.mk=b.dataset.g;persist();$('mkTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderMarkets();};
   $('mkSearch').oninput=renderMarkets;
@@ -1797,7 +1900,7 @@ function init(){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
   }
-  syncBtns();connect();requestAnimationFrame(frame);
+  LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
 init();
 })();
