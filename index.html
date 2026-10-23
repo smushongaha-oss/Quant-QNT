@@ -1688,9 +1688,12 @@ const LRN=(()=>{
   }
   function decide(sy0,force){
     const key=keyOf(sy0),m=rowsOf(key),k=ks(key),tf=cfg.tf,kt=cfg.tgt||2;
-    const rows=[...m.values()].sort((a,b)=>a.t-b.t),N=rows.length;
-    const inf=info[key]={N,at:Date.now(),kt,msg:'',chal:null,cur:null,neu:null,fwd:null};
-    if(N<MIN_ROWS){inf.msg='GATHERING DATA: '+N+' OF '+MIN_ROWS+' RESOLVED CANDIDATES';return inf;}
+    const all=[...m.values()].sort((a,b)=>a.t-b.t);
+    const rows=all.filter(o=>inSession(o.t,o.sy)),N=rows.length;
+    const miss=key.indexOf('SYNTH_')===0?[]:[...new Set(rows.map(o=>o.sy))].filter(s=>!(cfg.spr[s]>0));
+    const missTxt=miss.length?'SET A TRADING COST FOR '+miss.map(s=>shortOf(nameFor(s))).join(', ')+' (ALERTS SECTION, ONE INSTRUMENT AT A TIME ON THE CHART)':'';
+    const inf=info[key]={N,NA:all.length,at:Date.now(),kt,msg:'',chal:null,cur:null,neu:null,fwd:null,miss};
+    if(N<MIN_ROWS){inf.msg='GATHERING DATA: '+N+' OF '+MIN_ROWS+' RESOLVED CANDIDATES'+(cfg.sess==='ln'&&all.length>N?' IN SESSION':'')+(missTxt?'. '+missTxt:'');return inf;}
     const cut=Math.floor(N*0.7),train=rows.slice(0,cut),test=rows.slice(cut);
     const curW=goodW(k.w)?k.w:NEU,curThr=k.thr!=null?k.thr:cfg.thr;
     inf.ntr=train.length;inf.nte=test.length;
@@ -1715,6 +1718,7 @@ const LRN=(()=>{
     const cool=Date.now()-k.lastPromo>=COOL&&N-k.lastPromoN>=30;
     let why='';
     if(same)why='THE BEST SETTINGS FOUND MATCH THE CURRENT ONES';
+    else if(miss.length)why=missTxt;
     else if(tCh.n<MIN_TEST)why='TEST SAMPLE TOO SMALL ('+tCh.n+' OF '+MIN_TEST+')';
     else if(!(tCh.mean>0))why='CHALLENGER IS NOT PROFITABLE ON UNSEEN DATA ('+fmt(tCh.mean)+')';
     else if(gain<MIN_GAIN)why='GAIN OF '+fmt(gain)+' IS UNDER THE '+MIN_GAIN.toFixed(2)+'R BAR';
@@ -1810,7 +1814,7 @@ const LRN=(()=>{
     const box=(l,v,c)=>'<div class="fx '+(c||'')+'"><span class="lab">'+l+'</span><b>'+v+'</b></div>';
     const fw=inf&&inf.fwd?(inf.fwd.c.n?fmt(inf.fwd.c.mean)+' VS '+(inf.fwd.n.n?fmt(inf.fwd.n.mean):'-')+' NEUTRAL':'WAITING'):(k&&goodW(k.w)?'WAITING':'-');
     const boxes=[
-      box('RESOLVED CANDIDATES',inf?inf.N:'-'),
+      box(cfg.sess==='ln'&&inf&&inf.NA>inf.N?'CANDIDATES IN SESSION':'RESOLVED CANDIDATES',inf?inf.N:'-'),
       box('SUGGESTED ALERT LEVEL',k&&k.thr!=null?k.thr:'-','o'),
       box('NEUTRAL, UNSEEN DATA',inf?tx(inf.neu):'-'),
       box('CURRENT, UNSEEN DATA',inf&&inf.cur?tx(inf.cur.test):'-'),
