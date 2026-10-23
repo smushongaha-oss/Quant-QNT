@@ -199,6 +199,15 @@ select{max-width:100%;text-overflow:ellipsis}
 .plan .side.b{background:var(--pos);border-color:var(--pos)}.plan .side.s{background:var(--neg);border-color:var(--neg)}
 .plan .sl{border-color:#7a2630;background:#1c0a0e;color:#ff8d98}
 .plan .tp{border-color:#1f6b45;background:#07180f;color:#7defb4}
+.p-tune{grid-column:span 12}
+.tnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
+.tnstat{font-size:12px;margin:6px 0 8px;text-transform:none;letter-spacing:.02em;color:#a8bccf}
+.tnstat b{font-weight:400;color:#fff}
+.tnlog{font-size:10.5px;color:var(--dim);max-height:150px;overflow:auto}
+.tnlog div{padding:3px 0;border-bottom:1px solid #0b1522;text-transform:none;letter-spacing:.02em}
+.p-tune .fb{grid-template-columns:repeat(4,1fr)}
+@media(max-width:699px){.p-tune .fb{grid-template-columns:1fr 1fr}}
+button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -219,7 +228,7 @@ select{max-width:100%;text-overflow:ellipsis}
     <button id="bSnd" type="button">SND</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sTune">TUNER</a><a href="#sAlrt">ALERTS</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
@@ -362,6 +371,19 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
   </section>
 
+  <section class="p p-tune" id="sTune">
+    <div class="ph">SELF-IMPROVEMENT <span class="r" id="tnSym"></span></div>
+    <div class="tnrow">
+      <div><label class="lab" for="tnMode">MODE</label><br><select id="tnMode"><option value="off">OFF</option><option value="suggest">SUGGEST ONLY</option><option value="auto">AUTO, GUARDED</option></select></div>
+      <button id="tnRun" type="button">RUN CHECK NOW</button><button id="tnApply" type="button">APPLY PROPOSAL</button><button id="tnReset" type="button">RESET TO DEFAULTS</button>
+    </div>
+    <div class="tnstat" id="tnStat"></div>
+    <div class="fb" id="tnGrid"></div>
+    <div class="ph" style="margin-top:10px">TUNER LOG</div>
+    <div class="tnlog" id="tnLog"></div>
+    <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">This page can re-weight the five score parts and pick its own alert level from the signals it has logged for this instrument and timeframe. A change is only adopted if it beats the default scoring on trades it was not fitted on, using a walk-forward test over at least 120 resolved signals. After it is adopted, the live results are watched, and it switches back to the defaults if they turn out worse. It never changes entries, stops or targets, only which signals alert you. On the random Derived indices there is nothing real to learn, so the usual and correct answer is "no reliable improvement".</div>
+  </section>
+
   <details class="p p-how" id="sHow">
     <summary>HOW THE SCORE IS BUILT</summary>
     <div class="how">
@@ -372,7 +394,8 @@ select{max-width:100%;text-overflow:ellipsis}
       <p><b>Regime (15).</b> ATR compared with its 50 bar average. Normal volatility scores full marks, dead or spiking markets score low.</p>
       <p><b>Trade plan.</b> Entry at the signal close, stop beyond the zone or wick plus 0.15 ATR, targets at 1R, 2R and 3R. Stops are checked before targets inside the same candle, so results lean pessimistic.</p>
       <p><b>Timeframes.</b> Pick M1, M5, M15 or H1 as the entry timeframe. The bias timeframe above it is H1 for M1, M5 and M15, and H4 when you trade H1. Slower timeframes give fewer signals, so the audit fills up more slowly: H1 history covers about 25 days, M15 about 8 days, M5 about 3 days and M1 about 1 day.</p>
-            <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
+            <p><b>Self-improvement.</b> The tuner tries small changes to the five score weights, the alert level and a bias-aligned-only rule. It fits them on older trades and keeps them only if they also win on newer trades it never saw, then keeps watching the live results and undoes itself if they turn worse. It needs at least 120 resolved signals for the instrument and timeframe.</p>
+      <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
       <p><b>The scanner and map.</b> All 13 Volatility indices stream over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
       <p><b>Real markets.</b> Forex, gold, indices and crypto have spreads, commission and swaps, so enter your cost per trade in price units and the audit takes it off every trade. Candles after a weekend or session gap are skipped and kept out of the ATR. The session filter keeps alerts and stats to London and New York hours. Closed markets are marked and ranked last.</p>
       <p>Deriv synthetic indices are random number generated. Read the audit before you trust any score band, and ignore rows with fewer than 30 trades.</p>
@@ -583,6 +606,62 @@ function statOf(list,k){
 }
 
 
+
+/* ---- tuner core: re-weights the score and picks an alert level, judged only on unseen trades ---- */
+const WG=[0.5,1,1.5],TG=[50,55,60,65,70,75,80,85,90];
+const WCOMBOS=[];for(const a of WG)for(const b of WG)for(const c of WG)for(const d of WG)for(const e of WG)WCOMBOS.push([a,b,c,d,e]);
+const netR=(s,k)=>(s.reached>=k?k:-1)-(COST>0&&s.risk>0?COST/s.risk:0);
+function scoreW(p,w){let nu=0,de=0;for(let i=0;i<5;i++){nu+=p[i]*w[i];de+=MAXP[i]*w[i];}return 100*nu/de;}
+function rstat(a){
+  const n=a.length;if(!n)return {n:0,mean:0,sd:0,t:0};
+  let s=0;for(const v of a)s+=v;const m=s/n;
+  let q=0;for(const v of a)q+=(v-m)*(v-m);
+  const sd=n>1?Math.sqrt(q/(n-1)):0;
+  return {n,mean:m,sd,t:sd>0?m/(sd/Math.sqrt(n)):0};
+}
+function searchBest(items,minN){
+  let best=null;const N=items.length,sc=new Float64Array(N);
+  for(const w of WCOMBOS){
+    const de=MAXP[0]*w[0]+MAXP[1]*w[1]+MAXP[2]*w[2]+MAXP[3]*w[3]+MAXP[4]*w[4];
+    for(let j=0;j<N;j++){const p=items[j].parts;sc[j]=100*(p[0]*w[0]+p[1]*w[1]+p[2]*w[2]+p[3]*w[3]+p[4]*w[4])/de;}
+    for(const T of TG)for(let al=0;al<2;al++){
+      let n=0,s=0,s2=0;
+      for(let j=0;j<N;j++){const it=items[j];if(sc[j]<T)continue;if(al&&it.hb!==it.d)continue;n++;s+=it.r;s2+=it.r*it.r;}
+      if(n<minN)continue;
+      const m=s/n,sd=Math.sqrt(Math.max(0,s2/n-m*m)),lcb=m-sd/Math.sqrt(n);
+      if(!best||lcb>best.lcb)best={w,T,al,n,mean:m,lcb};
+    }
+  }
+  return best;
+}
+function walkForward(sigs,k,base){
+  const items=sigs.filter(s=>RES_OK(s.res)&&s.parts).sort((a,b)=>a.t-b.t).map(s=>({parts:s.parts,hb:s.hb,d:s.d,score:s.score,r:netR(s,k)}));
+  const N=items.length,out={N,ok:false,enough:N>=120,reason:''};
+  if(N<120){out.reason='NEED 120 RESOLVED SIGNALS, HAVE '+N;return out;}
+  const B=6,bs=Math.floor(N/B),blocks=[];
+  for(let b=0;b<B;b++)blocks.push(items.slice(b*bs,b===B-1?N:(b+1)*bs));
+  const tunedR=[],baseR=[];
+  for(let f=2;f<B;f++){
+    const train=[].concat(...blocks.slice(0,f)),test=blocks[f];
+    const fit=searchBest(train,Math.max(15,Math.round(train.length*0.12)));
+    for(const it of test){
+      const bp=it.score>=base;
+      if(bp)baseR.push(it.r);
+      if(fit){if((!fit.al||it.hb===it.d)&&scoreW(it.parts,fit.w)>=fit.T)tunedR.push(it.r);}
+      else if(bp)tunedR.push(it.r);
+    }
+  }
+  const T=rstat(tunedR),Bs=rstat(baseR);
+  out.oos={nT:T.n,meanT:T.mean,tT:T.t,nB:Bs.n,meanB:Bs.mean};
+  if(T.n<30){out.reason='TOO FEW UNSEEN TRADES TO JUDGE ('+T.n+' OF 30 NEEDED)';return out;}
+  if(T.mean<=0){out.reason='TUNED RESULTS ARE NOT POSITIVE ON UNSEEN TRADES';return out;}
+  if(T.mean-Bs.mean<0.10){out.reason='NO RELIABLE IMPROVEMENT OVER THE DEFAULT SCORING';return out;}
+  if(T.t<1.28){out.reason='THE IMPROVEMENT IS NOT STATISTICALLY CONVINCING YET';return out;}
+  const fit=searchBest(items,Math.max(15,Math.round(N*0.12)));
+  if(!fit){out.reason='NO SETTING HAD ENOUGH TRADES';return out;}
+  out.ok=true;out.params=fit;return out;
+}
+
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
@@ -590,7 +669,7 @@ const DEF=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','V
 const SYMS=DEF.map(x=>x.slice());
 const MAXW=16;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90,watch:null,mk:'ALL',spr:{},sess:'all'},LS.get('cse_set',{}));
+const cfg=Object.assign({sym:'1HZ90V',tf:60,thr:70,snd:true,tok:'',chat:'',tab:'score',src:'all',tgt:2,view:90,tmode:'auto',watch:null,mk:'ALL',spr:{},sess:'all'},LS.get('cse_set',{}));
 if(![60,300,900,3600].includes(cfg.tf))cfg.tf=60;
 const htfOf=tf=>tf>=3600?14400:3600;
 let HTF=htfOf(cfg.tf);
@@ -660,13 +739,13 @@ function setResult(sy,X,C,alertOn){
   r.px=C[n-1].c;r.a=X.A[n-2];r.hb=X.HT[n-2];r.tr=X.T[n-2];r.lastT=C[n-2].t;r.dp=detectDp(C);
   r.w=watchOf(X,n-2,r.px);r.ready=true;r.err=null;
   if(ev){
-    r.sig={score:ev.score,d:ev.d,t:ev.t,pat:ev.pat,kind:ev.kind,entry:ev.entry,sl:ev.sl,tp:ev.tp};
+    r.sig={score:ev.score,d:ev.d,t:ev.t,pat:ev.pat,kind:ev.kind,entry:ev.entry,sl:ev.sl,tp:ev.tp,parts:ev.parts,hb:ev.hb};
     if(alertOn){
       const key=sy+'_'+ev.key;
       if(!r.seeded)S.seenS.add(key);
       else if(!S.seenS.has(key)){
         S.seenS.add(key);r.la=r.la||{};
-        if(ev.score>=cfg.thr&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
+        if(passes(ev,sy)&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
       }
     }
   }
@@ -678,7 +757,7 @@ function setFocus(sy){
   const old=cfg.sym;
   SC[old]=(S.C.length>=90&&S.H.length>=30)?{C:S.C.slice(-600),H:S.H.slice(-250)}:{C:[],H:[]};
   cfg.sym=sy;persist();delete SC[sy];
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.arch=LS.get(arcKey(),{});
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.tuneN=null;S.tuneRes=null;S.arch=LS.get(arcKey(),{});
   updateCost();syncSyms();
   if(S.ws&&S.ws.readyState===1){S.ci=0;focusReq(S.ws);}else connect();
   buildSelect();S.dirty=true;
@@ -687,7 +766,7 @@ function connect(retry){
   stop();
   if(!retry){S.tries=0;S.ep=0;S.ci=0;}
   const my=S.gen,ep=EPS[S.ep%EPS.length];
-  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;
+  S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.got=false;S.lastMsg=Date.now();S.D=null;S.tuneN=null;S.tuneRes=null;
   S.rmap={};S.seenS=new Set();
   Object.keys(SC).forEach(k=>delete SC[k]);Object.keys(R).forEach(k=>delete R[k]);
   SYMS.forEach(([sy])=>{if(sy!==cfg.sym)SC[sy]={C:[],H:[]};});
@@ -907,6 +986,89 @@ function realPreset(){
 }
 function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}
 
+
+/* ---------- self-improvement (guarded tuner) ---------- */
+const TUNE=LS.get('cse_tune',{});
+let TLOG=LS.get('cse_tunelog',[]);
+const tkey=()=>cfg.sym+'_'+cfg.tf;
+const tuneOn=()=>{const x=TUNE[tkey()];return !!(x&&x.on);};
+function passes(s,sy){
+  const tn=TUNE[sy+'_'+cfg.tf];
+  if(tn&&tn.on&&s.parts){if(tn.al&&s.hb!==s.d)return false;return scoreW(s.parts,tn.w)>=tn.T;}
+  return s.score>=cfg.thr;
+}
+const rr=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
+const wTxt=w=>'ZONE x'+w[0]+' STRUCTURE x'+w[1]+' CANDLE x'+w[2]+' MOMENTUM x'+w[3]+' REGIME x'+w[4];
+function saveTune(){LS.set('cse_tune',TUNE);LS.set('cse_tunelog',TLOG.slice(-40));}
+function tlog(m){TLOG.push({t:Math.floor(Date.now()/1000),m:nameFor(cfg.sym)+' '+tfName()+': '+m});if(TLOG.length>40)TLOG=TLOG.slice(-40);saveTune();}
+function applyTune(res,how){
+  const p=res.params;
+  TUNE[tkey()]={on:true,w:p.w,T:p.T,al:p.al,at:Math.floor(Date.now()/1000),k:+cfg.tgt||2,n:res.N,oos:res.oos};
+  tlog(how+' APPLIED. '+wTxt(p.w)+', ALERT AT '+p.T+(p.al?', BIAS-ALIGNED ONLY':'')+'. UNSEEN TRADES: '+rr(res.oos.meanT)+' OVER '+res.oos.nT+' VS '+rr(res.oos.meanB)+' DEFAULT');
+  if(S.X)derive();S.dirty=true;
+}
+function tuneRun(manual){
+  if(S.tuning)return;
+  S.tuning=true;
+  try{
+    const res=walkForward(S.sigs,+cfg.tgt||2,cfg.thr);
+    S.tuneRes=res;S.tuneN=res.N;S.tuneRunAt=Math.floor(Date.now()/1000);
+    const cur=TUNE[tkey()];
+    if(res.ok){
+      if(cfg.tmode==='auto'&&!manual)applyTune(res,'AUTO');
+      else if(manual&&cfg.tmode!=='off'&&cfg.tmode==='auto')applyTune(res,'AUTO');
+      else tlog('PROPOSAL READY. '+wTxt(res.params.w)+', ALERT AT '+res.params.T);
+    }else if(cur&&cur.on&&res.enough){
+      delete TUNE[tkey()];saveTune();tlog('TUNING REMOVED. '+res.reason);
+      if(S.X)derive();
+    }
+  }catch(e){tlog('TUNER ERROR');}
+  finally{S.tuning=false;S.dirty=true;}
+}
+function guardCheck(){
+  const tn=TUNE[tkey()];if(!tn||!tn.on)return;
+  const k=tn.k||2,L=S.sigs.filter(s=>RES_OK(s.res)&&s.t>=tn.at&&s.parts);
+  const tuned=L.filter(s=>passes(s,cfg.sym)).map(s=>netR(s,k)),base=L.filter(s=>s.score>=cfg.thr).map(s=>netR(s,k));
+  if(tuned.length<15)return;
+  const mt=rstat(tuned).mean,mb=base.length>=15?rstat(base).mean:null;
+  if(mt<-0.25||(mb!==null&&mt<mb-0.15)){
+    delete TUNE[tkey()];saveTune();tlog('REVERTED TO DEFAULT. LIVE TUNED RESULT '+rr(mt)+' OVER '+tuned.length+' TRADES'+(mb!==null?' VS '+rr(mb)+' DEFAULT':''));
+    if(S.X)derive();S.dirty=true;
+  }
+}
+function tuneTick(){
+  guardCheck();
+  if(cfg.tmode==='off'||S.tuning)return;
+  const N=S.sigs.filter(s=>RES_OK(s.res)).length;
+  if(N>=120&&(S.tuneN==null||N-S.tuneN>=20))setTimeout(()=>tuneRun(false),80);
+}
+function renderTune(){
+  const key=tkey(),tn=TUNE[key],res=S.tuneRes;
+  $('tnSym').textContent=shortOf(nameFor(cfg.sym))+' / '+tfName();
+  const N=S.sigs.filter(s=>RES_OK(s.res)).length;
+  let stat;
+  if(tn&&tn.on)stat='<b class="pos">TUNED ALERTS ARE ACTIVE.</b> SCORES ARE RE-WEIGHTED AND ALERTS FOLLOW THE TUNED LEVEL.';
+  else if(res&&res.ok)stat='<b class="amb">A PROPOSAL IS READY.</b> PRESS APPLY PROPOSAL TO USE IT.';
+  else if(res)stat='<b>USING THE DEFAULT SCORING.</b> '+esc(res.reason||'');
+  else stat='<b>USING THE DEFAULT SCORING.</b> '+(N<120?'WAITING FOR 120 RESOLVED SIGNALS ('+N+' SO FAR).':'THE FIRST CHECK RUNS SHORTLY.');
+  setH('tnStat',stat);
+  const p=tn&&tn.on?tn:(res&&res.ok?res.params:null),o=(tn&&tn.on&&tn.oos)?tn.oos:(res?res.oos:null);
+  const box=(l,v,c)=>'<div class="fx '+(c||'')+'"><span class="lab">'+l+'</span><b>'+v+'</b></div>';
+  setH('tnGrid',[
+    box('SCORING',tn&&tn.on?'TUNED':'DEFAULT',tn&&tn.on?'o':''),
+    box('ALERT AT',p?p.T:cfg.thr,''),
+    box('BIAS-ALIGNED ONLY',p?(p.al?'YES':'NO'):'NO',''),
+    box('UNSEEN TRADES, TUNED',o&&o.nT?rr(o.meanT)+' / N'+o.nT:'-',''),
+    box('UNSEEN TRADES, DEFAULT',o&&o.nB?rr(o.meanB)+' / N'+o.nB:'-',''),
+    box('LAST CHECK',S.tuneRunAt?dtM(S.tuneRunAt):'NEVER',''),
+    box('WEIGHTS',p?'Z'+p.w[0]+' S'+p.w[1]+' C'+p.w[2]+' M'+p.w[3]+' R'+p.w[4]:'ALL x1',''),
+    box('SIGNALS CHECKED',N,'')
+  ].join(''));
+  $('tnApply').disabled=!(res&&res.ok&&!(tn&&tn.on));
+  $('tnApply').style.opacity=$('tnApply').disabled?0.4:1;
+  setH('tnLog',TLOG.slice(-8).reverse().map(e=>'<div>'+dtM(e.t)+' '+esc(e.m)+'</div>').join('')||'<div class="dm">NO EVENTS YET</div>');
+}
+
 /* ---------- focus recompute and derived data ---------- */
 function recompute(){
   const C=S.C,H=S.H;
@@ -923,15 +1085,15 @@ function recompute(){
   const store={};S.sigs.filter(s=>s.src==='live').slice(-500).forEach(s=>{store[s.key]=s;});
   S.arch=store;LS.set(arcKey(),store);
   if(S.first){S.sigs.forEach(s=>S.seen.add(s.key));S.first=false;}
-  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(s.score>=cfg.thr&&s.src==='live'&&inSession(s.t,cfg.sym))alertSig(s,cfg.sym);}}}
-  derive();S.dirty=true;
+  else{for(const s of S.sigs){if(!S.seen.has(s.key)){S.seen.add(s.key);wlog('&#8226;','SIGNAL',(s.d===1?'BUY ':'SELL ')+s.score+' '+s.pat,'a');if(passes(s,cfg.sym)&&s.src==='live'&&inSession(s.t,cfg.sym))alertSig(s,cfg.sym);}}}
+  derive();S.dirty=true;tuneTick();
 }
 function derive(){
   const X=S.X,C=S.C,n=C.length,last=n-2,D={tl:[],inp:{zone:[],str:[],cand:[],mom:[],reg:[],pot:[]},cp:''};
   const from=Math.max(40,last-119);
   for(let i=from;i<=last;i++){
     const ev=evalBar(X,i,0),w=watchOf(X,i,C[i].c),a=X.A[i];
-    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i]});
+    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i],hot:ev?passes(ev,cfg.sym):false});
     if(i>last-60){
       let cs=0,nm='';
       for(const d of [1,-1]){const p=patternAt(C,i,d,a);if(p&&p.s>=0.5){const v=Math.max(0,20*p.s-p.pen);if(v>cs){cs=v;nm=p.name;}}}
@@ -985,7 +1147,7 @@ function stateOf(sy){
   m.hb=r.hb;m.tr=r.tr;m.w=r.w;
   const age=r.sig?Math.round((r.lastT-r.sig.t)/cfg.tf):99;
   if(r.sig&&age<=2&&r.sig.score>=40){
-    const hot=r.sig.score>=cfg.thr;
+    const hot=passes(r.sig,sy);
     m.mode=hot?'sig':'setup';m.rank=(hot?3000:2000)+r.sig.score-age*5;m.val=r.sig.score;m.side=r.sig.d;m.sig=r.sig;
     m.txt=(r.sig.d===1?'BUY':'SELL')+(hot?' SIGNAL ':' SETUP ')+r.sig.score;
   }else if(r.w){
@@ -1060,18 +1222,18 @@ function resTxt(s){
 }
 function renderFills(){
   const l=S.sigs.slice(-12).reverse();
-  setH('fills',l.length?l.map(s=>{const [t]=resTxt(s);return '<div class="fc '+(s.d===1?'up':'dn')+(s.score>=cfg.thr?' hot':'')+'"><b>'+(s.d===1?'BUY ':'SELL ')+s.score+' / '+t+'</b><span>'+s.pat+' AT '+s.kind+' / '+clkM(s.t+cfg.tf)+'</span></div>';}).join(''):'<div class="fc"><span>NO SIGNALS YET</span></div>');
+  setH('fills',l.length?l.map(s=>{const [t]=resTxt(s);return '<div class="fc '+(s.d===1?'up':'dn')+(passes(s,cfg.sym)?' hot':'')+'"><b>'+(s.d===1?'BUY ':'SELL ')+s.score+' / '+t+'</b><span>'+s.pat+' AT '+s.kind+' / '+clkM(s.t+cfg.tf)+'</span></div>';}).join(''):'<div class="fc"><span>NO SIGNALS YET</span></div>');
 }
 function renderTape(){
   const l=S.sigs.slice(-16).reverse();
-  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkL(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(s.score>=cfg.thr?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="n">'+fp(cfg.sym,s.tp[0])+'</td><td class="n">'+fp(cfg.sym,s.tp[1])+'</td><td class="n">'+fp(cfg.sym,s.tp[2])+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
+  setH('tape',l.map(s=>{const [t,c]=resTxt(s);return '<tr><td>'+clkL(s.t+cfg.tf)+'</td><td class="'+(s.d===1?'pos':'neg')+'">'+(s.d===1?'BUY':'SELL')+'</td><td>'+s.pat+'</td><td>'+s.kind+'</td><td class="n '+(passes(s,cfg.sym)?'amb':'')+'">'+s.score+'</td><td class="n">'+fp(cfg.sym,s.entry)+'</td><td class="n">'+fp(cfg.sym,s.sl)+'</td><td class="n">'+fp(cfg.sym,s.tp[0])+'</td><td class="n">'+fp(cfg.sym,s.tp[1])+'</td><td class="n">'+fp(cfg.sym,s.tp[2])+'</td><td class="'+c+'">'+t+'</td></tr>';}).join(''));
   const D=S.D;
   if(!D){setH('heat','');setH('ft','');return;}
   setH('heat',D.bands.map(b=>{
     const n=b.s2.n,w=[b.s1,b.s2,b.s3].map((x,i)=>pct(x.w[i],x.n));
     return '<div class="hr"><div class="lab"><span>'+b.lab+'</span><span>N'+n+'</span></div><div class="hb">'+w.map((v,i)=>'<div><i style="width:'+v+'%;background:'+['#2a6fb8','#2fe38a','#e7d54a'][i]+'"></i></div>').join('')+'</div><div class="lab"><span>1R</span><span>2R</span><span>3R</span></div></div>';
   }).join(''));
-  const last=S.sigs[S.sigs.length-1],ge=S.sigs.filter(s=>s.score>=cfg.thr).length,h1=D.all[0];
+  const last=S.sigs[S.sigs.length-1],ge=S.sigs.filter(s=>passes(s,cfg.sym)).length,h1=D.all[0];
   setH('ft',[
     ['LAST SIGNAL',last?(last.d===1?'BUY ':'SELL ')+last.score+' @ '+fp(cfg.sym,last.entry):'-',''],
     ['AVG / MEDIAN SCORE',D.avg+' / '+D.med,''],
@@ -1230,7 +1392,7 @@ function drawTimeline(){
   // signal stems
   for(let i=0;i<N;i++){
     const p=L[i];if(!p.score)continue;
-    const hot=p.score>=cfg.thr,col=p.d===1?'47,227,138':'255,77,94';
+    const hot=!!p.hot,col=p.d===1?'47,227,138':'255,77,94';
     g.strokeStyle='rgba('+col+','+(hot?0.9:0.35)+')';g.lineWidth=hot?1.6:1;g.beginPath();g.moveTo(x(i),y(0));g.lineTo(x(i),y(p.score));g.stroke();
     g.fillStyle=hot?K.amb:'rgba(245,165,36,.6)';g.beginPath();g.arc(x(i),y(p.score),hot?2.6:1.7,0,6.283);g.fill();
   }
@@ -1398,7 +1560,7 @@ function renderVerdict(){
   const sd=ev?ev.d:watch?watch.w.d:0;
   const col=!sd?'#6f8296':sd===1?K.pos:K.neg;
   let verdict='NO ZONE NEAR',sub='WAITING FOR PRICE TO APPROACH A ZONE';
-  if(ev){const side=ev.d===1?'BUY':'SELL';verdict=total>=cfg.thr?side+' SIGNAL':total>=40?side+' SETUP':'WEAK '+side+' TOUCH';sub=ev.pat+' AT '+ev.kind;}
+  if(ev){const side=ev.d===1?'BUY':'SELL';verdict=passes(ev,cfg.sym)?side+' SIGNAL':total>=40?side+' SETUP':'WEAK '+side+' TOUCH';sub=ev.pat+' AT '+ev.kind;}
   else if(watch){verdict=watch.w.d===1?'WATCHING FOR A BUY':'WATCHING FOR A SELL';sub=watch.w.kind+', '+(watch.dist<0.05?'PRICE INSIDE':watch.dist.toFixed(1)+' ATR AWAY')+', POTENTIAL';}
   svg+='<text x="120" y="126" text-anchor="middle" font-family="Orbitron,monospace" font-size="44" font-weight="700" fill="'+(ev?'#ffffff':watch?'#9fb6cc':'#44566a')+'">'+(ev||watch?total:'--')+'</text>';
   svg+='<text x="120" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="13" fill="'+col+'">'+verdict+'</text>';
@@ -1406,7 +1568,7 @@ function renderVerdict(){
   setH('ring',svg);
   const t=X&&n?X.T[n-1]:0,h=X&&n?X.HT[n-1]:0;
   const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
-  setH('vchips','<span class="vchip">'+HN()+' BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
+  setH('vchips','<span class="vchip">'+HN()+' BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(tuneOn()?'<span class="vchip up">TUNED ALERTS</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
   setH('vparts',VPN.map((nm,k)=>'<li><i class="sw" style="background:'+VPC[k]+'"></i><div class="nm">'+nm.toUpperCase()+'<span>'+VPD[k].toUpperCase()+'</span></div><div class="pt">'+(Math.round(parts[k]*10)/10)+'/'+MAXP[k]+'</div></li>').join(''));
 }
 
@@ -1573,14 +1735,14 @@ function frame(now){
   if(now-lastUi>500||S.dirty){
     lastUi=now;
     safe(computeScan);safe(renderHeader);safe(renderTickers);safe(renderCaps);safe(renderScanList);safe(mpRefresh);
-    if(S.dirty){S.dirty=false;[renderAudit,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawTimeline,drawFunnel].forEach(safe);}
+    if(S.dirty){S.dirty=false;[renderAudit,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,renderTune,drawChart,drawTimeline,drawFunnel].forEach(safe);}
     if(S.wd){S.wd=false;safe(renderWire);}
   }
   if(VIS.shell)safe(()=>drawShell(now));
   if(VIS.map)safe(()=>mpFrame(now));
   requestAnimationFrame(frame);
 }
-function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;all.watch=cfg.watch;all.mk=cfg.mk;all.spr=cfg.spr;all.sess=cfg.sess;LS.set('cse_set',all);}
+function persist(){const all=LS.get('cse_set',{});all.sym=cfg.sym;all.tf=cfg.tf;all.thr=cfg.thr;all.snd=cfg.snd;all.tok=cfg.tok;all.chat=cfg.chat;all.tab=cfg.tab;all.src=cfg.src;all.tgt=cfg.tgt;all.view=cfg.view;all.watch=cfg.watch;all.mk=cfg.mk;all.spr=cfg.spr;all.sess=cfg.sess;all.tmode=cfg.tmode;LS.set('cse_set',all);}
 function syncBtns(){document.querySelectorAll('#tfBar button').forEach(b=>b.classList.toggle('on',+b.dataset.tf===cfg.tf));$('bSnd').textContent=cfg.snd?'SND ON':'SND OFF';$('hThr').textContent=cfg.thr;$('thr').value=cfg.thr;$('thrv').textContent=cfg.thr;$('sndChk').checked=cfg.snd;}
 function init(){
   rebuildSyms();buildSelect();updateCost();
@@ -1612,6 +1774,11 @@ function init(){
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('Confluence engine test message')).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
   };
   mpBind();
+  $('tnMode').value=cfg.tmode;
+  $('tnMode').onchange=e=>{cfg.tmode=e.target.value;persist();S.tuneN=null;S.dirty=true;if(cfg.tmode!=='off')tuneTick();};
+  $('tnRun').onclick=()=>tuneRun(true);
+  $('tnApply').onclick=()=>{if(S.tuneRes&&S.tuneRes.ok)applyTune(S.tuneRes,'MANUAL');};
+  $('tnReset').onclick=()=>{if(TUNE[tkey()]){delete TUNE[tkey()];tlog('RESET TO DEFAULT SCORING');if(S.X)derive();}S.dirty=true;};
   $('mkTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===cfg.mk));
   $('mkTabs').onclick=e=>{const b=e.target.closest('button[data-g]');if(!b)return;cfg.mk=b.dataset.g;persist();$('mkTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderMarkets();};
   $('mkSearch').oninput=renderMarkets;
