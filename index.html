@@ -115,8 +115,7 @@ td.n,th.n{text-align:right}
 #cvFun{height:290px}
 #toast{position:fixed;z-index:60;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translate(-50%,-140%);opacity:0;visibility:hidden;transition:transform .3s,opacity .3s,visibility .3s;background:#07101b;border:1px solid var(--amb);padding:8px 14px;min-width:260px;max-width:92vw;cursor:pointer}
 #toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
-#toast .t1{font-family:var(--o);font-size:13px}#toast .t2{font-size:10.5px;color:var(--dim);margin-top:2px}
-html{scroll-behavior:smooth}
+#toast .t1{font-family:var(--o);font-size:13px}#toast .t2{font-size:10.5px;color:var(--dim);margin-top:2px}html{scroll-behavior:smooth}
 .jump{display:flex;gap:6px;flex-wrap:wrap;padding:6px 10px;border-bottom:1px solid var(--bd);background:#04080f;position:sticky;top:0;z-index:30}
 .jump a{color:var(--dim);text-decoration:none;font-size:10.5px;letter-spacing:.12em;border:1px solid var(--bd);padding:3px 8px;background:#06101a}
 .jump a:hover,.jump a:focus-visible{color:#fff;border-color:var(--blu);outline:none}
@@ -229,7 +228,6 @@ select{max-width:100%;text-overflow:ellipsis}
 </header>
 <nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sLearn">LEARN</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
-
 <main class="grid">
   <section class="p p-chart" id="sChart">
     <div class="chh"><div class="ph" style="margin:0" id="chT">-</div><b id="chPx">-</b></div>
@@ -243,7 +241,6 @@ select{max-width:100%;text-overflow:ellipsis}
       <div class="chside"><div class="ph" style="margin-top:2px">ZONE LADDER <span class="r" id="zlR"></span></div><div class="zl" id="zl"></div></div>
     </div>
   </section>
-
   <section class="p p-audit" id="sAudit">
     <div class="ph">ENGINE AUDIT <span class="r" id="auSym">-</span><span class="lv">LIVE</span></div>
     <div class="lab" id="auLab">EXPECTANCY AT 2R</div>
@@ -254,32 +251,26 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="ph" style="margin-top:12px">SCORE LADDER <span class="r">HIT 2R BY BAND</span></div>
     <div class="lad" id="ladder"></div>
   </section>
-
-
   <section class="p p-time">
     <div class="ph">CONFLUENCE TIMELINE <span class="r">SCORE AND POTENTIAL, LAST 120 BARS</span></div>
     <canvas id="cvTl"></canvas>
     <div class="leg"><span><i style="background:#37d6ff"></i>POTENTIAL</span><span><i style="background:#f5a524"></i>CONFIRMED SCORE</span><span><i style="background:#2fe38a"></i>BUY</span><span><i style="background:#ff4d5e"></i>SELL</span><span><i style="background:#ffffff;opacity:.4"></i>ALERT LEVEL</span></div>
   </section>
-
   <section class="p p-wire">
     <div class="ph">WIRE INSPECTOR <span class="r">DERIV WS</span></div>
     <div id="wire"></div>
   </section>
-
   <section class="p p-verd" id="sVerd">
     <div class="ph">VERDICT <span class="r" id="vSym"></span></div>
     <svg id="ring" viewBox="0 14 240 190" role="img" aria-label="Confluence score"></svg>
     <div class="vchips" id="vchips"></div>
     <ul class="vparts" id="vparts"></ul>
   </section>
-
   <section class="p p-scan" id="sScan">
     <div class="ph">SCANNER <span class="r" id="scCount"></span></div>
     <div class="scl" id="scl"></div>
     <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Ranked by readiness. A signal is a confirmed candle at a zone that scored at least your alert level. Potential is what a zone would score before a candle confirms it, so it tops out at 72. Tap a row to put that index on the chart.</div>
   </section>
-
   <section class="p p-map" id="sMap">
     <div class="ph">INDEX CONSTELLATION <span class="r">TAP A NODE / DRAG SIDEWAYS TO MOVE</span></div>
     <canvas id="cvMap" aria-label="Constellation of the 13 volatility indices"></canvas>
@@ -289,7 +280,6 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="leg"><span><i style="background:#2fe38a"></i>BUY SIDE</span><span><i style="background:#ff4d5e"></i>SELL SIDE</span><span><i style="background:#f5a524"></i>SIGNAL AT YOUR LEVEL</span><span>LINES JOIN INDICES ON THE SAME SIDE, DISPLAY ONLY</span></div>
   </section>
-
   <section class="p p-shell" id="shellP">
     <canvas id="cvShell"></canvas>
     <div class="ph" style="position:relative;z-index:2">NEURAL SHELL <span class="r" style="color:#6f8296">INDEX SECTORS / SCORE SPIKES / LAST-BAR INPUTS</span><span class="r" style="margin-left:14px" id="shN">SECTORS 13</span></div>
@@ -302,7 +292,6 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="shtick" id="shTick">EACH TICK RAISES THE SECTOR OF ITS INDEX / SPIKE LENGTH IS READINESS / MINT BUY, RED SELL, AMBER SIGNAL AT YOUR ALERT LEVEL</div>
   </section>
-
   <section class="p p-tape" id="sTape">
     <div class="ph">EXECUTION TAPE <span class="r">SIGNALS FOR THE CHOSEN INDEX, NEWEST FIRST</span></div>
     <div class="tpw">
@@ -311,13 +300,11 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="fb" id="ft"></div>
   </section>
-
   <section class="p p-fun">
     <div class="ph">R-MULTIPLE FUNNEL <span class="r">PATH CONE AFTER ENTRY</span></div>
     <canvas id="cvFun"></canvas>
     <div class="fb" id="fb"></div>
   </section>
-
   <section class="p p-mkts" id="sMkts">
     <div class="ph">MARKETS <span class="r" id="mkCount"></span></div>
     <div class="stabs" id="mkTabs">
@@ -331,7 +318,6 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="mklist" id="mkList"></div>
     <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">The list comes from Deriv itself, so you only see what your connection offers. Derived indices are random number generated. Real markets are not, but they carry spread and commission, close at weekends and gap, so set a trading cost below before you read any expectancy. Up to 16 instruments can be scanned at once. Tap CHART to put one on the chart, and + SCAN to add it to the scanner, shell and map.</div>
   </section>
-
   <section class="p p-stat" id="sStat">
     <div class="ph">WHAT ACTUALLY WORKS <span class="r" id="stSym"></span></div>
     <div class="stabs" id="stTabs">
@@ -348,7 +334,6 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="lab" id="cmpNote" style="text-transform:none;letter-spacing:.02em;margin:4px 0 8px">Before running: choose each instrument, enter its own cost and slippage in the controls above, then return here. Values are price units per instrument; do not copy a raw spread value across differently quoted markets. OOS windows use train-only threshold selection.</div>
     <div id="cmpBox"></div>
   </section>
-
   <section class="p" id="sExec" style="grid-column:span 12;border-color:#6a4814">
     <div class="ph">DERIV MULTIPLIERS AUTO EXECUTION <span class="r" id="mxStatus">DISCONNECTED / DEMO ONLY / DISARMED</span></div>
     <div class="lab" style="text-transform:none;letter-spacing:.02em;margin-bottom:8px">Uses Deriv Multipliers contracts via the Deriv WebSocket API: BUY signals map to MULTUP and SELL signals to MULTDOWN. This is not CFD execution. Token is held in page memory only and sent to Deriv for authorization; it is never written to localStorage or source code. For safer deployment, use a trusted local/private origin and a dedicated least-privilege trading token. Do not use a token with payment or withdrawal permissions.</div>
@@ -400,7 +385,6 @@ select{max-width:100%;text-overflow:ellipsis}
       <div class="lab" style="text-transform:none;letter-spacing:.02em">Alerts fire for any scanned instrument, not only the one on the chart. Sound and notifications only work while this page is open in the foreground.</div>
     </div>
   </section>
-
   <section class="p p-learn" id="sLearn">
     <div class="ph">SELF-IMPROVE <span class="r" id="lrKey">-</span><span class="lv" id="lrState">NEUTRAL</span></div>
     <div class="stabs">
@@ -412,7 +396,6 @@ select{max-width:100%;text-overflow:ellipsis}
     <div id="lrBody"></div>
     <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">The engine keeps every resolved candidate it has ever seen, scored with neutral weights. Every few minutes it searches for better weights on the older 70 percent of that history, then tests them on the newest 30 percent it did not tune on. New settings are adopted only if they are profitable on that unseen slice, beat the current settings by at least 0.10R and at least 2 standard errors, and at least 30 test trades exist. After adoption it keeps comparing the learned weights with neutral on trades that came afterwards and reverts if they trail. On derived indices outcomes are random, so expect it to stay neutral most of the time. That is the guard working, not a fault.</div>
   </section>
-
   <details class="p p-how" id="sHow">
     <summary>HOW THE SCORE IS BUILT</summary>
     <div class="how">
@@ -423,7 +406,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <p><b>Regime (15).</b> ATR compared with its 50 bar average. Normal volatility scores full marks, dead or spiking markets score low.</p>
       <p><b>Trade plan.</b> The live plan is displayed at the signal close. Historical backtests enter at the next candle open with adverse entry slippage; stops remain beyond the zone or wick plus 0.15 ATR, and targets are recalculated at 1R, 2R and 3R from the simulated fill. Spread/commission is deducted as a round-trip price cost, exit slippage is deducted, gap-through-stop fills can lose more than 1R, and stops are checked before targets when both touch inside one candle.</p>
       <p><b>Timeframes.</b> Pick M1, M5, M15 or H1 as the entry timeframe. The bias timeframe above it is H1 for M1, M5 and M15, and H4 when you trade H1. Slower timeframes give fewer signals, so the audit fills up more slowly: H1 history covers about 25 days, M15 about 8 days, M5 about 3 days and M1 about 1 day.</p>
-            <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Trades that expire after 150 bars are closed at the final candle close; unreached targets use that actual close-to-entry return rather than being silently discarded. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
+      <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Trades that expire after 150 bars are closed at the final candle close; unreached targets use that actual close-to-entry return rather than being silently discarded. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
       <p><b>The scanner and map.</b> All 13 Volatility indices stream over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
       <p><b>Real markets.</b> Forex, gold, indices and crypto have spreads, commission and swaps, so enter your cost per trade in price units and the audit takes it off every trade. Candles after a weekend or session gap are skipped and kept out of the ATR. The session filter keeps alerts and stats to London and New York hours. Closed markets are marked and ranked last.</p>
       <p><b>Self-improve.</b> Score weights for zone, structure, candle, momentum and regime start at 1.00 and can move between 0.50 and 1.50. The alert level can move between 50 and 90. The search runs on the older 70 percent of resolved candidates and must prove itself on the newest 30 percent, with a penalty for straying from neutral. Changes need to be profitable on the unseen slice, beat the current settings by 0.10R and 2 standard errors, rest on 30 test trades, and are held for 6 hours. After adoption a forward check compares learned against neutral on newer trades and reverts on failure. Tick AUTO ALERT LEVEL to let the learned level move your alert slider. Data lives in this browser, so use EXPORT DATA to keep it.</p>
@@ -433,21 +416,17 @@ select{max-width:100%;text-overflow:ellipsis}
 </main>
 <div class="tick"><span class="tag b">&#9632; ENGINE</span><div class="mqw"><div class="mq" id="mqBot" style="animation-duration:120s"></div></div></div>
 <div id="toast" role="status" aria-live="polite"><div class="t1"></div><div class="t2"></div></div>
-
 <script>
-
 const MAXP=[25,25,20,15,15];
 const NEUT=[1,1,1,1,1];
 function wScore(p,w){w=w||NEUT;let num=0,den=0;for(let i=0;i<5;i++){num+=w[i]*p[i];den+=w[i]*MAXP[i];}return den>0?100*num/den:0;}
 const RES_OK=r=>r==='sl'||r==='tp3'||r==='exp';
-
 function smaArr(a,n){const o=new Array(a.length).fill(NaN);let s=0,c=0;for(let i=0;i<a.length;i++){const v=a[i];if(v===v){s+=v;c++;}if(i>=n){const u=a[i-n];if(u===u){s-=u;c--;}}if(i>=n-1&&c===n)o[i]=s/n;}return o;}
 function atrArr(C,n,gap){const o=new Array(C.length).fill(NaN);let prev=0,sum=0;for(let i=0;i<C.length;i++){const isGap=!!(gap&&gap[i]);let tr=(i===0||isGap)?C[i].h-C[i].l:Math.max(C[i].h-C[i].l,Math.abs(C[i].h-C[i-1].c),Math.abs(C[i].l-C[i-1].c));if(i<n){sum+=tr;if(i===n-1){prev=sum/n;o[i]=prev;}}else{prev=(prev*(n-1)+tr)/n;o[i]=prev;}}return o;}
 function rsiArr(cl,n){const o=new Array(cl.length).fill(NaN);let ag=0,al=0;for(let i=1;i<cl.length;i++){const d=cl[i]-cl[i-1],g=Math.max(d,0),l=Math.max(-d,0);if(i<=n){ag+=g;al+=l;if(i===n){ag/=n;al/=n;o[i]=al===0?100:100-100/(1+ag/al);}}else{ag=(ag*(n-1)+g)/n;al=(al*(n-1)+l)/n;o[i]=al===0?100:100-100/(1+ag/al);}}return o;}
 function stochArr(r,n){const o=new Array(r.length).fill(NaN);for(let i=n-1;i<r.length;i++){let mn=Infinity,mx=-Infinity,ok=true;for(let k=i-n+1;k<=i;k++){const v=r[k];if(v!==v){ok=false;break;}if(v<mn)mn=v;if(v>mx)mx=v;}if(ok)o[i]=mx===mn?0.5:(r[i]-mn)/(mx-mn);}return o;}
 function swingsOf(C,n){const o=[];for(let k=n;k<C.length-n;k++){let hi=true,lo=true;for(let d=1;d<=n;d++){if(!(C[k].h>C[k-d].h&&C[k].h>=C[k+d].h))hi=false;if(!(C[k].l<C[k-d].l&&C[k].l<=C[k+d].l))lo=false;if(!hi&&!lo)break;}if(hi)o.push({k,conf:k+n,type:'H',price:C[k].h});if(lo)o.push({k,conf:k+n,type:'L',price:C[k].l});}return o;}
 function insideZ(z,b){return z.dir===1?(b.l<=z.hi&&b.h>=z.lo):(b.h>=z.lo&&b.l<=z.hi);}
-
 function scan(C,sw,A){
   const n=C.length,T=new Int8Array(n),SLa=new Array(n).fill(NaN),SHa=new Array(n).fill(NaN),Z=[];
   let lh=null,ll=null,tr=0,p=0;
@@ -458,19 +437,15 @@ function scan(C,sw,A){
     let ext=d===1?-Infinity:Infinity;
     for(let m=Math.max(0,j-10);m<=j;m++){ext=d===1?Math.max(ext,C[m].h):Math.min(ext,C[m].l);}
     if(ob>=0){
-      const b=C[ob];let lo,hi;
-      if(d===1){lo=b.l;hi=Math.max(b.o,b.c);}else{hi=b.h;lo=Math.min(b.o,b.c);}
+      const b=C[ob];let lo,hi;      if(d===1){lo=b.l;hi=Math.max(b.o,b.c);}else{hi=b.h;lo=Math.min(b.o,b.c);}
       if(hi-lo<0.3*a){if(d===1)hi=lo+0.3*a;else lo=hi-0.3*a;}
-      let e2=ext;for(let m=ob;m<=j;m++){e2=d===1?Math.max(e2,C[m].h):Math.min(e2,C[m].l);}
-      Z.push({dir:d,lo,hi,born:j,kind:'OB-'+kind,imp:Math.abs(e2-(d===1?lo:hi))/a,dead:Infinity,touches:[]});
-    }
-    Z.push({dir:d,lo:lvl-(d===1?0.35:0.15)*a,hi:lvl+(d===1?0.15:0.35)*a,born:j,kind:'FLIP',imp:Math.abs(ext-lvl)/a,dead:Infinity,touches:[]});
+      let e2=ext;for(let m=ob;m<=j;m++){e2=d===1?Math.max(e2,C[m].h):Math.min(e2,C[m].l);}    Z.push({dir:d,lo,hi,born:j,kind:'OB-'+kind,imp:Math.abs(e2-(d===1?lo:hi))/a,dead:Infinity,touches:[]});
+    }    Z.push({dir:d,lo:lvl-(d===1?0.35:0.15)*a,hi:lvl+(d===1?0.15:0.35)*a,born:j,kind:'FLIP',imp:Math.abs(ext-lvl)/a,dead:Infinity,touches:[]});
   }
   for(let j=0;j<n;j++){
     while(p<sw.length&&sw[p].conf<=j){const s=sw[p++];if(s.type==='H')lh={p:s.price,broken:false};else ll={p:s.price,broken:false};}
     const c=C[j];
-    if(A[j]>0){
-      if(lh&&!lh.broken&&c.c>lh.p){lh.broken=true;mk(1,lh.p,j,tr<0?'CHoCH':'BOS');tr=1;}
+    if(A[j]>0){    if(lh&&!lh.broken&&c.c>lh.p){lh.broken=true;mk(1,lh.p,j,tr<0?'CHoCH':'BOS');tr=1;}
       else if(ll&&!ll.broken&&c.c<ll.p){ll.broken=true;mk(-1,ll.p,j,tr>0?'CHoCH':'BOS');tr=-1;}
     }
     T[j]=tr;if(lh)SHa[j]=lh.p;if(ll)SLa[j]=ll.p;
@@ -487,7 +462,6 @@ function scan(C,sw,A){
   }
   return {T,SLa,SHa,Z};
 }
-
 function patternAt(C,i,d,a){
   const c=C[i],p=C[i-1],q=C[i-2];
   const rng=x=>(x.h-x.l)||1e-9,body=x=>Math.abs(x.c-x.o);
@@ -496,19 +470,14 @@ function patternAt(C,i,d,a){
   const rej=x=>d===1?loW(x):upW(x),opp=x=>d===1?upW(x):loW(x);
   const b=body(c),r=rng(c);
   let best=null;
-  const put=(name,s)=>{if(!best||s>best.s)best={name,s};};
-  if(adv(p)&&fav(c)&&b>=body(p)&&(d===1?(c.c>=p.o&&c.o<=p.c):(c.c<=p.o&&c.o>=p.c)))put('Engulfing',1);
-  if(adv(p)&&body(p)>0.5*a&&fav(c)&&b<0.6*body(p)&&(d===1?(c.c<=p.o&&c.o>=p.c):(c.c>=p.o&&c.o<=p.c)))put('Harami',0.65);
-  if(rej(c)>=2*b&&rej(c)>=0.55*r&&opp(c)<=0.25*r)put('Pin bar',fav(c)?0.95:0.8);
-  if(adv(q)&&body(q)>=0.6*a&&body(p)<=0.4*body(q)&&fav(c)&&(d===1?c.c>(q.o+q.c)/2:c.c<(q.o+q.c)/2))put(d===1?'Morning star':'Evening star',1);
-  if(fav(c)&&b>=0.1*r&&rej(p)>=2*body(p)&&rej(c)>=2*b&&rej(p)>=0.5*rng(p)&&rej(c)>=0.5*r&&rej(p)>opp(p)&&rej(c)>opp(c))put('Double pin',0.85);
+  const put=(name,s)=>{if(!best||s>best.s)best={name,s};};  if(adv(p)&&fav(c)&&b>=body(p)&&(d===1?(c.c>=p.o&&c.o<=p.c):(c.c<=p.o&&c.o>=p.c)))put('Engulfing',1);  if(adv(p)&&body(p)>0.5*a&&fav(c)&&b<0.6*body(p)&&(d===1?(c.c<=p.o&&c.o>=p.c):(c.c>=p.o&&c.o<=p.c)))put('Harami',0.65);
+  if(rej(c)>=2*b&&rej(c)>=0.55*r&&opp(c)<=0.25*r)put('Pin bar',fav(c)?0.95:0.8);  if(adv(q)&&body(q)>=0.6*a&&body(p)<=0.4*body(q)&&fav(c)&&(d===1?c.c>(q.o+q.c)/2:c.c<(q.o+q.c)/2))put(d===1?'Morning star':'Evening star',1);  if(fav(c)&&b>=0.1*r&&rej(p)>=2*body(p)&&rej(c)>=2*b&&rej(p)>=0.5*rng(p)&&rej(c)>=0.5*r&&rej(p)>opp(p)&&rej(c)>opp(c))put('Double pin',0.85);
   // Doji patterns are indecisive and are deliberately not directional entry signals.
   if(!best)return null;
   const wr=opp(c)/r;
   best.pen=Math.min(8,Math.max(0,(wr-0.4)/0.4)*8);
   return best;
 }
-
 function zoneScore(X,z,i,d){
   const {Z,C}=X;
   let prior=0;for(const t of z.touches)if(t<i)prior++;
@@ -550,12 +519,10 @@ function watchOf(X,i,px){
     const zp=zoneScore(X,z,i,d).zp,mr=momRegime(X,i,d);
     const hp=HT[i]===d?10:HT[i]===0?4:0,tp=T[i]===d?7:0;
     const ww=X.w||NEUT;const pot=Math.round(100*(ww[0]*zp+ww[1]*(hp+tp)+ww[3]*mr.mp+ww[4]*mr.rp)/(ww[0]*25+ww[1]*25+ww[2]*20+ww[3]*15+ww[4]*15));
-    const rk=pot-6*dist;
-    if(!best||rk>best.rk)best={d,pot,rk,kind:z.kind,lo:z.lo,hi:z.hi,zp,st:hp+tp,mp:mr.mp,rp:mr.rp};
+    const rk=pot-6*dist;   if(!best||rk>best.rk)best={d,pot,rk,kind:z.kind,lo:z.lo,hi:z.hi,zp,st:hp+tp,mp:mr.mp,rp:mr.rp};
   }
   return best;
 }
-
 function evalBar(X,i,minScore){
   const {C,A,Z,T,SLa,SHa,HT,s10,s20,K,D,avgA}=X;
   const c=C[i],a=A[i];
@@ -564,8 +531,7 @@ function evalBar(X,i,minScore){
   let best=null;
   for(const z of Z){
     if(z.born>=i||z.dead<=i)continue;
-    const d=z.dir;
-    if(!(d===1?(c.l<=z.hi&&c.h>=z.lo&&c.c>=z.lo):(c.h>=z.lo&&c.l<=z.hi&&c.c<=z.hi)))continue;
+    const d=z.dir;    if(!(d===1?(c.l<=z.hi&&c.h>=z.lo&&c.c>=z.lo):(c.h>=z.lo&&c.l<=z.hi&&c.c<=z.hi)))continue;
     const pat=patternAt(C,i,d,a);
     if(!pat||pat.s<0.5)continue;
     const zsc=zoneScore(X,z,i,d);const zp=zsc.zp,prior=zsc.prior;
@@ -583,13 +549,10 @@ function evalBar(X,i,minScore){
     let sl=d===1?Math.min(z.lo,c.l)-0.15*a:Math.max(z.hi,c.h)+0.15*a;
     let risk=Math.abs(entry-sl);
     if(risk<0.6*a){sl=entry-d*0.6*a;risk=0.6*a;}
-    if(risk>3.5*a)continue;
-    best={i,t:c.t,d,score,parts,pat:pat.name,kind:z.kind,entry,sl,risk,tp:[1,2,3].map(k2=>entry+d*k2*risk),zlo:z.lo,zhi:z.hi,
-      res:'open',reached:0,closedT:0,key:c.t+'_'+d,src:'bt',touches:prior,hb:HT[i],tr:T[i]};
+    if(risk>3.5*a)continue;    best={i,t:c.t,d,score,parts,pat:pat.name,kind:z.kind,entry,sl,risk,tp:[1,2,3].map(k2=>entry+d*k2*risk),zlo:z.lo,zhi:z.hi,     res:'open',reached:0,closedT:0,key:c.t+'_'+d,src:'bt',touches:prior,hb:HT[i],tr:T[i]};
   }
   return best;
 }
-
 function resolveSig(s,C,last){
   const end=Math.min(last,s.i+150);
   for(let m=s.i+1;m<=end;m++){
@@ -597,14 +560,11 @@ function resolveSig(s,C,last){
     // A stop-market can fill worse than the stop when the candle opens through it.
     const stopped=s.d===1?(b.o<=s.sl||b.l<=s.sl):(b.o>=s.sl||b.h>=s.sl);
     if(stopped){
-      const fill=s.d===1?(b.o<=s.sl?b.o:s.sl):(b.o>=s.sl?b.o:s.sl);
-      s.stopR=((fill-s.entry)*s.d)/s.risk;s.res='sl';s.closedT=b.t;s.closedI=m;return;
+      const fill=s.d===1?(b.o<=s.sl?b.o:s.sl):(b.o>=s.sl?b.o:s.sl);      s.stopR=((fill-s.entry)*s.d)/s.risk;s.res='sl';s.closedT=b.t;s.closedI=m;return;
     }
     // Conservative OHLC assumption: if stop and target are both touched in one candle, stop wins.
-    for(let k=s.reached;k<3;k++){if(s.d===1?b.h>=s.tp[k]:b.l<=s.tp[k])s.reached=k+1;else break;}
-    if(s.reached>=3){s.res='tp3';s.closedT=b.t;s.closedI=m;return;}
-  }
-  if(s.i+150<=last){s.res='exp';s.closedT=C[end].t;s.closedI=end;s.expiryR=((C[end].c-s.entry)*s.d)/s.risk;}else{s.res='open';s.closedI=last;}
+    for(let k=s.reached;k<3;k++){if(s.d===1?b.h>=s.tp[k]:b.l<=s.tp[k])s.reached=k+1;else break;}    if(s.reached>=3){s.res='tp3';s.closedT=b.t;s.closedI=m;return;}
+  }  if(s.i+150<=last){s.res='exp';s.closedT=C[end].t;s.closedI=end;s.expiryR=((C[end].c-s.entry)*s.d)/s.risk;}else{s.res='open';s.closedI=last;}
 }
 function applyBacktestExecution(s,X,slip=SLIP){
   const fillBar=X.C[s.i+1];if(!fillBar)return false;
@@ -612,8 +572,7 @@ function applyBacktestExecution(s,X,slip=SLIP){
   const fill=fillBar.o+s.d*Math.max(0,slip);
   if((s.d===1&&fill<=s.sl)||(s.d===-1&&fill>=s.sl))return false;
   const risk=Math.abs(fill-s.sl),a=X.A[s.i];
-  if(!(risk>0)||!(a>0)||risk>3.5*a)return false;
-  s.entry=fill;s.risk=risk;s.tp=[1,2,3].map(k=>fill+s.d*k*risk);s.exec='next-open';s.fillT=fillBar.t;
+  if(!(risk>0)||!(a>0)||risk>3.5*a)return false;  s.entry=fill;s.risk=risk;s.tp=[1,2,3].map(k=>fill+s.d*k*risk);s.exec='next-open';s.fillT=fillBar.t;
   return true;
 }
 function analyze(X,logMin,noSpace,slip=SLIP,precomputed=null,allowEntry=null,startIndex=40){
@@ -627,12 +586,10 @@ function analyze(X,logMin,noSpace,slip=SLIP,precomputed=null,allowEntry=null,sta
     if(allowEntry&&!allowEntry(X.C[i].t))continue;
     const s=precomputed?{...raw,tp:raw.tp.slice(),res:'open',reached:0,closedT:0,closedI:undefined,stopR:undefined,expiryR:undefined,exec:undefined,fillT:undefined}:raw;
     if(!noSpace&&i-last[s.d]<8)continue;
-    if(!applyBacktestExecution(s,X,slip))continue;
-    last[s.d]=i;resolveSig(s,X.C,n-2);blockedUntil=s.closedI==null?i:s.closedI;out.push(s);
+    if(!applyBacktestExecution(s,X,slip))continue;  last[s.d]=i;resolveSig(s,X.C,n-2);blockedUntil=s.closedI==null?i:s.closedI;out.push(s);
   }
   return out;
 }
-
 function buildX(C,H,tf,htf,w){
   htf=htf||3600;
   const gapC=C.map((c,i)=>i>0&&c.t-C[i-1].t>tf),gapH=H.map((c,i)=>i>0&&c.t-H[i-1].t>htf);
@@ -645,7 +602,6 @@ function buildX(C,H,tf,htf,w){
   for(let i=0;i<C.length;i++){const ct=C[i].t+tf;while(hp+1<H.length&&H[hp+1].t+htf<=ct)hp++;HT[i]=hp>=0?scH.T[hp]:0;}
   return {C,A,Z:sc.Z,T:sc.T,SLa:sc.SLa,SHa:sc.SHa,HT,s10,s20,K,D,avgA,gap:gapC,w:w||null};
 }
-
 let COST=0,SLIP=0;
 function costUnits(s){
   // COST is round-trip spread/commission. Backtest entry slippage is reflected in the next-open fill,
@@ -703,8 +659,7 @@ function walkForward(X,k,slip=SLIP,calendar=null,wfCfg={}){
       const train=all.filter(s=>s.i>=start&&s.i<a&&s.closedT>0&&s.closedT<startT);
       const m=walkMetric(train,k);
       if(m.n<20||!Number.isFinite(m.lcb)||m.lcb<=0)continue;
-      const objective=m.lcb-0.025*m.dd/Math.sqrt(m.n);
-      if(objective>best+1e-9||(Math.abs(objective-best)<=1e-9&&thr>chosen)){best=objective;chosen=thr;bestTrain=m;}
+      const objective=m.lcb-0.025*m.dd/Math.sqrt(m.n);      if(objective>best+1e-9||(Math.abs(objective-best)<=1e-9&&thr>chosen)){best=objective;chosen=thr;bestTrain=m;}
     }
     const chosenRun=runs.get(chosen)||[];
     // Purge trades whose exit would fall beyond this test window to prevent fold-boundary leakage.
@@ -714,10 +669,7 @@ function walkForward(X,k,slip=SLIP,calendar=null,wfCfg={}){
     oosRows.push(...test);
   }
   return {ready:true,folds,oos:walkMetric(oosRows,k),target:k,optimized:true,market:wfSym?grpFor(wfSym):'UNKNOWN',session:sessionEnabled?'LONDON + NEW YORK':'ALL HOURS',costConfigured:(Math.max(0,COST)+Math.max(0,SLIP))>0,cost:COST,slip:SLIP,periodStart:periodStartT,periodEnd:periodEndT};
-}
-
-
-(()=>{
+}(()=>{
 'use strict';
 const $=id=>document.getElementById(id);
 const DEF=[['1HZ90V','Volatility 90 (1s)'],['R_75','Volatility 75'],['1HZ75V','Volatility 75 (1s)'],['R_100','Volatility 100'],['1HZ100V','Volatility 100 (1s)'],['R_50','Volatility 50'],['1HZ50V','Volatility 50 (1s)'],['R_25','Volatility 25'],['1HZ25V','Volatility 25 (1s)'],['R_10','Volatility 10'],['1HZ10V','Volatility 10 (1s)'],['1HZ15V','Volatility 15 (1s)'],['1HZ30V','Volatility 30 (1s)']];
@@ -753,7 +705,6 @@ const clkM=sec=>cfg.tf>=900?dtM(sec):clkS(sec).slice(0,5);
 const clkL=sec=>cfg.tf>=900?dtM(sec):clkS(sec);
 const arcKey=()=>'cse_arch_'+cfg.sym+'_'+cfg.tf;
 const pct=(w,n)=>n?Math.round(100*w/n):0;
-
 /* ---------- state ---------- */
 const EPS=[
   {n:'NEW API',u:'wss://api.derivws.com/trading/v1/options/ws/public',legacy:false},
@@ -764,14 +715,12 @@ const CNT=[[1500,400],[500,300],[200,200]];
 const S={ws:null,gen:0,C:[],H:[],X:null,sigs:[],btSigs:[],dp:2,first:true,sessionFrom:0,seen:new Set(),arch:{},ping:null,ac:null,rid:0,rmap:{},seenS:new Set(),toastSym:null,ci:0,tries:0,ep:0,got:false,lastMsg:0,D:null,dirty:true,tickAt:{},cat:{},names:{},subd:new Set()};
 const SC={},R={},PULSE={},WL=[];
 let SCN=[];
-
 function wlog(dir,type,txt,cls){WL.push({t:Date.now(),dir,type,txt,cls:cls||''});if(WL.length>80)WL.shift();S.wd=true;}
 function setStatus(t,c){const e=$('st');e.className='st '+(c||'');e.lastChild.textContent=t.toUpperCase();}
 function stop(){S.gen++;clearInterval(S.ping);clearInterval(S.h1t);clearInterval(S.stale);if(S.ws){try{S.ws.onclose=null;S.ws.onerror=null;S.ws.close();}catch(e){}S.ws=null;}}
 function histReq(ws,sym,g,cnt){
   const id=++S.rid;S.rmap[id]={sym,g};
-  wlog('&#9654;','HISTORY',sym+' G'+g+' N'+cnt,'s');
-  try{ws.send(JSON.stringify({ticks_history:sym,adjust_start_time:1,count:cnt,end:'latest',granularity:g,style:'candles',req_id:id}));}catch(e){}
+  wlog('&#9654;','HISTORY',sym+' G'+g+' N'+cnt,'s'); try{ws.send(JSON.stringify({ticks_history:sym,adjust_start_time:1,count:cnt,end:'latest',granularity:g,style:'candles',req_id:id}));}catch(e){}
 }
 function entryCnt(c){return cfg.tf===60?c[0]:cfg.tf===300?Math.min(c[0],1000):cfg.tf===900?Math.min(c[0],800):Math.min(c[0],600);}
 function htfCnt(c){return HTF===3600?c[1]:Math.min(c[1],300);}
@@ -786,9 +735,7 @@ function lightReqs(ws,my,h1Only){
 }
 function tickInto(arr,g,ep,p){
   const last=arr[arr.length-1];if(!last)return false;
-  const be=Math.floor(ep/g)*g;
-  if(last.t===be){last.c=p;if(p>last.h)last.h=p;if(p<last.l)last.l=p;return false;}
-  if(be>last.t){arr.push({t:be,o:p,h:p,l:p,c:p});if(arr.length>2000)arr.shift();return true;}
+  const be=Math.floor(ep/g)*g;  if(last.t===be){last.c=p;if(p>last.h)last.h=p;if(p<last.l)last.l=p;return false;}  if(be>last.t){arr.push({t:be,o:p,h:p,l:p,c:p});if(arr.length>2000)arr.shift();return true;}
   return false;
 }
 function detectDp(C){let m=2;for(let i=Math.max(0,C.length-60);i<C.length;i++){const s=String(C[i].c),k=s.indexOf('.');if(k>=0)m=Math.max(m,s.length-k-1);}return Math.min(m,5);}
@@ -796,8 +743,7 @@ const fp=(sy,p)=>p==null||p!==p?'-':p.toFixed(sy===cfg.sym?S.dp:((R[sy]&&R[sy].d
 function scanRecompute(sy){const st=SC[sy];if(!st||st.C.length<90||st.H.length<30)return;setResult(sy,buildX(st.C,st.H,cfg.tf,HTF,LRN.wFor(sy)),st.C,true);}
 function setResult(sy,X,C,alertOn){
   const n=C.length,r=R[sy]||(R[sy]={});
-  const ev=evalBar(X,n-2,40);
-  r.px=C[n-1].c;r.a=X.A[n-2];r.hb=X.HT[n-2];r.tr=X.T[n-2];r.lastT=C[n-2].t;r.dp=detectDp(C);
+  const ev=evalBar(X,n-2,40);  r.px=C[n-1].c;r.a=X.A[n-2];r.hb=X.HT[n-2];r.tr=X.T[n-2];r.lastT=C[n-2].t;r.dp=detectDp(C);
   r.w=watchOf(X,n-2,r.px);r.ready=true;r.err=null;
   if(ev){
     r.sig={...ev,src:'live'};
@@ -807,8 +753,7 @@ function setResult(sy,X,C,alertOn){
       if(lastSignalT!==ev.t)r.lastSigT[dk]=ev.t;
       if(!r.seeded)S.seenS.add(key);
       else if(!S.seenS.has(key)){
-        S.seenS.add(key);r.la=r.la||{};
-        if(spaced&&ev.score>=cfg.thr&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
+        S.seenS.add(key);r.la=r.la||{};       if(spaced&&ev.score>=cfg.thr&&inSession(ev.t,sy)&&ev.t-(r.la[ev.d]||0)>=8*cfg.tf){r.la[ev.d]=ev.t;alertSig(ev,sy);}
       }
     }
   }else{r.sig=null;}
@@ -817,8 +762,7 @@ function setResult(sy,X,C,alertOn){
 }
 function setFocus(sy){
   if(sy===cfg.sym)return;
-  const old=cfg.sym;
-  SC[old]=(S.C.length>=90&&S.H.length>=30)?{C:S.C.slice(-600),H:S.H.slice(-250)}:{C:[],H:[]};
+  const old=cfg.sym;  SC[old]=(S.C.length>=90&&S.H.length>=30)?{C:S.C.slice(-600),H:S.H.slice(-250)}:{C:[],H:[]};
   cfg.sym=sy;persist();delete SC[sy];
   S.C=[];S.H=[];S.X=null;S.sigs=[];S.first=true;S.seen=new Set();S.D=null;S.arch=LS.get(arcKey(),{});
   updateCost();syncSyms();
@@ -839,16 +783,11 @@ function connect(retry){
   try{ws=new WebSocket(ep.u);}catch(e){setStatus('SOCKET BLOCKED','err');S.ep++;S.tries++;setTimeout(()=>{if(my===S.gen)connect(true);},3000);return;}
   S.ws=ws;
   ws.onopen=()=>{
-    if(my!==S.gen)return;
-    S.lastMsg=Date.now();setStatus('LOADING');wlog('&#8226;','SYS','SOCKET OPEN','d');
+    if(my!==S.gen)return; S.lastMsg=Date.now();setStatus('LOADING');wlog('&#8226;','SYS','SOCKET OPEN','d');
     focusReq(ws);
     S.subd=new Set();SYMS.forEach(([sy])=>ensureTicks(sy));
-    wlog('&#9654;','TICKS','SUBSCRIBE x'+SYMS.length,'s');
-    try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}
-    lightReqs(ws,my,false);
-    S.ping=setInterval(()=>{try{ws.send(JSON.stringify({ping:1}));}catch(e){}},30000);
-    S.h1t=setInterval(()=>{if(S.C.length)histReq(ws,cfg.sym,HTF,htfCnt(CNT[S.ci]));lightReqs(ws,my,true);try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}},300000);
-    S.stale=setInterval(()=>{if(Date.now()-S.lastMsg>45000){try{ws.close();}catch(e){}}},10000);
+    wlog('&#9654;','TICKS','SUBSCRIBE x'+SYMS.length,'s');   try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}
+    lightReqs(ws,my,false);    S.ping=setInterval(()=>{try{ws.send(JSON.stringify({ping:1}));}catch(e){}},30000);    S.h1t=setInterval(()=>{if(S.C.length)histReq(ws,cfg.sym,HTF,htfCnt(CNT[S.ci]));lightReqs(ws,my,true);try{ws.send(JSON.stringify(ep.legacy?{active_symbols:'brief',product_type:'basic'}:{active_symbols:'brief'}));}catch(e){}},300000);   S.stale=setInterval(()=>{if(Date.now()-S.lastMsg>45000){try{ws.close();}catch(e){}}},10000);
   };
   ws.onmessage=ev=>{
     if(my!==S.gen)return;
@@ -858,14 +797,11 @@ function connect(retry){
       const er=d.echo_req||{};
       if(er.active_symbols){wlog('&#9664;','ERROR','MARKET LIST: '+String(d.error.message||'').slice(0,50),'e');return;}
       if(er.ticks&&er.ticks!==cfg.sym)return;
-      const meta=S.rmap[d.req_id]||{sym:er.ticks_history};
-      wlog('&#9664;','ERROR',String(d.error.message||'error').slice(0,60),'e');
-      if(meta.sym&&meta.sym!==cfg.sym){const r=R[meta.sym]||(R[meta.sym]={});r.err=d.error.message||'error';S.dirty=true;return;}
-      if(meta.sym===cfg.sym&&!S.C.length&&S.ci<CNT.length-1){S.ci++;focusReq(ws);return;}
+      const meta=S.rmap[d.req_id]||{sym:er.ticks_history};      wlog('&#9664;','ERROR',String(d.error.message||'error').slice(0,60),'e');
+      if(meta.sym&&meta.sym!==cfg.sym){const r=R[meta.sym]||(R[meta.sym]={});r.err=d.error.message||'error';S.dirty=true;return;}      if(meta.sym===cfg.sym&&!S.C.length&&S.ci<CNT.length-1){S.ci++;focusReq(ws);return;}
       setStatus(String(d.error.message||'API ERROR').slice(0,40),'err');return;
     }
-    S.got=true;
-    if(d.msg_type==='active_symbols'){buildCatalog(d.active_symbols||[]);return;}
+    S.got=true;   if(d.msg_type==='active_symbols'){buildCatalog(d.active_symbols||[]);return;}
     if(d.msg_type==='candles'&&Array.isArray(d.candles)){
       const er=d.echo_req||{},meta=S.rmap[d.req_id]||{sym:er.ticks_history,g:er.granularity};
       const arr=d.candles.map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close}));
@@ -873,14 +809,12 @@ function connect(retry){
       const sy=meta.sym||cfg.sym;
       wlog('&#9664;','CANDLES',sy+' G'+g+' N'+arr.length,'');
       if(sy!==cfg.sym){const st=SC[sy];if(!st)return;if(g===HTF)st.H=arr;else if(g===cfg.tf)st.C=arr;scanRecompute(sy);return;}
-      if(g===HTF)S.H=arr;else if(g===cfg.tf)S.C=arr;
-      if(S.C.length&&S.H.length){S.tries=0;setStatus('LIVE','live');recompute();}
+      if(g===HTF)S.H=arr;else if(g===cfg.tf)S.C=arr;     if(S.C.length&&S.H.length){S.tries=0;setStatus('LIVE','live');recompute();}
     }else if(d.msg_type==='tick'&&d.tick){
       const sy=d.tick.underlying_symbol||d.tick.symbol,pr=+d.tick.quote,e2=+d.tick.epoch;
       if(!sy||!(pr===pr))return;
       const r=R[sy]||(R[sy]={});r.px=pr;PULSE[sy]=1;
-      const now=Date.now();
-      if(sy===cfg.sym||now-(S.tickAt[sy]||0)>5000){S.tickAt[sy]=now;wlog('&#9664;','TICK',sy+' '+pr,sy===cfg.sym?'a':'d');}
+      const now=Date.now();     if(sy===cfg.sym||now-(S.tickAt[sy]||0)>5000){S.tickAt[sy]=now;wlog('&#9664;','TICK',sy+' '+pr,sy===cfg.sym?'a':'d');}
       if(sy===cfg.sym){
         if(!S.C.length||!S.H.length)return;
         const nw=tickInto(S.C,cfg.tf,e2,pr);tickInto(S.H,HTF,e2,pr);
@@ -896,13 +830,10 @@ function connect(retry){
   ws.onclose=ev=>{
     if(my!==S.gen)return;
     S.tries++;if(!S.got)S.ep++;
-    setStatus('RECONNECT #'+S.tries+' ('+(ev&&ev.code||'?')+')','err');wlog('&#8226;','SYS','CLOSED CODE '+(ev&&ev.code||'?'),'e');
-    setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,10000));
+    setStatus('RECONNECT #'+S.tries+' ('+(ev&&ev.code||'?')+')','err');wlog('&#8226;','SYS','CLOSED CODE '+(ev&&ev.code||'?'),'e');    setTimeout(()=>{if(my===S.gen)connect(true);},Math.min(2000*S.tries,10000));
   };
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!S.ws||S.ws.readyState!==1||Date.now()-S.lastMsg>45000))connect(true);});
-
-
 /* ---------- markets: catalog, watchlist, sessions, cost ---------- */
 const GN={FOREX:'FOREX',COMM:'COMMODITIES',IDX:'STOCK INDICES',CRYPTO:'CRYPTO',SYNTH:'DERIVED (RANDOM)',OTHER:'OTHER'};
 const DEF_NAMES={};DEF.forEach(d=>{DEF_NAMES[d[0]]=d[1];});
@@ -918,8 +849,7 @@ function grpOf(sy,market){
   if(/indic/.test(m))return 'IDX';
   if(/^frx/.test(sy))return 'FOREX';
   if(/^cry/i.test(sy))return 'CRYPTO';
-  if(/^OTC_/.test(sy))return 'IDX';
-  if(/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy))return 'SYNTH';
+  if(/^OTC_/.test(sy))return 'IDX';  if(/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy))return 'SYNTH';
   return 'OTHER';
 }
 const grpFor=sy=>/XAU|GOLD/i.test(String(sy||''))?'COMM':(S.cat[sy]?S.cat[sy].grp:grpOf(sy,''));
@@ -932,8 +862,7 @@ function inSession(t,sy){
   return h>=7&&h<21;
 }
 const sessFilter=l=>(cfg.sess==='all'||is247(cfg.sym))?l:l.filter(s=>inSession(s.t,cfg.sym));
-function updateCost(){
-  COST=Math.max(0,+(cfg.spr[cfg.sym])||0);SLIP=Math.max(0,+(cfg.slip[cfg.sym])||0);
+function updateCost(){  COST=Math.max(0,+(cfg.spr[cfg.sym])||0);SLIP=Math.max(0,+(cfg.slip[cfg.sym])||0);
   const i=$('sprIn'),si=$('slipIn');if(!i||!si)return;
   if(document.activeElement!==i)i.value=COST||'';
   if(document.activeElement!==si)si.value=SLIP||'';
@@ -943,37 +872,30 @@ function updateCost(){
 }
 function rebuildSyms(){
   const w=((cfg.watch&&cfg.watch.length)?cfg.watch:DEF.map(d=>d[0])).slice(0,MAXW);
-  if(!w.includes(cfg.sym))w.push(cfg.sym);
-  SYMS.splice(0,SYMS.length,...w.map(sy=>[sy,nameFor(sy)]));
+  if(!w.includes(cfg.sym))w.push(cfg.sym);  SYMS.splice(0,SYMS.length,...w.map(sy=>[sy,nameFor(sy)]));
 }
 function ensureTicks(sy){
-  if(!S.ws||S.ws.readyState!==1||S.subd.has(sy))return;
-  S.subd.add(sy);try{S.ws.send(JSON.stringify({ticks:sy,subscribe:1}));}catch(e){}
+  if(!S.ws||S.ws.readyState!==1||S.subd.has(sy))return; S.subd.add(sy);try{S.ws.send(JSON.stringify({ticks:sy,subscribe:1}));}catch(e){}
 }
 function syncSyms(){
   const before=new Set(SYMS.map(x=>x[0]));
   rebuildSyms();
   const now=new Set(SYMS.map(x=>x[0]));
   let removed=false;
-  before.forEach(sy=>{if(!now.has(sy)){removed=true;delete SC[sy];delete R[sy];delete PULSE[sy];}});
-  now.forEach(sy=>{if(sy!==cfg.sym&&!SC[sy])SC[sy]={C:[],H:[]};});
+  before.forEach(sy=>{if(!now.has(sy)){removed=true;delete SC[sy];delete R[sy];delete PULSE[sy];}}); now.forEach(sy=>{if(sy!==cfg.sym&&!SC[sy])SC[sy]={C:[],H:[]};});
   MP.nodes=[];
   const ws=S.ws;
-  if(ws&&ws.readyState===1){
-    if(removed){try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){}S.subd=new Set();}
+  if(ws&&ws.readyState===1){ if(removed){try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){}S.subd=new Set();}
     let k=0;
     SYMS.forEach(([sy])=>{
       ensureTicks(sy);
-      const st=SC[sy];
-      if(sy!==cfg.sym&&st&&!st.C.length&&Date.now()-(st.req||0)>10000){
-        st.req=Date.now();
-        setTimeout(()=>{if(ws.readyState===1&&SC[sy]){histReq(ws,sy,cfg.tf,500);histReq(ws,sy,HTF,200);}},300+(k++)*140);
+      const st=SC[sy];    if(sy!==cfg.sym&&st&&!st.C.length&&Date.now()-(st.req||0)>10000){
+        st.req=Date.now();    setTimeout(()=>{if(ws.readyState===1&&SC[sy]){histReq(ws,sy,cfg.tf,500);histReq(ws,sy,HTF,200);}},300+(k++)*140);
       }
     });
   }
   S.dirty=true;
 }
-
 function prettySym(sy){
   let m;
   if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]==='XAU'?'Gold/'+m[2]:m[1]==='XAG'?'Silver/'+m[2]:m[1]+'/'+m[2];
@@ -996,8 +918,7 @@ function buildCatalog(list){
   for(const a of list){
     const sy=a.underlying_symbol||a.symbol;
     if(!sy||a.is_trading_suspended)continue;
-    const mk=a.market||a.market_display_name||'';
-    cat[sy]={sy,name:pickName(a,sy),market:mk,grp:grpOf(sy,mk),open:a.exchange_is_open===undefined?true:!!a.exchange_is_open};
+    const mk=a.market||a.market_display_name||'';    cat[sy]={sy,name:pickName(a,sy),market:mk,grp:grpOf(sy,mk),open:a.exchange_is_open===undefined?true:!!a.exchange_is_open};
   }
   S.cat=cat;
   for(const sy in cat)S.names[sy]=cat[sy].name;
@@ -1050,15 +971,12 @@ function realPreset(){
   $('mkMsg').textContent='SCANNING '+pick.length+' REAL-MARKET INSTRUMENTS.';
   mkApplyWatch(pick);setFocus(pick[0]);
 }
-function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}
-
-/* ---------- focus recompute and derived data ---------- */
+function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}/* ---------- focus recompute and derived data ---------- */
 function recompute(){
   const C=S.C,H=S.H;
   if(C.length<90||H.length<30)return;
   S.dp=detectDp(C);
-  const X=buildX(C,H,cfg.tf,HTF,null);S.X=X;
-  setResult(cfg.sym,buildX(C,H,cfg.tf,HTF,LRN.wFor(cfg.sym)),C,true);
+  const X=buildX(C,H,cfg.tf,HTF,null);S.X=X; setResult(cfg.sym,buildX(C,H,cfg.tf,HTF,LRN.wFor(cfg.sym)),C,true);
   if(S.first)S.sessionFrom=C[C.length-2].t;
   const lastIdx=C.length-2,lastT=C[lastIdx].t,arch=S.arch||{},fresh=analyze(X,40).filter(s=>s.t<lastT),byKey=new Map();
   S.btSigs=fresh;
@@ -1092,20 +1010,15 @@ function derive(){
   const X=S.X,C=S.C,n=C.length,last=n-2,D={tl:[],inp:{zone:[],str:[],cand:[],mom:[],reg:[],pot:[]},cp:''};
   const from=Math.max(40,last-119);
   for(let i=from;i<=last;i++){
-    const ev=evalBar(X,i,0),w=watchOf(X,i,C[i].c),a=X.A[i];
-    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i]});
+    const ev=evalBar(X,i,0),w=watchOf(X,i,C[i].c),a=X.A[i];    D.tl.push({i,t:C[i].t,score:ev?ev.score:0,pot:w?w.pot:0,d:ev?ev.d:0,hb:X.HT[i]});
     if(i>last-60){
       let cs=0,nm='';
-      for(const d of [1,-1]){const p=patternAt(C,i,d,a);if(p&&p.s>=0.5){const v=Math.max(0,20*p.s-p.pen);if(v>cs){cs=v;nm=p.name;}}}
-      D.inp.zone.push(w?w.zp:0);D.inp.str.push(w?w.st:0);D.inp.cand.push(cs);D.inp.mom.push(w?w.mp:0);D.inp.reg.push(w?w.rp:0);D.inp.pot.push(w?w.pot:0);
+      for(const d of [1,-1]){const p=patternAt(C,i,d,a);if(p&&p.s>=0.5){const v=Math.max(0,20*p.s-p.pen);if(v>cs){cs=v;nm=p.name;}}}      D.inp.zone.push(w?w.zp:0);D.inp.str.push(w?w.st:0);D.inp.cand.push(cs);D.inp.mom.push(w?w.mp:0);D.inp.reg.push(w?w.rp:0);D.inp.pot.push(w?w.pot:0);
       if(i===last)D.cp=nm;
     }
   }
   const sg=sessFilter(S.sigs);
-  D.all=[1,2,3].map(k=>statOf(sg,k));
-  D.wf=walkForward(X,+cfg.tgt||2,Math.max(0,+(cfg.slip[cfg.sym])||0),null,{sym:cfg.sym,sess:cfg.sess});
-  D.bands=[['85+',s=>s.score>=85],['70-84',s=>s.score>=70&&s.score<85],['55-69',s=>s.score>=55&&s.score<70],['40-54',s=>s.score<55]].map(([lab,f])=>{const l=sg.filter(f);return {lab,s1:statOf(l,1),s2:statOf(l,2),s3:statOf(l,3)};});
-  D.avg=sg.length?Math.round(sg.reduce((a,s)=>a+s.score,0)/sg.length):0;
+  D.all=[1,2,3].map(k=>statOf(sg,k));  D.wf=walkForward(X,+cfg.tgt||2,Math.max(0,+(cfg.slip[cfg.sym])||0),null,{sym:cfg.sym,sess:cfg.sess});  D.bands=[['85+',s=>s.score>=85],['70-84',s=>s.score>=70&&s.score<85],['55-69',s=>s.score>=55&&s.score<70],['40-54',s=>s.score<55]].map(([lab,f])=>{const l=sg.filter(f);return {lab,s1:statOf(l,1),s2:statOf(l,2),s3:statOf(l,3)};});  D.avg=sg.length?Math.round(sg.reduce((a,s)=>a+s.score,0)/sg.length):0;
   const sc=sg.map(s=>s.score).sort((a,b)=>a-b);D.med=sc.length?sc[sc.length>>1]:0;
   const rb=sg.filter(s=>RES_OK(s.res)&&s.closedT).map(s=>(s.closedT-s.t)/cfg.tf).sort((a,b)=>a-b);
   D.medBars=rb.length?rb[rb.length>>1]:null;
@@ -1118,7 +1031,6 @@ function derive(){
   D.paths=paths;
   S.D=D;
 }
-
 /* ---------- Deriv Multipliers execution; credentials are memory-only ---------- */
 const mx$=id=>document.getElementById(id);
 function mxDay(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Muscat'});}
@@ -1127,16 +1039,12 @@ function mxSaveDaily(){try{localStorage.setItem('cse_mx_daily',JSON.stringify(MX
 function mxLog(event,detail,symbol){const tb=mx$('mxLog');if(tb.querySelector('td[colspan]'))tb.innerHTML='';const tr=document.createElement('tr');const vals=[new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Muscat'}),event,symbol||cfg.sym,detail||''];vals.forEach(v=>{const td=document.createElement('td');td.textContent=String(v);tr.appendChild(td);});tb.prepend(tr);while(tb.rows.length>30)tb.deleteRow(-1);}
 function mxPaint(status,detail){mx$('mxStatus').textContent=status;mx$('mxInfo').textContent=detail||'';mx$('mxArm').textContent=MX.armed?'AUTO-TRADE ARMED':'ARM DEMO AUTO-TRADE';mx$('mxArm').classList.toggle('on',MX.armed);mx$('mxAccount').textContent=MX.authorized?'Account '+(MX.account.loginid||'unknown')+' / '+(MX.account.is_virtual?'DEMO':'REAL')+' / '+MX.currency+' / balance '+Number(MX.balance).toFixed(2)+' / session P&L '+Number(MX.daily.pnl||0).toFixed(2)+' / trades '+(MX.daily.trades||0):'Not authorized. No trades can be placed.';}
 function mxRequest(data,timeout=12000){return new Promise((resolve,reject)=>{if(!MX.ws||MX.ws.readyState!==WebSocket.OPEN)return reject(new Error('Deriv socket is not connected.'));const id=++MX.req;data.req_id=id;const timer=setTimeout(()=>{MX.pending.delete(id);reject(new Error('Deriv response timed out. Order status may be unknown; do not retry automatically. Check portfolio before re-arming.'));},timeout);MX.pending.set(id,{resolve,reject,timer});MX.ws.send(JSON.stringify(data));});}
-function mxSocketMessage(ev){let m;try{m=JSON.parse(ev.data);}catch(e){return;}const id=m.req_id; if(id&&MX.pending.has(id)){const p=MX.pending.get(id);MX.pending.delete(id);clearTimeout(p.timer);if(m.error)p.reject(new Error(m.error.message||m.error.code||'Deriv API error'));else p.resolve(m);}
- if(m.msg_type==='proposal_open_contract'&&m.proposal_open_contract)mxContractUpdate(m.proposal_open_contract);
- if(m.msg_type==='balance'&&m.balance){MX.balance=Number(m.balance.balance)||MX.balance;mxPaint(MX.armed?'AUTHORIZED / ARMED':(MX.authorized?'AUTHORIZED / DISARMED':'CONNECTED'), 'Balance stream updated.');}}
+function mxSocketMessage(ev){let m;try{m=JSON.parse(ev.data);}catch(e){return;}const id=m.req_id; if(id&&MX.pending.has(id)){const p=MX.pending.get(id);MX.pending.delete(id);clearTimeout(p.timer);if(m.error)p.reject(new Error(m.error.message||m.error.code||'Deriv API error'));else p.resolve(m);} if(m.msg_type==='proposal_open_contract'&&m.proposal_open_contract)mxContractUpdate(m.proposal_open_contract); if(m.msg_type==='balance'&&m.balance){MX.balance=Number(m.balance.balance)||MX.balance;mxPaint(MX.armed?'AUTHORIZED / ARMED':(MX.authorized?'AUTHORIZED / DISARMED':'CONNECTED'), 'Balance stream updated.');}}
 async function mxConnect(){
- MX.armed=false;MX.liveConfirmed=false;const token=mx$('mxToken').value.trim();if(!token){mxPaint('TOKEN REQUIRED','Enter a Deriv API token in the field. It remains in memory only.');return;}
- if(MX.ws){try{MX.ws.close();}catch(e){}}MX.authorized=false;MX.account=null;MX.token=token;mxPaint('CONNECTING','Opening encrypted Deriv WebSocket; no orders are armed.');
+ MX.armed=false;MX.liveConfirmed=false;const token=mx$('mxToken').value.trim();if(!token){mxPaint('TOKEN REQUIRED','Enter a Deriv API token in the field. It remains in memory only.');return;} if(MX.ws){try{MX.ws.close();}catch(e){}}MX.authorized=false;MX.account=null;MX.token=token;mxPaint('CONNECTING','Opening encrypted Deriv WebSocket; no orders are armed.');
  try{const appId=mx$('mxAppId').value.trim();if(!/^\d+$/.test(appId))throw new Error('Enter a valid numeric Deriv App ID.');const ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+encodeURIComponent(appId));MX.ws=ws;await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Connection timed out.')),12000);ws.onopen=()=>{clearTimeout(timer);resolve();};ws.onerror=()=>{clearTimeout(timer);reject(new Error('WebSocket connection failed.'));};});ws.onmessage=mxSocketMessage;ws.onclose=()=>{MX.armed=false;MX.authorized=false;MX.liveConfirmed=false;for(const [id,p] of MX.pending){clearTimeout(p.timer);p.reject(new Error('Deriv connection closed.'));}MX.pending.clear();mxPaint('DISCONNECTED / DISARMED','Connection closed. Automatic reconnection and automatic order retry are disabled. Reconnect manually and check the portfolio before re-arming.');};
  const auth=await mxRequest({authorize:token});const a=auth.authorize;if(!a||typeof a.is_virtual==='undefined')throw new Error('Authorization response did not include account mode. Trading disabled.');
- const selected=mx$('mxMode').value;const wantLive=selected==='live';if(wantLive){if(a.is_virtual!==0)throw new Error('LIVE mode selected but Deriv authorized a virtual/demo account.');if(mx$('mxLivePhrase').value.trim()!=='ENABLE LIVE TRADING')throw new Error('Live account connected, but exact live confirmation phrase is missing.');if(!confirm('LIVE TRADING WARNING\n\nThis account is REAL. New Multipliers contracts can lose the full stake. Confirm you explicitly want to authorize live execution?'))throw new Error('Live confirmation cancelled.');MX.liveConfirmed=true;}else if(a.is_virtual!==1){throw new Error('DEMO mode is selected, but the authorized account is REAL. Trading is blocked. Use a demo token or explicitly complete the separate live gate.');}
- MX.account=a;MX.currency=a.currency||'USD';MX.balance=Number(a.balance)||0;MX.authorized=true;mxLoadDaily();
+ const selected=mx$('mxMode').value;const wantLive=selected==='live';if(wantLive){if(a.is_virtual!==0)throw new Error('LIVE mode selected but Deriv authorized a virtual/demo account.');if(mx$('mxLivePhrase').value.trim()!=='ENABLE LIVE TRADING')throw new Error('Live account connected, but exact live confirmation phrase is missing.');if(!confirm('LIVE TRADING WARNING\n\nThis account is REAL. New Multipliers contracts can lose the full stake. Confirm you explicitly want to authorize live execution?'))throw new Error('Live confirmation cancelled.');MX.liveConfirmed=true;}else if(a.is_virtual!==1){throw new Error('DEMO mode is selected, but the authorized account is REAL. Trading is blocked. Use a demo token or explicitly complete the separate live gate.');} MX.account=a;MX.currency=a.currency||'USD';MX.balance=Number(a.balance)||0;MX.authorized=true;mxLoadDaily();
  // Reconcile the broker portfolio before arming, including positions opened before a page reload.
  const pf=await mxRequest({portfolio:1});const active=pf.portfolio&&pf.portfolio.contracts;if(!Array.isArray(active))throw new Error('Portfolio response was incomplete. Fail-closed: cannot verify open-contract count.');MX.open.clear();
  for(const c of active){if(!c||!c.contract_id)continue;const id=String(c.contract_id);MX.open.set(id,{id,symbol:c.underlying_symbol||c.symbol||c.shortcode||'UNKNOWN',stake:Number(c.buy_price)||0,contractType:c.contract_type||'UNKNOWN',transactionId:c.transaction_id||'',buyPrice:Number(c.buy_price)||0,settled:false,restored:true});}
@@ -1165,8 +1073,7 @@ mx$('mxConnect').addEventListener('click',mxConnect);mx$('mxArm').addEventListen
 /* ---------- alerts ---------- */
 function beep(){
   if(!cfg.snd)return;
-  try{S.ac=S.ac||new (window.AudioContext||window.webkitAudioContext)();const a=S.ac,o=a.createOscillator(),g=a.createGain();
-  o.type='square';o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(a.destination);o.start();o.frequency.setValueAtTime(1175,a.currentTime+.12);o.stop(a.currentTime+.28);}catch(e){}
+  try{S.ac=S.ac||new (window.AudioContext||window.webkitAudioContext)();const a=S.ac,o=a.createOscillator(),g=a.createGain();  o.type='square';o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(a.destination);o.start();o.frequency.setValueAtTime(1175,a.currentTime+.12);o.stop(a.currentTime+.28);}catch(e){}
 }
 function alertSig(s,sy){
   S.toastSym=sy;
@@ -1175,17 +1082,13 @@ function alertSig(s,sy){
   const t=$('toast');
   t.querySelector('.t1').textContent=(s.d===1?'BUY':'SELL')+' SIGNAL / SCORE '+s.score;
   t.querySelector('.t1').style.color=s.d===1?K.pos:K.neg;
-  t.querySelector('.t2').textContent=nameOf(sy)+' '+tfName()+' / '+s.pat+' AT '+s.kind+' / ENTRY '+fp(sy,s.entry);
-  t.classList.add('show');clearTimeout(alertSig.h);alertSig.h=setTimeout(()=>t.classList.remove('show'),12000);
+  t.querySelector('.t2').textContent=nameOf(sy)+' '+tfName()+' / '+s.pat+' AT '+s.kind+' / ENTRY '+fp(sy,s.entry); t.classList.add('show');clearTimeout(alertSig.h);alertSig.h=setTimeout(()=>t.classList.remove('show'),12000);
   beep();
   try{if('Notification' in window&&Notification.permission==='granted')new Notification((s.d===1?'Buy ':'Sell ')+nameOf(sy)+' ('+s.score+')',{body:s.pat+' at '+s.kind});}catch(e){}
   if(cfg.tok&&cfg.chat){
-    const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\nEntry '+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);
-    fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:cfg.chat,text:txt})}).catch(()=>{});
+    const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\nEntry '+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);    fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:cfg.chat,text:txt})}).catch(()=>{});
   }
-}
-
-/* ---------- scanner states ---------- */
+}/* ---------- scanner states ---------- */
 function stateOf(sy){
   const r=R[sy],m={mode:'load',rank:-5,val:0,side:0,txt:'LOADING',hb:0,tr:0,sig:null,w:null,dist:0};
   if(isClosed(sy))return {mode:'none',rank:-2,val:0,side:0,txt:'MARKET CLOSED',hb:0,tr:0,sig:null,w:null,dist:0,closed:true};
@@ -1193,20 +1096,16 @@ function stateOf(sy){
   m.hb=r.hb;m.tr=r.tr;m.w=r.w;
   const age=r.sig?Math.round((r.lastT-r.sig.t)/cfg.tf):99;
   if(r.sig&&age<=2&&r.sig.score>=40){
-    const hot=r.sig.score>=cfg.thr;
-    m.mode=hot?'sig':'setup';m.rank=(hot?3000:2000)+r.sig.score-age*5;m.val=r.sig.score;m.side=r.sig.d;m.sig=r.sig;
+    const hot=r.sig.score>=cfg.thr;   m.mode=hot?'sig':'setup';m.rank=(hot?3000:2000)+r.sig.score-age*5;m.val=r.sig.score;m.side=r.sig.d;m.sig=r.sig;
     m.txt=(r.sig.d===1?'BUY':'SELL')+(hot?' SIGNAL ':' SETUP ')+r.sig.score;
   }else if(r.w){
-    const dist=r.w.d===1?Math.max(0,(r.px-r.w.hi)/r.a):Math.max(0,(r.w.lo-r.px)/r.a);
-    if(dist<=2.5){m.mode='watch';m.rank=r.w.pot-6*dist;m.val=r.w.pot;m.side=r.w.d;m.dist=dist;m.txt=(r.w.d===1?'DEMAND ':'SUPPLY ')+r.w.kind+' '+(dist<0.05?'INSIDE':dist.toFixed(1)+' ATR');}
+    const dist=r.w.d===1?Math.max(0,(r.px-r.w.hi)/r.a):Math.max(0,(r.w.lo-r.px)/r.a);    if(dist<=2.5){m.mode='watch';m.rank=r.w.pot-6*dist;m.val=r.w.pot;m.side=r.w.d;m.dist=dist;m.txt=(r.w.d===1?'DEMAND ':'SUPPLY ')+r.w.kind+' '+(dist<0.05?'INSIDE':dist.toFixed(1)+' ATR');}
   }
   if(m.mode==='load'){m.mode='none';m.txt='NO ZONE NEAR';m.rank=-1;}
   return m;
 }
-function computeScan(){
-  SCN=SYMS.map(([sy,nm])=>({sy,short:shortOf(nm),st:stateOf(sy)})).sort((a,b)=>b.st.rank-a.st.rank);
+function computeScan(){  SCN=SYMS.map(([sy,nm])=>({sy,short:shortOf(nm),st:stateOf(sy)})).sort((a,b)=>b.st.rank-a.st.rank);
 }
-
 /* ---------- DOM panels ---------- */
 function setH(id,h){const e=$(id);if(e._h!==h){e.innerHTML=h;e._h=h;}}
 function renderHeader(){
@@ -1216,15 +1115,13 @@ function renderHeader(){
   const sg=SCN.filter(x=>x.st.mode==='sig').length;
   $('hSig').textContent=sg;
   const b=SCN[0];
-  $('hBest').textContent=b&&b.st.rank>0?b.short+' '+b.st.val:'-';
-  $('hBest').style.color=b&&b.st.rank>0?(b.st.side===1?K.pos:K.neg):'#fff';
+  $('hBest').textContent=b&&b.st.rank>0?b.short+' '+b.st.val:'-';  $('hBest').style.color=b&&b.st.rank>0?(b.st.side===1?K.pos:K.neg):'#fff';
 }
 function renderAudit(){
   const D=S.D;
   $('auSym').textContent=shortOf(nameOf(cfg.sym))+' / '+tfName();
   if(!D){setH('auGrid','');return;}
-  const s2=D.all[1],big=$('auBig');
-  if(s2.n){big.textContent=(s2.e>=0?'+':'')+s2.e.toFixed(2)+'R';big.className='big '+(s2.e>=0?'pos':'neg');}
+  const s2=D.all[1],big=$('auBig');  if(s2.n){big.textContent=(s2.e>=0?'+':'')+s2.e.toFixed(2)+'R';big.className='big '+(s2.e>=0?'pos':'neg');}
   else{big.textContent='--';big.className='big dm';}
   $('auSub').textContent='AVERAGE R PER TRADE, FIXED 2R TARGET, SAME STOP'+(COST>0?', AFTER COST':'')+(LRN.wFor(cfg.sym)?' / LEARNED WEIGHTS':'');
   const n=s2.n;
@@ -1313,18 +1210,15 @@ function renderTickers(){
   $('mqTop').innerHTML=mqHtml(parts.length?parts:['<span class="dm">LOADING INDICES</span>']);
   $('mqBot').innerHTML=mqHtml(eng);
 }
-
 /* ---------- canvases ---------- */
 function fit(cv){
   const dpr=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;
-  if(!w||!h)return null;
-  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  if(!w||!h)return null;  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
   const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
   return {g,w,h};
 }
 function renderPlan(act){
-  const el=$('planBar');if(!el)return;
-  if(!act){if(el.className!=='plan'){el.className='plan';}setH('planBar','');return;}
+  const el=$('planBar');if(!el)return;  if(!act){if(el.className!=='plan'){el.className='plan';}setH('planBar','');return;}
   const f=v=>v.toFixed(S.dp),rk=act.risk,d=act.d;
   const h='<span class="side '+(d===1?'b':'s')+'">OPEN '+(d===1?'BUY':'SELL')+' '+act.score+'</span>'
    +'<span>ENTRY <b>'+f(act.entry)+'</b></span>'
@@ -1341,15 +1235,13 @@ function drawChart(){
   const act=S.sigs.slice().reverse().find(s=>s.res==='open'&&s.i!==undefined&&C[s.i]&&C[s.i].t===s.t);
   renderPlan(act);
   $('chT').textContent=nameOf(cfg.sym).toUpperCase()+' / '+tfName();
-  g.font='11px "Share Tech Mono",monospace';
-  if(!X||C.length<20){g.fillStyle=K.dim;g.textAlign='center';g.fillText('LOADING CANDLES',W/2,Hh/2);return;}
+  g.font='11px "Share Tech Mono",monospace';  if(!X||C.length<20){g.fillStyle=K.dim;g.textAlign='center';g.fillText('LOADING CANDLES',W/2,Hh/2);return;}
   const n=C.length,V=Math.min(cfg.view||90,n),st=n-V;
   let mn=Infinity,mx=-Infinity;
   for(let i=st;i<n;i++){if(C[i].l<mn)mn=C[i].l;if(C[i].h>mx)mx=C[i].h;}
   const pd=(mx-mn)*0.1||1;mn-=pd;mx+=pd;
   const axis=Math.max(58,Math.ceil(g.measureText(mx.toFixed(S.dp)).width)+10),top=6,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/(V+Math.max(3,Math.round(V*0.08)));
-  const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
-  g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
+  const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;  g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
   const lyT=y(C[n-1].c);
   const planL=[];
   if(act){
@@ -1367,40 +1259,31 @@ function drawChart(){
   const usedY=[];
   zs.slice(0,9).forEach((z,zi)=>{
     const x0=Math.max(0,(Math.max(z.born,st)-st)*bw),col=z.dir===1?'47,227,138':'255,77,94',near=zi<5;
-    const y0=y(Math.min(mx,z.hi)),y1=y(Math.max(mn,z.lo)),hh=Math.max(1,y1-y0);
-    g.fillStyle='rgba('+col+','+(near?0.14:0.06)+')';g.fillRect(x0,y0,pw-x0,hh);
-    g.strokeStyle='rgba('+col+','+(near?0.5:0.22)+')';g.strokeRect(x0+.5,y0+.5,pw-x0-1,Math.max(1,hh-1));
+    const y0=y(Math.min(mx,z.hi)),y1=y(Math.max(mn,z.lo)),hh=Math.max(1,y1-y0);    g.fillStyle='rgba('+col+','+(near?0.14:0.06)+')';g.fillRect(x0,y0,pw-x0,hh);    g.strokeStyle='rgba('+col+','+(near?0.5:0.22)+')';g.strokeRect(x0+.5,y0+.5,pw-x0-1,Math.max(1,hh-1));
     if(near){
       const tw=g.measureText(z.kind).width,ly=y0+9;
       if(!usedY.some(u=>Math.abs(u-ly)<10)){
         let lx=null,al='left';
-        if(pw-x0>=tw+8)lx=x0+3;else if(x0>tw+8){lx=x0-3;al='right';}
-        if(lx!==null){usedY.push(ly);g.textAlign=al;g.fillStyle='rgba('+col+',.95)';g.fillText(z.kind,lx,ly);}
+        if(pw-x0>=tw+8)lx=x0+3;else if(x0>tw+8){lx=x0-3;al='right';}        if(lx!==null){usedY.push(ly);g.textAlign=al;g.fillStyle='rgba('+col+',.95)';g.fillText(z.kind,lx,ly);}
       }
     }
   });
   g.textAlign='left';
-
   const line=(arr,col)=>{g.strokeStyle=col;g.lineWidth=1.1;g.beginPath();let on=false;for(let i=st;i<n;i++){const v=arr[i];if(!(v===v)){on=false;continue;}if(!on){g.moveTo(x(i),y(v));on=true;}else g.lineTo(x(i),y(v));}g.stroke();};
   line(X.s10,K.yel);line(X.s20,K.blu);
   for(let i=st;i<n;i++){
     const c=C[i],up=c.c>=c.o,col=up?K.pos:K.neg,xx=x(i);
-    g.strokeStyle=col;g.fillStyle=col;g.lineWidth=1;
-    g.beginPath();g.moveTo(xx,y(c.h));g.lineTo(xx,y(c.l));g.stroke();
+    g.strokeStyle=col;g.fillStyle=col;g.lineWidth=1;   g.beginPath();g.moveTo(xx,y(c.h));g.lineTo(xx,y(c.l));g.stroke();
     const yo=y(c.o),yc=y(c.c);g.fillRect(xx-bw*0.34,Math.min(yo,yc),bw*0.68,Math.max(1,Math.abs(yo-yc)));
   }
   g.textAlign='center';
-  for(const s of S.sigs){
-    if(s.i===undefined||s.i<st||s.i>=n||!C[s.i]||C[s.i].t!==s.t)continue;
+  for(const s of S.sigs){    if(s.i===undefined||s.i<st||s.i>=n||!C[s.i]||C[s.i].t!==s.t)continue;
     const c=C[s.i],xx=x(s.i),col=s.d===1?K.pos:K.neg,yy=s.d===1?y(c.l)+8:y(c.h)-8;
-    g.fillStyle=col;g.beginPath();
-    if(s.d===1){g.moveTo(xx,yy-5);g.lineTo(xx-4,yy+2);g.lineTo(xx+4,yy+2);}else{g.moveTo(xx,yy+5);g.lineTo(xx-4,yy-2);g.lineTo(xx+4,yy-2);}
+    g.fillStyle=col;g.beginPath();    if(s.d===1){g.moveTo(xx,yy-5);g.lineTo(xx-4,yy+2);g.lineTo(xx+4,yy+2);}else{g.moveTo(xx,yy+5);g.lineTo(xx-4,yy-2);g.lineTo(xx+4,yy-2);}
     g.fill();const tyy=s.d===1?yy+12:yy-6;g.fillStyle='rgba(3,6,11,.8)';g.fillRect(xx-8,tyy-8,16,10);g.fillStyle=col;g.fillText(s.score,xx,tyy);
   }
   if(act){
-    const x0=Math.max(0,x(act.i)),ye=y(act.entry),ys=y(act.sl),yt=y(act.tp[2]);
-    g.fillStyle='rgba(255,77,94,.10)';g.fillRect(x0,Math.min(ye,ys),pw-x0,Math.abs(ys-ye));
-    g.fillStyle='rgba(47,227,138,.08)';g.fillRect(x0,Math.min(ye,yt),pw-x0,Math.abs(yt-ye));
+    const x0=Math.max(0,x(act.i)),ye=y(act.entry),ys=y(act.sl),yt=y(act.tp[2]);   g.fillStyle='rgba(255,77,94,.10)';g.fillRect(x0,Math.min(ye,ys),pw-x0,Math.abs(ys-ye));   g.fillStyle='rgba(47,227,138,.08)';g.fillRect(x0,Math.min(ye,yt),pw-x0,Math.abs(yt-ye));
     g.setLineDash([4,3]);g.lineWidth=1.2;
     for(const q of planL){g.strokeStyle=q.col;g.beginPath();g.moveTo(x0,q.yy);g.lineTo(pw,q.yy);g.stroke();}
     g.setLineDash([]);g.textAlign='right';g.font='bold 11px "Share Tech Mono",monospace';
@@ -1413,9 +1296,7 @@ function drawChart(){
     for(const q of planL){g.fillStyle=q.col;g.fillRect(pw,q.ly-9,axis,17);g.fillStyle='#03060b';g.fillText(q.p.toFixed(S.dp),pw+3,q.ly+3);}
     g.font='11px "Share Tech Mono",monospace';
   }
-  const lp=C[n-1].c,ly=y(lp);
-  g.setLineDash([2,3]);g.strokeStyle='rgba(215,230,245,.5)';g.beginPath();g.moveTo(0,ly);g.lineTo(pw,ly);g.stroke();g.setLineDash([]);
-  g.fillStyle=K.amb;g.fillRect(pw,ly-8,axis,16);g.fillStyle='#120a00';g.textAlign='left';g.fillText(lp.toFixed(S.dp),pw+3,ly+3);
+  const lp=C[n-1].c,ly=y(lp);  g.setLineDash([2,3]);g.strokeStyle='rgba(215,230,245,.5)';g.beginPath();g.moveTo(0,ly);g.lineTo(pw,ly);g.stroke();g.setLineDash([]);  g.fillStyle=K.amb;g.fillRect(pw,ly-8,axis,16);g.fillStyle='#120a00';g.textAlign='left';g.fillText(lp.toFixed(S.dp),pw+3,ly+3);
   g.fillStyle=K.dim;g.textAlign='center';
   for(let i=st+Math.floor(V/8);i<n;i+=Math.max(10,Math.round(V/(cfg.tf>=900?3:4))))g.fillText(clkM(C[i].t),x(i),Hh-3);
   const chg=(C[n-1].c-C[st].c)/C[st].c*100;
@@ -1424,37 +1305,29 @@ function drawChart(){
 function drawTimeline(){
   const f=fit($('cvTl'));if(!f)return;
   const {g,w:W,h:Hh}=f,D=S.D;
-  g.font='10px "Share Tech Mono",monospace';
-  if(!D||!D.tl.length){g.fillStyle=K.dim;g.textAlign='center';g.fillText('WAITING FOR HISTORY',W/2,Hh/2);return;}
+  g.font='10px "Share Tech Mono",monospace';  if(!D||!D.tl.length){g.fillStyle=K.dim;g.textAlign='center';g.fillText('WAITING FOR HISTORY',W/2,Hh/2);return;}
   const L=D.tl,axis=34,top=8,bot=26,pw=W-axis,ph=Hh-top-bot,N=L.length,bw=pw/N;
-  const x=i=>(i+0.5)*bw,y=v=>top+(1-v/100)*ph;
-  g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
+  const x=i=>(i+0.5)*bw,y=v=>top+(1-v/100)*ph;  g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
   for(const v of [0,25,50,75,100]){g.beginPath();g.moveTo(0,y(v));g.lineTo(pw,y(v));g.stroke();g.fillText(String(v),pw+5,y(v)+3);}
   // H1 bias ribbon
-  for(let i=0;i<N;i++){g.fillStyle=L[i].hb===1?'rgba(47,227,138,.5)':L[i].hb===-1?'rgba(255,77,94,.5)':'rgba(111,130,150,.35)';g.fillRect(i*bw,Hh-bot+8,bw+0.5,4);}
-  g.fillStyle=K.dim;g.textAlign='left';g.fillText(HN(),pw+5,Hh-bot+15);
-  // alert level
-  g.setLineDash([4,4]);g.strokeStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(0,y(cfg.thr));g.lineTo(pw,y(cfg.thr));g.stroke();g.setLineDash([]);
+  for(let i=0;i<N;i++){g.fillStyle=L[i].hb===1?'rgba(47,227,138,.5)':L[i].hb===-1?'rgba(255,77,94,.5)':'rgba(111,130,150,.35)';g.fillRect(i*bw,Hh-bot+8,bw+0.5,4);}  g.fillStyle=K.dim;g.textAlign='left';g.fillText(HN(),pw+5,Hh-bot+15);
+  // alert level  g.setLineDash([4,4]);g.strokeStyle='rgba(255,255,255,.35)';g.beginPath();g.moveTo(0,y(cfg.thr));g.lineTo(pw,y(cfg.thr));g.stroke();g.setLineDash([]);
   // signal stems
   for(let i=0;i<N;i++){
     const p=L[i];if(!p.score)continue;
-    const hot=p.score>=cfg.thr,col=p.d===1?'47,227,138':'255,77,94';
-    g.strokeStyle='rgba('+col+','+(hot?0.9:0.35)+')';g.lineWidth=hot?1.6:1;g.beginPath();g.moveTo(x(i),y(0));g.lineTo(x(i),y(p.score));g.stroke();
-    g.fillStyle=hot?K.amb:'rgba(245,165,36,.6)';g.beginPath();g.arc(x(i),y(p.score),hot?2.6:1.7,0,6.283);g.fill();
+    const hot=p.score>=cfg.thr,col=p.d===1?'47,227,138':'255,77,94'; g.strokeStyle='rgba('+col+','+(hot?0.9:0.35)+')';g.lineWidth=hot?1.6:1;g.beginPath();g.moveTo(x(i),y(0));g.lineTo(x(i),y(p.score));g.stroke();    g.fillStyle=hot?K.amb:'rgba(245,165,36,.6)';g.beginPath();g.arc(x(i),y(p.score),hot?2.6:1.7,0,6.283);g.fill();
   }
   // potential line
   g.strokeStyle=K.cy;g.lineWidth=1.3;g.beginPath();
   L.forEach((p,i)=>{if(i===0)g.moveTo(x(i),y(p.pot));else g.lineTo(x(i),y(p.pot));});g.stroke();
-  const lp=L[N-1].pot;
-  g.fillStyle=K.cy;g.fillRect(pw,y(lp)-7,axis,14);g.fillStyle='#021018';g.fillText(String(lp),pw+5,y(lp)+3);
+  const lp=L[N-1].pot;  g.fillStyle=K.cy;g.fillRect(pw,y(lp)-7,axis,14);g.fillStyle='#021018';g.fillText(String(lp),pw+5,y(lp)+3);
   g.fillStyle=K.dim;g.textAlign='center';
   for(let k=0;k<4;k++){const i=Math.floor(N*(k+0.5)/4);g.fillText(clkM(L[i].t),x(i),Hh-bot+22);}
 }
 function drawFunnel(){
   const f=fit($('cvFun'));if(!f)return;
   const {g,w:W,h:Hh}=f,D=S.D;
-  g.font='10px "Share Tech Mono",monospace';
-  if(!D||!D.paths.length){g.fillStyle=K.dim;g.textAlign='center';g.fillText('NO RESOLVED PATHS YET',W/2,Hh/2);return;}
+  g.font='10px "Share Tech Mono",monospace';  if(!D||!D.paths.length){g.fillStyle=K.dim;g.textAlign='center';g.fillText('NO RESOLVED PATHS YET',W/2,Hh/2);return;}
   const axis=34,top=10,bot=22,pw=W-axis,ph=Hh-top-bot,T=40;
   const lo=-2.2,hi=Math.max(4.2,Math.max(...D.paths.map(p=>Math.max(...p.p)))*0.9);
   const x=t=>t/T*pw,y=r=>top+(hi-Math.max(lo,Math.min(hi,r)))/(hi-lo)*ph;
@@ -1463,15 +1336,11 @@ function drawFunnel(){
   for(let k=-6;k<=6;k++){g.beginPath();g.moveTo(pw*0.5+k*8,top+ph*0.62);g.lineTo(pw*0.5+k*pw*0.2,top+ph);g.stroke();}
   for(let k=0;k<5;k++){const yy=top+ph*(0.62+0.38*Math.pow(k/4,1.6));g.beginPath();g.moveTo(0,yy);g.lineTo(pw,yy);g.stroke();}
   g.fillStyle=K.dim;g.textAlign='left';
-  for(const r of [-1,0,1,2,3]){
-    g.setLineDash(r===0?[]:[4,4]);g.strokeStyle=r===-1?'rgba(255,77,94,.6)':r===0?'rgba(255,255,255,.3)':'rgba(47,227,138,.4)';
-    g.beginPath();g.moveTo(0,y(r));g.lineTo(pw,y(r));g.stroke();g.setLineDash([]);g.fillText((r>0?'+':'')+r+'R',pw+5,y(r)+3);
+  for(const r of [-1,0,1,2,3]){ g.setLineDash(r===0?[]:[4,4]);g.strokeStyle=r===-1?'rgba(255,77,94,.6)':r===0?'rgba(255,255,255,.3)':'rgba(47,227,138,.4)';   g.beginPath();g.moveTo(0,y(r));g.lineTo(pw,y(r));g.stroke();g.setLineDash([]);g.fillText((r>0?'+':'')+r+'R',pw+5,y(r)+3);
   }
   // paths
   for(const q of D.paths){
-    const end=q.p[q.p.length-1];
-    g.strokeStyle=end>=0?'rgba(47,227,138,.22)':'rgba(255,77,94,.22)';g.lineWidth=1;
-    g.beginPath();q.p.forEach((r,t)=>{if(t===0)g.moveTo(x(t),y(r));else g.lineTo(x(t),y(r));});g.stroke();
+    const end=q.p[q.p.length-1]; g.strokeStyle=end>=0?'rgba(47,227,138,.22)':'rgba(255,77,94,.22)';g.lineWidth=1;    g.beginPath();q.p.forEach((r,t)=>{if(t===0)g.moveTo(x(t),y(r));else g.lineTo(x(t),y(r));});g.stroke();
   }
   // mean and cone
   const mean=[],sd=[];
@@ -1484,14 +1353,12 @@ function drawFunnel(){
     g.fillStyle='rgba(74,168,255,.14)';g.beginPath();
     mean.forEach((m,t)=>{const yy=y(m+sd[t]);if(t===0)g.moveTo(x(t),yy);else g.lineTo(x(t),yy);});
     for(let t=mean.length-1;t>=0;t--)g.lineTo(x(t),y(mean[t]-sd[t]));
-    g.closePath();g.fill();
-    g.strokeStyle='#e8f4ff';g.lineWidth=1.6;g.beginPath();mean.forEach((m,t)=>{if(t===0)g.moveTo(x(t),y(m));else g.lineTo(x(t),y(m));});g.stroke();
+    g.closePath();g.fill();    g.strokeStyle='#e8f4ff';g.lineWidth=1.6;g.beginPath();mean.forEach((m,t)=>{if(t===0)g.moveTo(x(t),y(m));else g.lineTo(x(t),y(m));});g.stroke();
     const lm=mean[mean.length-1];g.fillStyle=lm>=0?K.pos:K.neg;g.beginPath();g.arc(x(mean.length-1),y(lm),3,0,6.283);g.fill();
   }
   g.fillStyle=K.dim;g.textAlign='center';
   for(const t of [0,10,20,30,40])g.fillText(t+' BARS',Math.min(pw-12,Math.max(12,x(t))),Hh-5);
 }
-
 /* ---------- neural shell ---------- */
 const NU=96,NV=22,PTS=[];
 for(let iu=0;iu<NU;iu++)for(let iv=0;iv<NV;iv++)PTS.push({iu,u:iu/NU*6.28318,v:iv/NV*6.28318+(iu%2)*0.14});
@@ -1499,7 +1366,7 @@ const BK=8,BC=['#27446c','#33598a','#3f70a6','#4d86bf','#6aa3d6','#8cc0ea','#b4d
 let lastShell=0;
 function drawShell(now){
   const cv=$('cvShell'),pn=$('shellP');
-  if(window.innerWidth<700&&now-lastShell<45)return;
+  if(now-lastShell<30)return;
   lastShell=now;
   const f=fit(cv);if(!f)return;
   const {g,w:W,h:Hh}=f,pr=pn.getBoundingClientRect(),md=$('shMid').getBoundingClientRect();
@@ -1543,14 +1410,11 @@ function drawShell(now){
       const hsh=0.6+0.4*Math.abs(Math.sin(q*12.9898+j*78.233));
       const L=(ready?0.12+0.62*s0.val/100:0.07+0.05*hsh)*hsh*(1+0.7*pu);
       const rb=R0+r0,a=proj(rb*cu,0,rb*su),b=proj((rb+L)*cu,0,(rb+L)*su);
-      const al=Math.max(0.15,Math.min(1,(1.6-a[2])/2.4))*(ready?0.9:0.45);
-      g.strokeStyle='rgba('+col+','+al+')';g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
-      g.fillStyle='rgba('+col+','+Math.min(1,al+0.2)+')';g.beginPath();g.arc(b[0],b[1],ready?1.9:1.2,0,6.283);g.fill();
+      const al=Math.max(0.15,Math.min(1,(1.6-a[2])/2.4))*(ready?0.9:0.45);      g.strokeStyle='rgba('+col+','+al+')';g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();    g.fillStyle='rgba('+col+','+Math.min(1,al+0.2)+')';g.beginPath();g.arc(b[0],b[1],ready?1.9:1.2,0,6.283);g.fill();
     }
     const u=(j+0.5)/NS*6.28318,rl=R0+r0+0.92,lp=proj(rl*Math.cos(u),0,rl*Math.sin(u));
     const al=Math.max(0.3,Math.min(1,(1.6-lp[2])/2.2));
-    g.font=(hot?'12px':'10px')+' "Share Tech Mono",monospace';g.textAlign='center';
-    g.fillStyle='rgba('+col+','+al+')';g.fillText(shortOf(nm)+(ready?' '+s0.val:''),lp[0],lp[1]);
+    g.font=(hot?'12px':'10px')+' "Share Tech Mono",monospace';g.textAlign='center';    g.fillStyle='rgba('+col+','+al+')';g.fillText(shortOf(nm)+(ready?' '+s0.val:''),lp[0],lp[1]);
   });
   // connectors from input cards (wide screens)
   if(window.innerWidth>=1100){
@@ -1559,12 +1423,9 @@ function drawShell(now){
       const el=$('ic'+i);if(!el)continue;
       const r=el.getBoundingClientRect(),ax=r.right-pr.left,ay=r.top-pr.top+r.height/2;
       const tx=cx-sc*1.18,ty=cy+(i-2.5)*sc*0.2;
-      const c1x=ax+(tx-ax)*0.55,c1y=ay,c2x=tx-(tx-ax)*0.25,c2y=ty;
-      g.strokeStyle=cols[i]+'88';g.lineWidth=1.1;g.beginPath();g.moveTo(ax,ay);g.bezierCurveTo(c1x,c1y,c2x,c2y,tx,ty);g.stroke();
+      const c1x=ax+(tx-ax)*0.55,c1y=ay,c2x=tx-(tx-ax)*0.25,c2y=ty;      g.strokeStyle=cols[i]+'88';g.lineWidth=1.1;g.beginPath();g.moveTo(ax,ay);g.bezierCurveTo(c1x,c1y,c2x,c2y,tx,ty);g.stroke();
       const t=REDUCE?0.5:((now*0.00035+i*0.17)%1),mt=1-t;
-      const px=mt*mt*mt*ax+3*mt*mt*t*c1x+3*mt*t*t*c2x+t*t*t*tx,py=mt*mt*mt*ay+3*mt*mt*t*c1y+3*mt*t*t*c2y+t*t*t*ty;
-      g.fillStyle=cols[i];g.beginPath();g.arc(px,py,2.4,0,6.283);g.fill();
-      g.beginPath();g.arc(tx,ty,3,0,6.283);g.fillStyle=cols[i]+'cc';g.fill();
+      const px=mt*mt*mt*ax+3*mt*mt*t*c1x+3*mt*t*t*c2x+t*t*t*tx,py=mt*mt*mt*ay+3*mt*mt*t*c1y+3*mt*t*t*c2y+t*t*t*ty;    g.fillStyle=cols[i];g.beginPath();g.arc(px,py,2.4,0,6.283);g.fill();      g.beginPath();g.arc(tx,ty,3,0,6.283);g.fillStyle=cols[i]+'cc';g.fill();
     }
   }
 }
@@ -1575,7 +1436,6 @@ function renderCaps(){
   $('cap2').textContent=b&&b.st.rank>0?('BEST READY '+b.short+' / '+b.st.txt):'NO READY INDEX';
   $('cap3').textContent=n>1?('LAST CLOSED BAR '+clkL(S.C[n-2].t+cfg.tf)):'';
 }
-
 /* ---------- verdict ring ---------- */
 const VPN=['Zone','Structure','Candle','Momentum','Regime'];
 const VPD=['Fresh order block or flip level','Higher timeframe bias, trend, liquidity sweep','Pattern strength, wick check','SMA 10/20 and Stoch RSI','ATR against its 50 bar average'];
@@ -1616,9 +1476,7 @@ function renderVerdict(){
   const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
   setH('vchips','<span class="vchip">'+HN()+' BIAS '+w(h)+'</span><span class="vchip">'+tfName()+' TREND '+w(t)+'</span><span class="vchip">ATR '+(X&&X.A[n-1]>0?fp(cfg.sym,X.A[n-1]):'-')+'</span>'+(ev?'<span class="vchip neg">STOP '+fp(cfg.sym,ev.sl)+'</span><span class="vchip up">TP1 '+fp(cfg.sym,ev.tp[0])+'</span><span class="vchip up">TP2 '+fp(cfg.sym,ev.tp[1])+'</span><span class="vchip up">TP3 '+fp(cfg.sym,ev.tp[2])+'</span>':'')+(isClosed(cfg.sym)?'<span class="vchip neg">MARKET CLOSED</span>':'')+(COST>0&&X&&X.A[n-1]>0?'<span class="vchip">COST '+(COST/X.A[n-1]).toFixed(2)+' ATR</span>':''));
   setH('vparts',VPN.map((nm,k)=>'<li><i class="sw" style="background:'+VPC[k]+'"></i><div class="nm">'+nm.toUpperCase()+'<span>'+VPD[k].toUpperCase()+'</span></div><div class="pt">'+(Math.round(parts[k]*10)/10)+'/'+MAXP[k]+'</div></li>').join(''));
-}
-
-/* ---------- ranked scanner list ---------- */
+}/* ---------- ranked scanner list ---------- */
 function renderScanList(){
   let ready=0;
   const rows=SCN.map(x=>{
@@ -1626,8 +1484,7 @@ function renderScanList(){
     if(r&&r.ready)ready++;
     let txt='LOADING CANDLES',num='',cap='',cls='',hot=false;
     if(st.mode==='sig'||st.mode==='setup'){
-      const age=Math.round((r.lastT-st.sig.t)/cfg.tf);
-      hot=st.mode==='sig';cls=st.side===1?'b':'s';num=st.val;cap=hot?'SIGNAL':'SETUP';
+      const age=Math.round((r.lastT-st.sig.t)/cfg.tf);      hot=st.mode==='sig';cls=st.side===1?'b':'s';num=st.val;cap=hot?'SIGNAL':'SETUP';
       txt=(st.side===1?'Buy':'Sell')+(hot?' signal: ':' setup: ')+st.sig.pat+' at '+st.sig.kind+(age===0?', just closed':', '+age+(age===1?' bar ago':' bars ago'));
     }else if(st.mode==='watch'){
       cls=st.side===1?'b':'s';num=st.val;cap='POTENTIAL';
@@ -1641,7 +1498,6 @@ function renderScanList(){
   $('scCount').textContent=ready+' OF '+SYMS.length+' LOADED';
   setH('scl',rows);
 }
-
 /* ---------- stats explorer ---------- */
 function groupBy(list,tab){
   const m=new Map();
@@ -1673,7 +1529,6 @@ function renderWalkForward(){
   const o=wf.oos;
   setH('wfBox','<div class="ph" style="margin-top:12px">WALK-FORWARD / TRAIN-ONLY THRESHOLD SELECTION <span class="r">'+esc(GN[wf.market||grpFor(cfg.sym)]||grpFor(cfg.sym))+' / '+esc(wf.session||'ALL HOURS')+' / TARGET '+k+'R</span></div><div class="lab" style="text-transform:none;letter-spacing:.02em;margin:4px 0 8px">Each test window uses a score threshold selected only from earlier resolved history. A threshold is selected only with at least 20 prior trades and positive conservative expectancy; otherwise the model abstains (101 = no trade). Trades crossing a test-window boundary are purged from the window metrics. This threshold is report-only and does not change live alerts.'+(!wf.costConfigured?' <b style="color:var(--amb)">WARNING: COSTS ARE ZERO. CONFIGURE ROUND-TRIP COST AND SLIPPAGE FOR THIS SYMBOL BEFORE TRUSTING NET EXPECTANCY.</b>':'')+'</div><div class="tw"><table><thead><tr><th>WINDOW</th><th>TIME (MUSCAT)</th><th class="n">CHOSEN FLOOR</th><th class="n">TRAIN N</th><th>TRAIN NET</th><th class="n">TEST N</th><th>TEST NET</th></tr></thead><tbody>'+rows+'<tr style="color:#fff"><td>AGGREGATE OOS</td><td>LAST 50%</td><td class="n">—</td><td>—</td><td>—</td><td class="n">'+o.n+'</td><td>'+fmtM(o)+'</td></tr></tbody></table></div><div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Net R deducts the configured costs for this symbol: round-trip spread/commission and slippage. Costs are stored per symbol. For forex and gold, enable the London + New York session filter to test weekday entries in the configured session; exits are still allowed outside the entry window. Synthetic indices bypass that session filter because they trade continuously. Expired positions are closed at the final candle close and marked to that return. Maximum drawdown is measured on chronological cumulative net-R. If every training threshold lacks a positive conservative edge, the test window abstains rather than forcing a trade. Results remain historical estimates, not a guarantee of future returns.</div>');
 }
-
 function compareMarketClass(sy){
   if(/XAU|GOLD/i.test(String(sy||'')))return 'GOLD';
   const g=grpFor(sy);return g==='SYNTH'?'DERIV SYNTHETIC':g==='FOREX'?'FOREX':g==='COMM'?'COMMODITY':g;
@@ -1688,13 +1543,10 @@ function runSideBySide(){
   const commonEnd=loaded.length?Math.min(...loaded.map(x=>x.st.C[Math.max(0,x.st.C.length-2)].t)):0;
   const calendar={startT:commonStart,endT:commonEnd};
   for(const {sy,st} of loaded){
-    const usable=st.C.filter(c=>c.t>=commonStart&&c.t<=commonEnd).length;
-    if(usable<200){results.push({sy,group:compareMarketClass(sy),ready:false,reason:'Less than 200 bars in shared calendar window (40-bar warm-up + 160-bar validation minimum)'});continue;}
-    cfg.sym=sy;COST=Math.max(0,+(cfg.spr[sy])||0);SLIP=Math.max(0,+(cfg.slip[sy])||0);
+    const usable=st.C.filter(c=>c.t>=commonStart&&c.t<=commonEnd).length;   if(usable<200){results.push({sy,group:compareMarketClass(sy),ready:false,reason:'Less than 200 bars in shared calendar window (40-bar warm-up + 160-bar validation minimum)'});continue;}    cfg.sym=sy;COST=Math.max(0,+(cfg.spr[sy])||0);SLIP=Math.max(0,+(cfg.slip[sy])||0);
     try{
       const X=buildX(st.C,st.H,cfg.tf,HTF,null);
-      const wf=walkForward(X,target,SLIP,calendar,{sym:sy,sess:cfg.sess});
-      results.push({sy,group:compareMarketClass(sy),ready:!!wf.ready,wf,cost:COST,slip:SLIP,atr:X.A[X.A.length-2]||0});
+      const wf=walkForward(X,target,SLIP,calendar,{sym:sy,sess:cfg.sess});      results.push({sy,group:compareMarketClass(sy),ready:!!wf.ready,wf,cost:COST,slip:SLIP,atr:X.A[X.A.length-2]||0});
     }catch(e){results.push({sy,group:compareMarketClass(sy),ready:false,reason:'Calculation failed'});}
   }
   cfg.sym=oldSym;COST=oldCost;SLIP=oldSlip;updateCost();
@@ -1704,11 +1556,10 @@ function runSideBySide(){
   const groups=[...new Set(results.map(r=>r.group))].sort((a,b)=>['DERIV SYNTHETIC','FOREX','GOLD','COMMODITY'].indexOf(a)-['DERIV SYNTHETIC','FOREX','GOLD','COMMODITY'].indexOf(b));
   const summary=groups.map(g=>{const a=ready.filter(r=>r.group===g);if(!a.length)return '<tr><td><b>'+esc(g)+'</b></td><td colspan="5">No usable OOS results</td></tr>';const mean=a.reduce((z,r)=>z+r.wf.oos.e,0)/a.length,meanDD=a.reduce((z,r)=>z+r.wf.oos.dd,0)/a.length,meanHit=a.reduce((z,r)=>z+r.wf.oos.hit,0)/a.length,n=a.reduce((z,r)=>z+r.wf.oos.n,0);return '<tr style="color:#fff"><td><b>'+esc(g)+' · equal-weight mean</b></td><td class="n">'+a.length+' / '+results.filter(r=>r.group===g).length+' instruments</td><td class="n">'+n+'</td><td class="n">'+fmt(mean)+'</td><td class="n">'+fmtPct(meanHit)+'</td><td class="n">'+fmt(meanDD)+'</td></tr>';}).join('');
   const rows=results.map(r=>{if(!r.ready||!r.wf||!r.wf.ready)return '<tr><td>'+esc(r.group)+'</td><td>'+esc(r.sy)+'</td><td colspan="7">'+esc(r.reason||'Needs at least 160 usable bars')+'</td></tr>';const m=r.wf.oos;return '<tr><td>'+esc(r.group)+'</td><td>'+esc(r.sy)+'</td><td class="n">'+r.cost.toPrecision(4)+'</td><td class="n">'+r.slip.toPrecision(4)+'</td><td class="n">'+m.n+'</td><td class="n '+(m.e>0?'pos':m.e<0?'neg':'')+'">'+fmt(m.e)+'</td><td class="n">'+fmtPct(m.hit)+'</td><td class="n">'+fmt(m.dd)+'</td><td class="n">'+(m.pf===Infinity?'∞':Number.isFinite(m.pf)?m.pf.toFixed(2):'—')+'</td></tr>';}).join('');
-  setH(box,'<div class="lab" style="text-transform:none;letter-spacing:.02em;margin:6px 0">Equal-weight class means give each instrument one vote, so high-frequency instruments do not dominate the class score. All instruments use the same overlapping calendar period and the same calendar-based train/test fold boundaries; market closures still mean candle counts differ. OOS expectancy is net R per resolved trade; drawdown is maximum chronological drawdown in R. Comparisons are valid only for the same timeframe, target and session policy. This is a research report, not evidence of live profitability.</div><div class="tw"><table><thead><tr><th>CLASS SUMMARY</th><th>INSTRUMENTS</th><th class="n">OOS TRADES</th><th class="n">MEAN NET EXP.</th><th class="n">MEAN HIT</th><th class="n">MEAN DD</th></tr></thead><tbody>'+summary+'</tbody></table></div><div class="tw" style="margin-top:8px"><table><thead><tr><th>CLASS</th><th>SYMBOL</th><th class="n">ROUND-TRIP COST</th><th class="n">SLIP / SIDE</th><th class="n">OOS N</th><th class="n">NET EXP.</th><th class="n">HIT</th><th class="n">MAX DD</th><th class="n">PF</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  setH('cmpBox','<div class="lab" style="text-transform:none;letter-spacing:.02em;margin:6px 0">Equal-weight class means give each instrument one vote, so high-frequency instruments do not dominate the class score. All instruments use the same overlapping calendar period and the same calendar-based train/test fold boundaries; market closures still mean candle counts differ. OOS expectancy is net R per resolved trade; drawdown is maximum chronological drawdown in R. Comparisons are valid only for the same timeframe, target and session policy. This is a research report, not evidence of live profitability.</div><div class="tw"><table><thead><tr><th>CLASS SUMMARY</th><th>INSTRUMENTS</th><th class="n">OOS TRADES</th><th class="n">MEAN NET EXP.</th><th class="n">MEAN HIT</th><th class="n">MEAN DD</th></tr></thead><tbody>'+summary+'</tbody></table></div><div class="tw" style="margin-top:8px"><table><thead><tr><th>CLASS</th><th>SYMBOL</th><th class="n">ROUND-TRIP COST</th><th class="n">SLIP / SIDE</th><th class="n">OOS N</th><th class="n">NET EXP.</th><th class="n">HIT</th><th class="n">MAX DD</th><th class="n">PF</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
   const zero=results.filter(r=>r.ready&&(!r.cost&&!r.slip)).map(r=>r.sy);
   note.textContent='Ran '+results.length+' instrument(s) at '+tfName()+', shared calendar '+(commonStart?new Date(commonStart*1000).toISOString().slice(0,16).replace('T',' ')+' UTC':'unavailable')+' to '+(commonEnd?new Date(commonEnd*1000).toISOString().slice(0,16).replace('T',' ')+' UTC':'unavailable')+', target '+target+'R, session '+(cfg.sess==='all'?'all hours':'London + New York for non-24/7 markets')+'. '+(zero.length?'WARNING: zero configured costs and slippage for '+zero.join(', ')+'. Those net results are not cost-realistic. ':'')+'Instruments without loaded history are listed as skipped. Gold is reported separately from forex.';
 }
-
 /* ---------- constellation map ---------- */
 const MP={nodes:[],W:0,H:0,drag:null,down:null,sel:null,last:0,g:null};
 const VIS={shell:true,map:true};
@@ -1717,8 +1568,7 @@ function mpInit(){
 }
 function mpFit(){
   const cv=$('cvMap'),dpr=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;
-  if(!w||!h)return false;
-  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  if(!w||!h)return false; if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
   const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);MP.g=g;
   if(MP.W!==w||MP.H!==h){
     MP.W=w;MP.H=h;
@@ -1737,8 +1587,7 @@ function mpPhysics(dt,frameNo){
     const tr=14+Math.min(100,n.st.val)/100*14+(n.st.mode==='sig'?4:0);
     n.r+=(tr-n.r)*0.08;
     const w=Math.min(100,Math.max(0,n.st.val))/100,k=0.00003+w*0.0003;
-    n.vx+=(cx-n.x)*k*dt;n.vy+=(cy-n.y)*k*dt;
-    n.vx+=Math.cos(n.ph+frameNo*0.004)*0.004*dt;n.vy+=Math.sin(n.ph*1.3+frameNo*0.005)*0.004*dt;
+    n.vx+=(cx-n.x)*k*dt;n.vy+=(cy-n.y)*k*dt; n.vx+=Math.cos(n.ph+frameNo*0.004)*0.004*dt;n.vy+=Math.sin(n.ph*1.3+frameNo*0.005)*0.004*dt;
   }
   for(let i=0;i<N.length;i++){
     const a=N[i];
@@ -1764,30 +1613,24 @@ function mpDraw(now){
   for(let y=0;y<MP.H;y+=40){g.beginPath();g.moveTo(0,y);g.lineTo(MP.W,y);g.stroke();}
   let li=0;
   for(let i=0;i<N.length;i++)for(let j=i+1;j<N.length;j++){
-    const a=N[i],b=N[j];
-    if(!a.st.side||a.st.side!==b.st.side||a.st.mode==='none'||b.st.mode==='none')continue;
-    const al=Math.min(a.st.val,b.st.val)/100,c=a.st.side===1?'47,227,138':'255,77,94';
-    g.strokeStyle='rgba('+c+','+(0.12+al*0.4)+')';g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();
+    const a=N[i],b=N[j];  if(!a.st.side||a.st.side!==b.st.side||a.st.mode==='none'||b.st.mode==='none')continue;
+    const al=Math.min(a.st.val,b.st.val)/100,c=a.st.side===1?'47,227,138':'255,77,94';    g.strokeStyle='rgba('+c+','+(0.12+al*0.4)+')';g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();
     if(!REDUCE){const t=((now*0.00035)+li*0.37)%1;g.beginPath();g.arc(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,2,0,6.283);g.fillStyle='rgba('+c+','+(0.5+al*0.5)+')';g.fill();}
     li++;
   }
   g.textAlign='center';
   for(const n of N){
     const s=n.st,c=mpCol(s.side,s.mode),r=n.r,pulse=REDUCE?1:0.92+Math.sin(now*0.003+n.ph)*0.08;
-    const gl=g.createRadialGradient(n.x,n.y,0,n.x,n.y,r*3);
-    gl.addColorStop(0,c+(s.mode==='sig'?'66':s.mode==='setup'?'44':s.mode==='watch'?'28':'12'));gl.addColorStop(1,c+'00');
+    const gl=g.createRadialGradient(n.x,n.y,0,n.x,n.y,r*3);    gl.addColorStop(0,c+(s.mode==='sig'?'66':s.mode==='setup'?'44':s.mode==='watch'?'28':'12'));gl.addColorStop(1,c+'00');
     g.beginPath();g.arc(n.x,n.y,r*3,0,6.283);g.fillStyle=gl;g.fill();
-    if(s.mode==='sig'&&!REDUCE){const rp=((now*0.0009+n.ph)%1);g.beginPath();g.arc(n.x,n.y,r+5+rp*22,0,6.283);g.strokeStyle='rgba(245,165,36,'+(0.55*(1-rp))+')';g.lineWidth=1.3;g.stroke();}
-    g.beginPath();g.arc(n.x,n.y,r*pulse,0,6.283);g.fillStyle=s.mode==='load'?'#0a1420':'#060d16';g.fill();
-    g.lineWidth=2;g.strokeStyle=s.mode==='sig'?'#f5a524':c;g.globalAlpha=s.mode==='none'||s.mode==='load'?0.55:1;g.stroke();g.globalAlpha=1;
-    if(s.val>0){g.beginPath();g.arc(n.x,n.y,r+5,-Math.PI/2,-Math.PI/2+6.283*Math.min(1,s.val/100));g.strokeStyle=c;g.lineWidth=3;g.stroke();}
-    g.fillStyle=s.mode==='none'||s.mode==='load'?'#6f8296':'#fff';g.font=Math.round(10+r*0.3)+'px "Share Tech Mono",monospace';
-    g.fillText(s.mode==='load'?'..':s.val>0?String(s.val):'-',n.x,n.y+4);
+    if(s.mode==='sig'&&!REDUCE){const rp=((now*0.0009+n.ph)%1);g.beginPath();g.arc(n.x,n.y,r+5+rp*22,0,6.283);g.strokeStyle='rgba(245,165,36,'+(0.55*(1-rp))+')';g.lineWidth=1.3;g.stroke();}    g.beginPath();g.arc(n.x,n.y,r*pulse,0,6.283);g.fillStyle=s.mode==='load'?'#0a1420':'#060d16';g.fill();    g.lineWidth=2;g.strokeStyle=s.mode==='sig'?'#f5a524':c;g.globalAlpha=s.mode==='none'||s.mode==='load'?0.55:1;g.stroke();g.globalAlpha=1;    if(s.val>0){g.beginPath();g.arc(n.x,n.y,r+5,-Math.PI/2,-Math.PI/2+6.283*Math.min(1,s.val/100));g.strokeStyle=c;g.lineWidth=3;g.stroke();} g.fillStyle=s.mode==='none'||s.mode==='load'?'#6f8296':'#fff';g.font=Math.round(10+r*0.3)+'px "Share Tech Mono",monospace';    g.fillText(s.mode==='load'?'..':s.val>0?String(s.val):'-',n.x,n.y+4);
     g.font='11px "Share Tech Mono",monospace';g.fillStyle=n.sy===MP.sel?'#f5a524':'#b7c8da';g.fillText(n.short,n.x,n.y-r-9);
     if(s.side&&s.mode!=='none'){g.font='10px "Share Tech Mono",monospace';g.fillStyle=c;g.fillText(s.side===1?'BUY':'SELL',n.x,n.y+r+15);}
   }
 }
 function mpFrame(now){
+  if(now-(MP.lastDraw||0)<30)return;
+  MP.lastDraw=now;
   if(!mpFit())return;
   if(!MP.nodes.length&&MP.W)mpInit();
   const dt=Math.min(2.5,(now-(MP.last||now))/16.67);MP.last=now;
@@ -1797,8 +1640,7 @@ function mpFrame(now){
 function mpFill(){
   const n=MP.nodes.find(x=>x.sy===MP.sel);if(!n)return;
   const s=n.st,r=R[n.sy]||{};
-  const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';
-  $('mpT').textContent=nameOf(n.sy).toUpperCase();$('mpX').textContent=s.txt;
+  const w=v=>v===1?'<b class="up">UP</b>':v===-1?'<b class="down">DOWN</b>':'<b>RANGE</b>';  $('mpT').textContent=nameOf(n.sy).toUpperCase();$('mpX').textContent=s.txt;
   let g='<div><span>PRICE</span><b>'+fp(n.sy,r.px)+'</b></div><div><span>'+HN()+' BIAS</span>'+w(s.hb)+'</div><div><span>'+tfName()+' TREND</span>'+w(s.tr)+'</div><div><span>ATR</span><b>'+fp(n.sy,r.a)+'</b></div>';
   if(s.sig){const q=s.sig;g+='<div><span>SCORE</span><b>'+q.score+'</b></div><div><span>ENTRY</span><b>'+fp(n.sy,q.entry)+'</b></div><div><span>STOP</span><b>'+fp(n.sy,q.sl)+'</b></div><div><span>1R / 2R</span><b>'+fp(n.sy,q.tp[0])+' / '+fp(n.sy,q.tp[1])+'</b></div>';}
   else if(s.w){g+='<div><span>ZONE</span><b>'+fp(n.sy,s.w.lo)+' TO '+fp(n.sy,s.w.hi)+'</b></div><div><span>POTENTIAL</span><b>'+s.w.pot+' OF 72</b></div>';}
@@ -1810,15 +1652,9 @@ function mpXY(e){const r=$('cvMap').getBoundingClientRect();return [e.clientX-r.
 function mpPick(x,y){let best=null,bd=1e9;for(const n of MP.nodes){const d=Math.hypot(n.x-x,n.y-y);if(d<n.r+14&&d<bd){best=n;bd=d;}}return best;}
 function mpBind(){
   const cv=$('cvMap');
-  cv.addEventListener('pointerdown',e=>{const [x,y]=mpXY(e),n=mpPick(x,y);MP.down={x,y,n,moved:false};if(n){MP.drag=n;n.vx=n.vy=0;try{cv.setPointerCapture(e.pointerId);}catch(er){}}});
-  cv.addEventListener('pointermove',e=>{if(!MP.down)return;const [x,y]=mpXY(e);if(Math.hypot(x-MP.down.x,y-MP.down.y)>6)MP.down.moved=true;if(MP.drag&&MP.down.moved){MP.drag.x=x;MP.drag.y=y;MP.drag.vx=MP.drag.vy=0;}});
-  cv.addEventListener('pointerup',()=>{if(MP.down&&MP.down.n&&!MP.down.moved)mpSelect(MP.down.n.sy);else if(MP.down&&!MP.down.n)mpClose();MP.drag=null;MP.down=null;});
-  cv.addEventListener('pointercancel',()=>{MP.drag=null;MP.down=null;});
-  $('mpClose').onclick=mpClose;
-  $('mpGo').onclick=()=>{if(MP.sel){setFocus(MP.sel);window.scrollTo({top:0,behavior:'smooth'});}};
-}
-
-/* ---------- self-improve: walk-forward learning of score weights and alert level ---------- */
+  cv.addEventListener('pointerdown',e=>{const [x,y]=mpXY(e),n=mpPick(x,y);MP.down={x,y,n,moved:false};if(n){MP.drag=n;n.vx=n.vy=0;try{cv.setPointerCapture(e.pointerId);}catch(er){}}}); cv.addEventListener('pointermove',e=>{if(!MP.down)return;const [x,y]=mpXY(e);if(Math.hypot(x-MP.down.x,y-MP.down.y)>6)MP.down.moved=true;if(MP.drag&&MP.down.moved){MP.drag.x=x;MP.drag.y=y;MP.drag.vx=MP.drag.vy=0;}});  cv.addEventListener('pointerup',()=>{if(MP.down&&MP.down.n&&!MP.down.moved)mpSelect(MP.down.n.sy);else if(MP.down&&!MP.down.n)mpClose();MP.drag=null;MP.down=null;});  cv.addEventListener('pointercancel',()=>{MP.drag=null;MP.down=null;});
+  $('mpClose').onclick=mpClose;  $('mpGo').onclick=()=>{if(MP.sel){setFocus(MP.sel);window.scrollTo({top:0,behavior:'smooth'});}};
+}/* ---------- self-improve: walk-forward learning of score weights and alert level ---------- */
 const LRN=(()=>{
   const GRID=[0.5,0.75,1,1.25,1.5],THRS=[50,55,60,65,70,75,80,85,90];
   const MIN_ROWS=300,MIN_TRAIN_N=80,MIN_TEST=30,MIN_GAIN=0.10,MIN_Z=2,LAMBDA=0.03,COOL=6*3600*1000,CAP=2500;
@@ -1834,7 +1670,6 @@ const LRN=(()=>{
   function wFor(sy){if(!cfg.learn)return null;const k=st.keys[keyOf(sy)];return k&&goodW(k.w)?k.w:null;}
   function save(){LS.set('cse_learn',st);}
   function log(k,ev,txt){k.log.unshift({at:Date.now(),ev,txt});if(k.log.length>12)k.log.length=12;wlog('&#8226;','LEARN',ev+' '+txt,'a');}
-
   /* dataset: every resolved candidate scored with neutral weights, so weights can be re-tried on it later */
   function rowsOf(key){
     if(!sets[key]){
@@ -1844,9 +1679,7 @@ const LRN=(()=>{
     return sets[key];
   }
   function saveRows(key){
-    const m=sets[key];let a=[...m.values()].sort((x,y)=>x.t-y.t);
-    if(a.length>CAP){a=a.slice(a.length-CAP);m.clear();a.forEach(o=>m.set(o.sy+'|'+o.t+'|'+o.d,o));}
-    LS.set('cse_lset_'+key,a.map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk,o.rt,o.res]));
+    const m=sets[key];let a=[...m.values()].sort((x,y)=>x.t-y.t);    if(a.length>CAP){a=a.slice(a.length-CAP);m.clear();a.forEach(o=>m.set(o.sy+'|'+o.t+'|'+o.d,o));}    LS.set('cse_lset_'+key,a.map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk,o.rt,o.res]));
   }
   function collect(sy){
     const foc=sy===cfg.sym,C=foc?S.C:(SC[sy]&&SC[sy].C),H=foc?S.H:(SC[sy]&&SC[sy].H);
@@ -1854,25 +1687,21 @@ const LRN=(()=>{
     const lt=C[C.length-2].t,sk=sy+'|'+cfg.tf;
     if(seen[sk]&&lt-seen[sk]<5*cfg.tf)return 0;
     seen[sk]=lt;
-    let cs;
-    try{cs=analyze(buildX(C,H,cfg.tf,HTF,null),0,true,Math.max(0,+(cfg.slip[sy])||0));}catch(e){return 0;}
+    let cs;    try{cs=analyze(buildX(C,H,cfg.tf,HTF,null),0,true,Math.max(0,+(cfg.slip[sy])||0));}catch(e){return 0;}
     const key=keyOf(sy),m=rowsOf(key);let add=0;
     for(const s of cs){
       if(!RES_OK(s.res))continue;
       const id=sy+'|'+s.t+'|'+s.d;
-      if(m.has(id))continue;
-      if(!(s.closedT>s.t))continue;m.set(id,{sy,t:s.t,d:s.d,p:s.parts.map(v=>Math.round(v*10)/10),r:s.reached,rk:+s.risk.toPrecision(5),rt:s.closedT,res:s.res});add++;
+      if(m.has(id))continue;     if(!(s.closedT>s.t))continue;m.set(id,{sy,t:s.t,d:s.d,p:s.parts.map(v=>Math.round(v*10)/10),r:s.reached,rk:+s.risk.toPrecision(5),rt:s.closedT,res:s.res});add++;
     }
     if(add)saveRows(key);
     return add;
   }
-
   /* selection and scoring on the dataset */
   const rOf=(o,k)=>(o.r>=k?k:-1)-((cfg.spr[o.sy]||0)+(cfg.slip[o.sy]||0))/Math.max(o.rk,1e-9);
   function pick(rows,w,thr,tf){
     const last={},activeUntil={},out=[];
-    for(const o of rows){
-      if(activeUntil[o.sy]!==undefined&&o.t<=activeUntil[o.sy])continue;
+    for(const o of rows){      if(activeUntil[o.sy]!==undefined&&o.t<=activeUntil[o.sy])continue;
       if(Math.round(wScore(o.p,w))<thr)continue;
       const kk=o.sy+'|'+o.d;
       if(last[kk]!==undefined&&o.t-last[kk]<8*tf)continue;
@@ -1910,7 +1739,6 @@ const LRN=(()=>{
     }
     return {w,thr:bt,obj:bo};
   }
-
   /* champion / challenger decision */
   function applyAll(){
     if(S.C.length)recompute();
@@ -1924,20 +1752,15 @@ const LRN=(()=>{
     if(N<MIN_ROWS){inf.msg='GATHERING DATA: '+N+' OF '+MIN_ROWS+' RESOLVED CANDIDATES';return inf;}
     const cut=Math.floor(N*0.7),test=rows.slice(cut),boundary=test.length?test[0].t:Infinity;
     // A training trade is eligible only if its outcome was fully known before validation began.
-    const train=rows.slice(0,cut).filter(o=>o.rt<boundary);
-    if(train.length<MIN_TRAIN_N||test.length<MIN_TEST){inf.msg='WAITING FOR NON-OVERLAPPING TRAIN/TEST DATA ('+train.length+' TRAIN / '+test.length+' TEST)';return inf;}
+    const train=rows.slice(0,cut).filter(o=>o.rt<boundary);    if(train.length<MIN_TRAIN_N||test.length<MIN_TEST){inf.msg='WAITING FOR NON-OVERLAPPING TRAIN/TEST DATA ('+train.length+' TRAIN / '+test.length+' TEST)';return inf;}
     const curW=goodW(k.w)?k.w:NEU,curThr=k.thr!=null?k.thr:cfg.thr;
     inf.ntr=train.length;inf.nte=test.length;
     const ch=optimise(train,kt,tf);
-    const tCh=stat(pick(test,ch.w,ch.thr,tf),kt),tCur=stat(pick(test,curW,curThr,tf),kt),tNeu=stat(pick(test,NEU,70,tf),kt);
-    inf.chal={w:ch.w,thr:ch.thr,train:ch.obj.s,test:tCh};inf.cur={w:curW,thr:curThr,test:tCur};inf.neu=tNeu;
+    const tCh=stat(pick(test,ch.w,ch.thr,tf),kt),tCur=stat(pick(test,curW,curThr,tf),kt),tNeu=stat(pick(test,NEU,70,tf),kt);   inf.chal={w:ch.w,thr:ch.thr,train:ch.obj.s,test:tCh};inf.cur={w:curW,thr:curThr,test:tCur};inf.neu=tNeu;
     /* forward check: after adoption, did the learned weights beat neutral on trades they had never seen */
     if(goodW(k.w)&&k.t0){
-      const f=rows.filter(o=>o.t>k.t0),pt=k.prevThr!=null?k.prevThr:70;
-      inf.fwd={c:stat(pick(f,k.w,curThr,tf),kt),n:stat(pick(f,NEU,pt,tf),kt)};
-      if(inf.fwd.c.n>=MIN_TEST&&inf.fwd.n.n>=MIN_TEST&&inf.fwd.c.mean<inf.fwd.n.mean-MIN_GAIN){
-        log(k,'REVERTED','LEARNED WEIGHTS TRAILED NEUTRAL ON NEW TRADES: '+fmt(inf.fwd.c.mean)+' VS '+fmt(inf.fwd.n.mean)+' OVER '+inf.fwd.c.n+' AND '+inf.fwd.n.n);
-        k.w=null;k.thr=k.prevThr;k.t0=0;k.lastPromo=Date.now();k.lastPromoN=N;
+      const f=rows.filter(o=>o.t>k.t0),pt=k.prevThr!=null?k.prevThr:70;      inf.fwd={c:stat(pick(f,k.w,curThr,tf),kt),n:stat(pick(f,NEU,pt,tf),kt)};      if(inf.fwd.c.n>=MIN_TEST&&inf.fwd.n.n>=MIN_TEST&&inf.fwd.c.mean<inf.fwd.n.mean-MIN_GAIN){
+        log(k,'REVERTED','LEARNED WEIGHTS TRAILED NEUTRAL ON NEW TRADES: '+fmt(inf.fwd.c.mean)+' VS '+fmt(inf.fwd.n.mean)+' OVER '+inf.fwd.c.n+' AND '+inf.fwd.n.n);     k.w=null;k.thr=k.prevThr;k.t0=0;k.lastPromo=Date.now();k.lastPromoN=N;
         if(cfg.autothr&&k.thr!=null){cfg.thr=k.thr;persist();}
         save();inf.msg='REVERTED TO NEUTRAL WEIGHTS';applyAll();return inf;
       }
@@ -1954,8 +1777,7 @@ const LRN=(()=>{
     else if(gain<MIN_GAIN)why='GAIN OF '+fmt(gain)+' IS UNDER THE '+MIN_GAIN.toFixed(2)+'R BAR';
     else if(z<MIN_Z)why='GAIN OF '+fmt(gain)+' IS NOT SIGNIFICANT (Z '+z.toFixed(1)+', NEEDS '+MIN_Z+')';
     else if(!cool)why='COOLDOWN, NEEDS 6 HOURS AND 30 NEW CANDIDATES SINCE THE LAST CHANGE';
-    if(why){inf.msg='HELD: '+why;return inf;}
-    k.prevThr=curThr;k.w=ch.w.every(v=>v===1)?null:ch.w;k.thr=ch.thr;k.t0=rows[rows.length-1].t;k.lastPromo=Date.now();k.lastPromoN=N;
+    if(why){inf.msg='HELD: '+why;return inf;}    k.prevThr=curThr;k.w=ch.w.every(v=>v===1)?null:ch.w;k.thr=ch.thr;k.t0=rows[rows.length-1].t;k.lastPromo=Date.now();k.lastPromoN=N;
     log(k,'PROMOTED','UNSEEN '+fmt(tCh.mean)+' VS '+fmt(tCur.mean)+' OVER '+tCh.n+' TRADES / WEIGHTS '+ch.w.join(' ')+' / LEVEL '+ch.thr);
     if(cfg.autothr){cfg.thr=ch.thr;persist();}
     save();inf.msg='PROMOTED NEW SETTINGS';applyAll();
@@ -1978,8 +1800,7 @@ const LRN=(()=>{
     busy=false;
   }
   function run(){
-    Object.keys(seen).forEach(k=>delete seen[k]);
-    SYMS.forEach(([sy],i)=>setTimeout(()=>{try{collect(sy);}catch(e){}},i*60));
+    Object.keys(seen).forEach(k=>delete seen[k]);    SYMS.forEach(([sy],i)=>setTimeout(()=>{try{collect(sy);}catch(e){}},i*60));
     setTimeout(()=>decideAll(true),SYMS.length*60+120);
     $('lrMsg').textContent='RUNNING A FULL CYCLE';
   }
@@ -1987,7 +1808,6 @@ const LRN=(()=>{
     Object.keys(st.keys).forEach(key=>{const k=st.keys[key];if(k.w||k.thr!=null)log(k,'RESET','BACK TO NEUTRAL WEIGHTS');k.w=null;k.thr=null;k.prevThr=null;k.t0=0;k.lastPromo=0;k.lastPromoN=0;});
     save();$('lrMsg').textContent='';applyAll();
   }
-
   /* export and import of the dataset (rows only, never the champion, so imported data is re-judged here) */
   function setKeys(){
     const a=new Set(Object.keys(sets));
@@ -1995,11 +1815,9 @@ const LRN=(()=>{
     return [...a];
   }
   function exportData(){
-    const sd={};
-    setKeys().forEach(key=>{sd[key]=[...rowsOf(key).values()].map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk,o.rt,o.res]);});
+    const sd={};  setKeys().forEach(key=>{sd[key]=[...rowsOf(key).values()].map(o=>[o.sy,o.t,o.d,o.p[0],o.p[1],o.p[2],o.p[3],o.p[4],o.r,o.rk,o.rt,o.res]);});
     const blob=new Blob([JSON.stringify({app:'confluence-brain',v:3,exported:Date.now(),state:st,sets:sd})],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='confluence-brain.json';document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='confluence-brain.json';document.body.appendChild(a);a.click();    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
   }
   function importData(e){
     const f=e.target.files&&e.target.files[0];if(!f)return;
@@ -2009,16 +1827,14 @@ const LRN=(()=>{
       try{
         const j=JSON.parse(String(fr.result));
         if(!j||j.app!=='confluence-brain'||j.v!==3||!j.sets)throw new Error('bad');
-        for(const key of Object.keys(j.sets)){
-          if(!/^[A-Z]+_\d+$/.test(key)||!Array.isArray(j.sets[key]))continue;
+        for(const key of Object.keys(j.sets)){         if(!/^[A-Z]+_\d+$/.test(key)||!Array.isArray(j.sets[key]))continue;
           const m=rowsOf(key);let add=0;
           for(const r of j.sets[key]){
             if(!Array.isArray(r)||r.length!==12)continue;
             if(typeof r[0]!=='string'||!/^[A-Za-z0-9_.]+$/.test(r[0]))continue;
             if(!r.slice(1,11).every(v=>typeof v==='number'&&isFinite(v)))continue;
             if(!['sl','tp3','exp'].includes(r[11]))continue;
-            if(r[2]!==1&&r[2]!==-1)continue;
-            if(!r.slice(3,8).every(v=>v>=0&&v<=30)||!(r[8]>=0&&r[8]<=3)||!(r[9]>0)||!(r[10]>r[1]))continue;
+            if(r[2]!==1&&r[2]!==-1)continue;        if(!r.slice(3,8).every(v=>v>=0&&v<=30)||!(r[8]>=0&&r[8]<=3)||!(r[9]>0)||!(r[10]>r[1]))continue;
             const id=r[0]+'|'+r[1]+'|'+r[2];
             if(!m.has(id)){m.set(id,{sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9],rt:r[10],res:r[11]});add++;}
           }
@@ -2031,12 +1847,10 @@ const LRN=(()=>{
     };
     fr.readAsText(f);
   }
-
   /* panel */
   function render(){
     const key=keyOf(cfg.sym),k=st.keys[key]||null,inf=info[key]||null,g=key.split('_')[0];
-    $('lrKey').textContent=(g==='SYNTH'?'DERIVED':g)+' / '+tfName();
-    $('lrState').textContent=!cfg.learn?'OFF':(k&&goodW(k.w)?'LEARNED':'NEUTRAL');
+    $('lrKey').textContent=(g==='SYNTH'?'DERIVED':g)+' / '+tfName();    $('lrState').textContent=!cfg.learn?'OFF':(k&&goodW(k.w)?'LEARNED':'NEUTRAL');
     $('lrOn').textContent=cfg.learn?'LEARNING ON':'LEARNING OFF';$('lrOn').classList.toggle('on',!!cfg.learn);
     $('lrAuto').textContent=cfg.autothr?'AUTO ALERT LEVEL ON':'AUTO ALERT LEVEL OFF';$('lrAuto').classList.toggle('on',!!cfg.autothr);
     const W=k&&goodW(k.w)?k.w:NEU;
@@ -2057,28 +1871,22 @@ const LRN=(()=>{
     const lg=(k&&k.log?k.log:[]).slice(0,6).map(l=>'<div class="fc '+(l.ev==='PROMOTED'?'up':l.ev==='REVERTED'?'dn':'')+'"><b>'+esc(l.ev)+' / '+clk(l.at)+'</b><span>'+esc(l.txt)+'</span></div>').join('');
     setH('lrBody','<div class="lrg"><div><div class="lab" style="margin-bottom:4px">ACTIVE SCORE WEIGHTS</div><div class="lad">'+bars+'</div></div><div><div class="fb">'+boxes+'</div></div></div><div class="lrm">'+esc(chw+msg)+'</div>'+(lg?'<div class="lrl">'+lg+'</div>':''));
   }
-  function bind(){
-    $('lrOn').onclick=()=>{cfg.learn=!cfg.learn;persist();applyAll();};
+  function bind(){    $('lrOn').onclick=()=>{cfg.learn=!cfg.learn;persist();applyAll();};
     $('lrAuto').onclick=()=>{
       cfg.autothr=!cfg.autothr;
       if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
       persist();syncBtns();S.dirty=true;
     };
-    $('lrRun').onclick=run;$('lrReset').onclick=reset;
-    $('lrExp').onclick=exportData;$('lrImp').onclick=()=>$('lrFile').click();$('lrFile').onchange=importData;
+    $('lrRun').onclick=run;$('lrReset').onclick=reset;    $('lrExp').onclick=exportData;$('lrImp').onclick=()=>$('lrFile').click();$('lrFile').onchange=importData;
     setInterval(tick,12000);setTimeout(tick,8000);
   }
   return {wFor,bind,render,_t:{rowsOf,pick,stat,optimise,collect,decide,keyOf,st}};
-})();
-
-/* ---------- loop and controls ---------- */
+})();/* ---------- loop and controls ---------- */
 let lastUi=0;
 function safe(fn){try{fn();}catch(e){if(!safe.once){safe.once=true;try{console.error(e);}catch(x){}}}}
 function frame(now){
   if(now-lastUi>500||S.dirty){
-    lastUi=now;
-    safe(computeScan);safe(renderHeader);safe(renderTickers);safe(renderCaps);safe(renderScanList);safe(mpRefresh);
-    if(S.dirty){S.dirty=false;[renderAudit,LRN.render,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawTimeline,drawFunnel].forEach(safe);}
+    lastUi=now;    safe(computeScan);safe(renderHeader);safe(renderTickers);safe(renderCaps);safe(renderScanList);safe(mpRefresh);   if(S.dirty){S.dirty=false;[renderAudit,LRN.render,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawTimeline,drawFunnel].forEach(safe);}
     if(S.wd){S.wd=false;safe(renderWire);}
   }
   if(VIS.shell)safe(()=>drawShell(now));
@@ -2090,56 +1898,42 @@ function syncBtns(){document.querySelectorAll('#tfBar button').forEach(b=>b.clas
 function init(){
   rebuildSyms();buildSelect();updateCost();
   $('sym').onchange=e=>setFocus(e.target.value);
-  $('tfBar').onclick=e=>{const b=e.target.closest('button[data-tf]');if(!b)return;const v=+b.dataset.tf;if(v===cfg.tf)return;cfg.tf=v;HTF=htfOf(v);persist();syncBtns();connect();};
-  $('tM').onclick=()=>{cfg.autothr=false;cfg.thr=Math.max(40,cfg.thr-5);persist();syncBtns();S.dirty=true;};
-  $('tP').onclick=()=>{cfg.autothr=false;cfg.thr=Math.min(95,cfg.thr+5);persist();syncBtns();S.dirty=true;};
-  $('bSnd').onclick=()=>{cfg.snd=!cfg.snd;persist();syncBtns();if(cfg.snd)beep();};
-  $('toast').onclick=()=>{if(S.toastSym){setFocus(S.toastSym);$('toast').classList.remove('show');}};
+  $('tfBar').onclick=e=>{const b=e.target.closest('button[data-tf]');if(!b)return;const v=+b.dataset.tf;if(v===cfg.tf)return;cfg.tf=v;HTF=htfOf(v);persist();syncBtns();connect();};  $('tM').onclick=()=>{cfg.autothr=false;cfg.thr=Math.max(40,cfg.thr-5);persist();syncBtns();S.dirty=true;};  $('tP').onclick=()=>{cfg.autothr=false;cfg.thr=Math.min(95,cfg.thr+5);persist();syncBtns();S.dirty=true;};  $('bSnd').onclick=()=>{cfg.snd=!cfg.snd;persist();syncBtns();if(cfg.snd)beep();};
+$('toast').onclick=()=>{if(S.toastSym){setFocus(S.toastSym);$('toast').classList.remove('show');}};
   window.addEventListener('resize',()=>{S.dirty=true;});
-  setInterval(()=>{$('hClk').textContent=clk(Date.now());},1000);
+ setInterval(()=>{$('hClk').textContent=clk(Date.now());},1000);
   $('scl').onclick=e=>{const b=e.target.closest('button[data-sy]');if(b){setFocus(b.dataset.sy);window.scrollTo({top:0,behavior:'smooth'});}};
   document.querySelectorAll('#stTabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===cfg.tab);});
   $('stTabs').onclick=e=>{const b=e.target.closest('button[data-t]');if(!b)return;cfg.tab=b.dataset.t;persist();document.querySelectorAll('#stTabs button').forEach(x=>x.classList.toggle('on',x===b));renderStats2();};
   $('stSrc').value=cfg.src;$('stTgt').value=String(cfg.tgt);
-  $('cmpRun').onclick=runSideBySide;
-  $('stSrc').onchange=e=>{cfg.src=e.target.value;persist();renderStats2();};
-  $('stTgt').onchange=e=>{cfg.tgt=+e.target.value;persist();if(S.X)derive();renderStats2();};
-  $('thr').oninput=e=>{cfg.autothr=false;cfg.thr=+e.target.value;persist();syncBtns();S.dirty=true;};
-  $('sndChk').onchange=e=>{cfg.snd=e.target.checked;persist();syncBtns();if(cfg.snd)beep();};
-  $('notif').onclick=()=>{try{Notification.requestPermission().then(p=>{$('notif').textContent=p==='granted'?'NOTIFICATIONS ON':'NOTIFICATIONS BLOCKED';});}catch(e){$('notif').textContent='NOT SUPPORTED HERE';}};
+  $('cmpRun').onclick=runSideBySide;  $('stSrc').onchange=e=>{cfg.src=e.target.value;persist();renderStats2();};  $('stTgt').onchange=e=>{cfg.tgt=+e.target.value;persist();if(S.X)derive();renderStats2();};  $('thr').oninput=e=>{cfg.autothr=false;cfg.thr=+e.target.value;persist();syncBtns();S.dirty=true;}; $('sndChk').onchange=e=>{cfg.snd=e.target.checked;persist();syncBtns();if(cfg.snd)beep();};  $('notif').onclick=()=>{try{Notification.requestPermission().then(p=>{$('notif').textContent=p==='granted'?'NOTIFICATIONS ON':'NOTIFICATIONS BLOCKED';});}catch(e){$('notif').textContent='NOT SUPPORTED HERE';}};
   if('Notification' in window&&Notification.permission==='granted')$('notif').textContent='NOTIFICATIONS ON';
   $('tgtok').value=cfg.tok;$('tgchat').value=cfg.chat;
   $('tgtok').onchange=e=>{cfg.tok=e.target.value.trim();};
   $('tgchat').onchange=e=>{cfg.chat=e.target.value.trim();};
   $('tgtest').onclick=()=>{
-    cfg.tok=$('tgtok').value.trim();cfg.chat=$('tgchat').value.trim();
+   cfg.tok=$('tgtok').value.trim();cfg.chat=$('tgchat').value.trim();
     if(!cfg.tok||!cfg.chat){$('tgtest').textContent='ENTER TOKEN AND CHAT ID';return;}
-    $('tgtest').textContent='SENDING';
-    fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:cfg.chat,text:'Confluence engine test message'})}).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
+    $('tgtest').textContent='SENDING';    fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:cfg.chat,text:'Confluence engine test message'})}).then(r=>{$('tgtest').textContent=r.ok?'SENT, CHECK TELEGRAM':'FAILED, CHECK TOKEN AND CHAT ID';}).catch(()=>{$('tgtest').textContent='FAILED, CHECK TOKEN AND CHAT ID';});
   };
   // Multipliers panel binds its own controls above; connection and arming always start disabled.
   mxPaint('DISCONNECTED / DEMO ONLY / DISARMED','Enter a demo token and connect. No orders are armed on page load.');
-  mpBind();
-  $('mkTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===cfg.mk));
+  mpBind();  $('mkTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.g===cfg.mk));
   $('mkTabs').onclick=e=>{const b=e.target.closest('button[data-g]');if(!b)return;cfg.mk=b.dataset.g;persist();$('mkTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderMarkets();};
   $('mkSearch').oninput=renderMarkets;
   $('mkList').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;if(b.dataset.a==='chart'){setFocus(b.dataset.sy);window.scrollTo({top:0,behavior:'smooth'});}else toggleWatch(b.dataset.sy);};
   $('mkReal').onclick=realPreset;$('mkVol').onclick=volPreset;
   $('sessSel').value=cfg.sess;
-  $('sessSel').onchange=e=>{cfg.sess=e.target.value;persist();if(S.X)derive();S.dirty=true;};
-  $('sprIn').onchange=e=>{cfg.spr[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)derive();S.dirty=true;};
-  $('slipIn').onchange=e=>{cfg.slip[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)recompute();S.dirty=true;};
+$('sessSel').onchange=e=>{cfg.sess=e.target.value;persist();if(S.X)derive();S.dirty=true;};  $('sprIn').onchange=e=>{cfg.spr[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)derive();S.dirty=true;}; $('slipIn').onchange=e=>{cfg.slip[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)recompute();S.dirty=true;};
   const syncView=()=>document.querySelectorAll('#chView button').forEach(b=>b.classList.toggle('on',+b.dataset.v===cfg.view));
   syncView();
   $('chView').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;cfg.view=+b.dataset.v;persist();syncView();drawChart();};
   const setFull=on=>{$('sChart').classList.toggle('full',on);document.body.classList.toggle('chfull',on);$('chFull').textContent=on?'EXIT FULL SCREEN':'FULL SCREEN';requestAnimationFrame(()=>{drawChart();});if(on)window.scrollTo(0,0);};
-  $('chFull').onclick=()=>setFull(!$('sChart').classList.contains('full'));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sChart').classList.contains('full'))setFull(false);});
+$('chFull').onclick=()=>setFull(!$('sChart').classList.contains('full')); document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sChart').classList.contains('full'))setFull(false);});
   if('IntersectionObserver' in window){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
-  }
-  LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
+  }  LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
 init();
 })();
