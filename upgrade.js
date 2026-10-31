@@ -1,6 +1,6 @@
 /* FAT Confluence engine upgrade: CONFIDENCE, WALK-FORWARD, RISK, BACKUP.
    Load with <script src="upgrade.js"></script> just before </body>. It reads the engine's own saved data and
-never changes how scores or signals are made. */
+   never changes how scores or signals are made. */
 (()=>{
 'use strict';
 const g=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
@@ -35,7 +35,8 @@ function build(){
   +'<div><div class="lab">EDGE TREND, ROLLING EXPECTANCY <span id="upTrN"></span></div><canvas id="upTr"></canvas><div style="margin-top:6px"><span class="up-b" id="upTrV">-</span></div><div class="lab" id="upTrT" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">RISK DESK</div><label for="upBal">ACCOUNT BALANCE</label><input id="upBal" type="number" min="0" step="any"><label for="upRisk">RISK PER TRADE, PERCENT</label><input id="upRisk" type="number" min="0" step="any"><label for="upStop">STOP DISTANCE, PRICE UNITS (FROM THE PLAN BAR)</label><input id="upStop" type="number" min="0" step="any"><label for="upCap">DAILY LOSS CAP, IN R</label><input id="upCap" type="number" min="0" step="any"><div class="fb" style="grid-template-columns:1fr 1fr"><div class="fx o"><span class="lab">RISK AMOUNT</span><b id="upAmt">-</b></div><div class="fx o"><span class="lab">SIZE PER 1.00 PRICE MOVE</span><b id="upSz">-</b></div></div><div style="margin-top:6px"><span class="up-b" id="upDay">-</span></div></div>'
   +'<div><div class="lab">BACKUP</div><div class="lab" id="upBk" style="margin:6px 0;text-transform:none;letter-spacing:.02em"></div><div class="stabs"><button id="upBkNow" type="button">BACKUP NOW</button><button id="upPers" type="button">PROTECT STORAGE</button></div><div class="lab" id="upBkM" style="text-transform:none;letter-spacing:.02em"></div></div>'
-  +'</div><div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">Built from the engine\'s saved resolved candidates, at your alert level and trading cost, with learned weights if learning is on. Interval is 95 percent. Picking the best level or band from many looks inflates results, so treat a pass as a lead, not proof.</div>';
+  +'</div><div class="lab" style="margin-top:12px">WHAT PREDICTS A WIN <span id="upCmpR"></span></div><div class="tw" id="upCmp" style="max-height:260px;margin:6px 0"></div><div class="lab" id="upCmpN" style="text-transform:none;letter-spacing:.02em;line-height:1.5"></div>'
+  +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">Built from the engine\'s saved resolved candidates, at your alert level and trading cost, with learned weights if learning is on. Interval is 95 percent. Picking the best level or band from many looks inflates results, so treat a pass as a lead, not proof.</div>';
   main.appendChild(sec);
   $('upTgt').value=String(P.tgt);$('upBal').value=P.bal;$('upRisk').value=P.risk;$('upStop').value=P.stop;$('upCap').value=P.cap;
   $('upKey').onchange=e=>{P.key=e.target.value;save();draw();};
@@ -100,6 +101,24 @@ function draw(){
       c.strokeStyle=eq>=0?'#2fe38a':'#ff4d5e';c.lineWidth=1.5;c.beginPath();cu.forEach((y,i)=>{if(i===0)c.moveTo(X(i),Y(y));else c.lineTo(X(i),Y(y));});c.stroke();
     }
   }
+  // component test: does a higher score part mean a better trade? plain engine, all candidates, no alert level
+  (function(){
+    const all=pick(rs,NEU,0,tf),NM=['ZONE','STRUCTURE','CANDLE','MOMENTUM','REGIME'],box=$('upCmp');
+    $('upCmpR').textContent='/ '+(P.sym==='ALL'?'ALL SYMBOLS POOLED':nm(P.sym))+' / '+all.length+' SPACED CANDIDATES AT '+k+'R';
+    if(all.length<30){box.innerHTML='<div class="dm" style="padding:8px">NEEDS MORE CANDIDATES (AT LEAST 30)</div>';$('upCmpN').textContent='';return;}
+    const rows2=NM.map((n,i)=>{
+      const vals=all.map(x=>x.p[i]),sv=vals.slice().sort((a,b)=>a-b),med=sv[sv.length>>1];
+      let hi=[],lo=[];all.forEach(x=>{(x.p[i]>med?hi:lo).push(rOf(x,k,spr));});
+      if(hi.length<8){hi=[];lo=[];all.forEach(x=>{(x.p[i]>=med?hi:lo).push(rOf(x,k,spr));});}
+      if(hi.length<8||lo.length<8)return {n,none:true};
+      const a=stat(hi),b=stat(lo),d=a.m-b.m,se=Math.sqrt(a.se*a.se+b.se*b.se),z=2.58;
+      let vt='NOT PROVEN',vc='var(--dim)';
+      if(a.n<20||b.n<20){vt='NOISE';vc='var(--amb)';}else if(d-z*se>0){vt='PREDICTIVE';vc='var(--pos)';}else if(d+z*se<0){vt='INVERSE';vc='var(--neg)';}
+      return {n,a,b,d,se,vt,vc};
+    });
+    box.innerHTML='<table><thead><tr><th>COMPONENT</th><th class="n">HIGH HALF</th><th class="n">LOW HALF</th><th class="n">DIFFERENCE</th><th>VERDICT</th></tr></thead><tbody>'+rows2.map(r=>r.none?'<tr><td>'+r.n+'</td><td class="n" colspan="3">NO SPREAD, VALUE BARELY CHANGES</td><td class="dm">-</td></tr>':'<tr><td>'+r.n+'</td><td class="n">'+f2(r.a.m)+' N'+r.a.n+'</td><td class="n">'+f2(r.b.m)+' N'+r.b.n+'</td><td class="n '+(r.d>0?'pos':r.d<0?'neg':'')+'">'+f2(r.d)+'</td><td style="color:'+r.vc+'">'+r.vt+'</td></tr>').join('')+'</tbody></table>';
+    $('upCmpN').textContent='Each row splits the trades at the median of that part and compares average R. A part counts as predictive only if the gap stays above zero at a strict 99 percent bar, because five parts are tested at once. If none passes, the score is not adding information on this symbol yet.';
+  })();
   // edge trend: rolling expectancy plus a straight-line fit of R against trade number
   (function(){
     const n=v.length,vb2=$('upTrV'),tx=$('upTrT'),cv2=$('upTr');
