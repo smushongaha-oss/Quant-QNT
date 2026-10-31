@@ -101,49 +101,4 @@ function draw(){
 }
 const go=()=>{try{draw();}catch(e){}};
 window.addEventListener('load',()=>{setTimeout(go,1500);setInterval(go,5000);});
-})();(function(){
-var CF={reg:'off',er:0.3,be:false};
-try{var sv=JSON.parse(localStorage.getItem('fat_sw')||'{}');for(var k in sv)CF[k]=sv[k];}catch(e){}
-function save(){try{localStorage.setItem('fat_sw',JSON.stringify(CF));}catch(e){}}
-function er(C,i,n){n=n||20;if(i<n)return 1;var p=0;for(var k=i-n+1;k<=i;k++)p+=Math.abs(C[k].c-C[k-1].c);return p>0?Math.abs(C[i].c-C[i-n].c)/p:0;}
-var _ev=evalBar;
-evalBar=function(X,i,m){var r=_ev(X,i,m);if(r&&CF.reg!=='off'){var e=er(X.C,i);if(CF.reg==='trend'?e<CF.er:e>=CF.er)return null;}return r;};
-var _rs=resolveSig;
-resolveSig=function(s,C,last){
-  if(!CF.be)return _rs(s,C,last);
-  var end=Math.min(last,s.i+150),stop=s.sl;s.be=false;
-  for(var m=s.i+1;m<=end;m++){
-    var b=C[m];
-    if(s.d===1?b.l<=stop:b.h>=stop){s.res='sl';s.closedT=b.t;s.be=stop!==s.sl;return;}
-    for(var k=s.reached;k<3;k++){if(s.d===1?b.h>=s.tp[k]:b.l<=s.tp[k])s.reached=k+1;else break;}
-    if(s.reached>=1)stop=s.entry;
-    if(s.reached>=3){s.res='tp3';s.closedT=b.t;return;}
-  }
-  s.res=(s.i+150<=last)?'exp':'open';
-};
-statOf=function(list,k){
-  var r=list.filter(function(s){return RES_OK(s.res);}),n=r.length;
-  var w=[1,2,3].map(function(x){return r.filter(function(s){return s.reached>=x;}).length;});
-  var tot=0;
-  for(var j=0;j<r.length;j++){var s=r[j],c=COST>0&&s.risk>0?COST/s.risk:0;tot+=(s.reached>=k?k:(s.be?0:-1))-c;}
-  return {n:n,w:w,e:n?tot/n:0,open:list.length-n};
-};
-function ui(){
-  var main=document.querySelector('main.grid');if(!main||document.getElementById('swP'))return;
-  var d=document.createElement('section');d.className='p';d.id='swP';d.style.gridColumn='span 12';
-  d.innerHTML='<div class="ph">STRATEGY SWITCHES <span class="r" id="swR"></span></div><div class="stabs">'
-  +'<select id="swReg" aria-label="Regime filter"><option value="off">REGIME FILTER OFF</option><option value="trend">TREND ONLY</option><option value="range">RANGE ONLY</option></select>'
-  +'<select id="swEr" aria-label="Efficiency threshold"><option value="0.2">ER 0.20</option><option value="0.3">ER 0.30</option><option value="0.4">ER 0.40</option><option value="0.5">ER 0.50</option></select>'
-  +'<button id="swBe" type="button"></button></div>'
-  +'<div class="lab" style="text-transform:none;letter-spacing:.02em;line-height:1.5">Regime filter uses a 20 bar efficiency ratio: near 1 is a clean trend, near 0 is chop. Break-even moves the stop to entry once 1R is touched, so a trade that reaches 1R and comes back counts as 0R, not a loss. The page reloads when you change a switch. To compare fairly, set STATS to BACKTEST ONLY and test one switch at a time. The Edge panel and the learner read stored candidates and do not include these switches.</div>';
-  main.appendChild(d);
-  var R=document.getElementById('swReg'),E=document.getElementById('swEr'),B=document.getElementById('swBe');
-  R.value=CF.reg;E.value=String(CF.er);B.textContent=CF.be?'BREAK-EVEN STOP ON':'BREAK-EVEN STOP OFF';B.className=CF.be?'on':'';
-  document.getElementById('swR').textContent=(CF.reg==='off'?'NO FILTER':CF.reg.toUpperCase()+' AT ER '+CF.er)+' / '+(CF.be?'BREAK-EVEN':'FIXED STOP');
-  function go(){save();setTimeout(function(){location.reload();},150);}
-  R.onchange=function(){CF.reg=R.value;go();};
-  E.onchange=function(){CF.er=+E.value;go();};
-  B.onclick=function(){CF.be=!CF.be;go();};
-}
-window.addEventListener('load',function(){try{ui();}catch(e){}});
 })();
