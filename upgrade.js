@@ -1,6 +1,6 @@
 /* FAT Confluence engine upgrade: CONFIDENCE, WALK-FORWARD, RISK, BACKUP.
    Load with <script src="upgrade.js"></script> just before </body>. It reads the engine's own saved data and
-   never changes how scores or signals are made. */
+never changes how scores or signals are made. */
 (()=>{
 'use strict';
 const g=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
