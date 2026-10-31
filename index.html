@@ -382,6 +382,12 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">The engine keeps every resolved candidate it has ever seen, scored with neutral weights. Every few minutes it searches for better weights on the older 70 percent of that history, then tests them on the newest 30 percent it did not tune on. New settings are adopted only if they are profitable on that unseen slice, beat the current settings by at least 0.10R and at least 2 standard errors, and at least 30 test trades exist. After adoption it keeps comparing the learned weights with neutral on trades that came afterwards and reverts if they trail. On derived indices outcomes are random, so expect it to stay neutral most of the time. That is the guard working, not a fault.</div>
   </section>
 
+  <section class="p p-learn" id="sEng">
+    <div class="ph">STRATEGY SWITCHES <span class="r" id="engR"></span></div>
+    <div class="stabs"><select id="engReg" aria-label="Regime filter"><option value="off">REGIME FILTER OFF</option><option value="trend">TREND ONLY</option><option value="range">RANGE ONLY</option></select><select id="engEr" aria-label="Efficiency threshold"><option value="0.2">ER 0.20</option><option value="0.3">ER 0.30</option><option value="0.4">ER 0.40</option><option value="0.5">ER 0.50</option></select><button id="engBe" type="button"></button><button id="engEdge" type="button"></button></div>
+    <div class="lab" style="text-transform:none;letter-spacing:.02em;line-height:1.5">Regime filter uses a 20 bar efficiency ratio: near 1 is a clean trend, near 0 is chop. Break-even moves the stop to entry once 1R is touched, so a trade that reaches 1R and comes back counts as 0R. Edge entry places a limit order at the zone edge, or at the close if that is better, and cancels it if it is not filled within 5 bars, so unfilled trades drop out of the stats. The page reloads when you change a switch. To compare fairly set STATS to BACKTEST ONLY and change one switch at a time. The learner and the Edge panel always use the plain engine so their data stays comparable.</div>
+  </section>
+
   <details class="p p-how" id="sHow">
     <summary>HOW THE SCORE IS BUILT</summary>
     <div class="how">
@@ -409,6 +415,9 @@ const MAXP=[25,25,20,15,15];
 const NEUT=[1,1,1,1,1];
 function wScore(p,w){w=w||NEUT;let num=0,den=0;for(let i=0;i<5;i++){num+=w[i]*p[i];den+=w[i]*MAXP[i];}return den>0?100*num/den:0;}
 const RES_OK=r=>r==='sl'||r==='tp3';
+let ENG_ON=true;
+const ENG=(()=>{const d={reg:'off',er:0.3,be:false,edge:false};try{Object.assign(d,JSON.parse(localStorage.getItem('fat_eng')||'{}'));}catch(e){}return d;})();
+function effRatio(C,i,n){if(i<n)return 1;let p=0;for(let k=i-n+1;k<=i;k++)p+=Math.abs(C[k].c-C[k-1].c);return p>0?Math.abs(C[i].c-C[i-n].c)/p:0;}
 
 function smaArr(a,n){const o=new Array(a.length).fill(NaN);let s=0,c=0;for(let i=0;i<a.length;i++){const v=a[i];if(v===v){s+=v;c++;}if(i>=n){const u=a[i-n];if(u===u){s-=u;c--;}}if(i>=n-1&&c===n)o[i]=s/n;}return o;}
 function atrArr(C,n,gap){const o=new Array(C.length).fill(NaN);let prev=0,sum=0;for(let i=0;i<C.length;i++){let tr=i===0?C[i].h-C[i].l:Math.max(C[i].h-C[i].l,Math.abs(C[i].h-C[i-1].c),Math.abs(C[i].l-C[i-1].c));if(gap&&gap[i]&&i>=n&&prev>0)tr=Math.min(tr,prev*1.5);if(i<n){sum+=tr;if(i===n-1){prev=sum/n;o[i]=prev;}}else{prev=(prev*(n-1)+tr)/n;o[i]=prev;}}return o;}
@@ -530,6 +539,7 @@ function evalBar(X,i,minScore){
   const c=C[i],a=A[i];
   if(!(a>0)||i<30)return null;
   if(X.gap&&(X.gap[i]||X.gap[i-1]||X.gap[i-2]||X.gap[i-3]))return null;
+  if(ENG_ON&&ENG.reg!=='off'){const e=effRatio(C,i,20);if(ENG.reg==='trend'?e<ENG.er:e>=ENG.er)return null;}
   let best=null;
   for(const z of Z){
     if(z.born>=i||z.dead<=i)continue;
@@ -548,23 +558,31 @@ function evalBar(X,i,minScore){
     const score=Math.round(wScore([zp,sp,cp,mp,rp],X.w));
     if(score<minScore)continue;
     if(best&&score<=best.score)continue;
-    const entry=c.c;
+    const lim=ENG_ON&&ENG.edge,entry=lim?(d===1?Math.min(c.c,z.hi):Math.max(c.c,z.lo)):c.c;
     let sl=d===1?Math.min(z.lo,c.l)-0.15*a:Math.max(z.hi,c.h)+0.15*a;
     let risk=Math.abs(entry-sl);
     if(risk<0.6*a){sl=entry-d*0.6*a;risk=0.6*a;}
     if(risk>3.5*a)continue;
     best={i,t:c.t,d,score,parts,pat:pat.name,kind:z.kind,entry,sl,risk,tp:[1,2,3].map(k2=>entry+d*k2*risk),zlo:z.lo,zhi:z.hi,
-      res:'open',reached:0,closedT:0,key:c.t+'_'+d,src:'bt',touches:prior,hb:HT[i],tr:T[i]};
+      res:'open',lim,reached:0,closedT:0,key:c.t+'_'+d,src:'bt',touches:prior,hb:HT[i],tr:T[i]};
   }
   return best;
 }
 
 function resolveSig(s,C,last){
-  const end=Math.min(last,s.i+150);
-  for(let m=s.i+1;m<=end;m++){
+  const end=Math.min(last,s.i+150),be=ENG_ON&&ENG.be;
+  let from=s.i+1,stop=s.sl;s.be=false;
+  if(s.lim){
+    let f=-1;
+    for(let m=s.i+1;m<=Math.min(end,s.i+6);m++){if(s.d===1?C[m].l<=s.entry:C[m].h>=s.entry){f=m;break;}}
+    if(f<0){s.res=(s.i+6<=last)?'exp':'open';return;}
+    from=f;
+  }
+  for(let m=from;m<=end;m++){
     const b=C[m];
-    if(s.d===1?b.l<=s.sl:b.h>=s.sl){s.res='sl';s.closedT=b.t;return;}
+    if(s.d===1?b.l<=stop:b.h>=stop){s.res='sl';s.closedT=b.t;s.be=stop!==s.sl;return;}
     for(let k=s.reached;k<3;k++){if(s.d===1?b.h>=s.tp[k]:b.l<=s.tp[k])s.reached=k+1;else break;}
+    if(be&&s.reached>=1)stop=s.entry;
     if(s.reached>=3){s.res='tp3';s.closedT=b.t;return;}
   }
   s.res=(s.i+150<=last)?'exp':'open';
@@ -601,7 +619,7 @@ function statOf(list,k){
   const r=list.filter(s=>RES_OK(s.res)),n=r.length;
   const w=[1,2,3].map(x=>r.filter(s=>s.reached>=x).length);
   let tot=0;
-  for(const s of r){const c=COST>0&&s.risk>0?COST/s.risk:0;tot+=(s.reached>=k?k:-1)-c;}
+  for(const s of r){const c=COST>0&&s.risk>0?COST/s.risk:0;tot+=(s.reached>=k?k:(s.be?0:-1))-c;}
   return {n,w,e:n?tot/n:0,open:list.length-n};
 }
 
@@ -1626,7 +1644,7 @@ const LRN=(()=>{
     if(seen[sk]&&lt-seen[sk]<5*cfg.tf)return 0;
     seen[sk]=lt;
     let cs;
-    try{cs=analyze(buildX(C,H,cfg.tf,HTF,null),0,true);}catch(e){return 0;}
+    ENG_ON=false;try{cs=analyze(buildX(C,H,cfg.tf,HTF,null),0,true);}catch(e){ENG_ON=true;return 0;}ENG_ON=true;
     const key=keyOf(sy),m=rowsOf(key);let add=0;
     for(const s of cs){
       if(!RES_OK(s.res))continue;
@@ -1680,6 +1698,18 @@ const LRN=(()=>{
     return {w,thr:bt,obj:bo};
   }
 
+  function wfCheck(rows,tf,kt){
+    const N=rows.length;let pass=0,valid=0;
+    for(const f of [0.55,0.7,0.85]){
+      const a=Math.floor(N*f),b=Math.min(N,Math.floor(N*(f+0.15)));
+      const tr=rows.slice(0,a),te=rows.slice(a,b);
+      if(tr.length<MIN_TRAIN_N||te.length<20)continue;
+      const c=optimise(tr,kt,tf),sc=stat(pick(te,c.w,c.thr,tf),kt),sn=stat(pick(te,NEU,70,tf),kt);
+      if(sc.n<8)continue;
+      valid++;if(sc.mean>0&&sc.mean>=sn.mean)pass++;
+    }
+    return {ok:valid>=2&&pass*3>=valid*2,pass,valid};
+  }
   /* champion / challenger decision */
   function applyAll(){
     if(S.C.length)recompute();
@@ -1713,12 +1743,13 @@ const LRN=(()=>{
     const se=Math.sqrt(tCh.sd*tCh.sd/Math.max(1,tCh.n)+tCur.sd*tCur.sd/Math.max(1,tCur.n)),z=se>0?gain/se:0;
     inf.z=z;
     const cool=Date.now()-k.lastPromo>=COOL&&N-k.lastPromoN>=30;
-    let why='';
+    let why='',wf=null;
     if(same)why='THE BEST SETTINGS FOUND MATCH THE CURRENT ONES';
     else if(tCh.n<MIN_TEST)why='TEST SAMPLE TOO SMALL ('+tCh.n+' OF '+MIN_TEST+')';
     else if(!(tCh.mean>0))why='CHALLENGER IS NOT PROFITABLE ON UNSEEN DATA ('+fmt(tCh.mean)+')';
     else if(gain<MIN_GAIN)why='GAIN OF '+fmt(gain)+' IS UNDER THE '+MIN_GAIN.toFixed(2)+'R BAR';
     else if(z<MIN_Z)why='GAIN OF '+fmt(gain)+' IS NOT SIGNIFICANT (Z '+z.toFixed(1)+', NEEDS '+MIN_Z+')';
+    else if(!(wf=wfCheck(rows,tf,kt)).ok)why='FAILED WALK-FORWARD, '+wf.pass+' OF '+wf.valid+' ROLLING WINDOWS PASSED';
     else if(!cool)why='COOLDOWN, NEEDS 6 HOURS AND 30 NEW CANDIDATES SINCE THE LAST CHANGE';
     if(why){inf.msg='HELD: '+why;return inf;}
     k.prevThr=curThr;k.w=ch.w.every(v=>v===1)?null:ch.w;k.thr=ch.thr;k.t0=rows[rows.length-1].t;k.lastPromo=Date.now();k.lastPromoN=N;
@@ -1900,6 +1931,12 @@ function init(){
     const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target.id==='shellP')VIS.shell=en.isIntersecting;else if(en.target.id==='sMap')VIS.map=en.isIntersecting;});},{rootMargin:'120px'});
     io.observe($('shellP'));io.observe($('sMap'));
   }
+  (function(){const R=$('engReg'),E=$('engEr'),B=$('engBe'),G=$('engEdge');R.value=ENG.reg;E.value=String(ENG.er);
+    B.textContent=ENG.be?'BREAK-EVEN STOP ON':'BREAK-EVEN STOP OFF';B.classList.toggle('on',ENG.be);
+    G.textContent=ENG.edge?'EDGE ENTRY ON':'EDGE ENTRY OFF';G.classList.toggle('on',ENG.edge);
+    $('engR').textContent=(ENG.reg==='off'?'NO FILTER':ENG.reg.toUpperCase()+' AT ER '+ENG.er)+' / '+(ENG.be?'BREAK-EVEN':'FIXED STOP')+' / '+(ENG.edge?'EDGE ENTRY':'MARKET ENTRY');
+    const go=()=>{try{localStorage.setItem('fat_eng',JSON.stringify(ENG));}catch(e){}setTimeout(()=>location.reload(),150);};
+    R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
 init();
