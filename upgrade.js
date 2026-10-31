@@ -21,7 +21,7 @@ function stat(v){const n=v.length;if(!n)return{n:0,m:0,se:0,lo:0,hi:0};let a=0,q
 function build(){
   const main=document.querySelector('main.grid');if(!main||$('upP'))return;
   const st=document.createElement('style');
-  st.textContent='.p-up{grid-column:span 12}.up-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px}.up-g input{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;text-transform:none}.up-g label{display:block;font-size:10px;color:var(--dim);letter-spacing:.1em;margin:6px 0 3px}.up-b{display:inline-block;padding:2px 8px;border:1px solid var(--bd);font-size:10.5px;letter-spacing:.1em}#upEq{height:150px}';
+  st.textContent='.p-up{grid-column:span 12}.up-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px}.up-g input{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;text-transform:none}.up-g label{display:block;font-size:10px;color:var(--dim);letter-spacing:.1em;margin:6px 0 3px}.up-b{display:inline-block;padding:2px 8px;border:1px solid var(--bd);font-size:10.5px;letter-spacing:.1em}#upEq,#upTr{height:150px}';
   document.head.appendChild(st);
   const sec=document.createElement('section');sec.className='p p-up';sec.id='upP';
   sec.innerHTML='<div class="ph">EDGE CHECK, RISK AND BACKUP <span class="r" id="upKeyR"></span></div>'
@@ -30,6 +30,7 @@ function build(){
   +'<div><div class="lab">CONFIDENCE</div><div class="big dm" id="upBig" style="font-size:30px">--</div><div class="lab" id="upCI"></div><div style="margin-top:6px"><span class="up-b" id="upV">-</span></div><div class="lab" id="upBE" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">WALK-FORWARD, 4 CHRONOLOGICAL WINDOWS</div><div class="lad" id="upWF" style="margin-top:6px"></div><div class="lab" id="upWFv" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">EQUITY IN R <span id="upDD"></span></div><canvas id="upEq"></canvas></div>'
+  +'<div><div class="lab">EDGE TREND, ROLLING EXPECTANCY <span id="upTrN"></span></div><canvas id="upTr"></canvas><div style="margin-top:6px"><span class="up-b" id="upTrV">-</span></div><div class="lab" id="upTrT" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">RISK DESK</div><label for="upBal">ACCOUNT BALANCE</label><input id="upBal" type="number" min="0" step="any"><label for="upRisk">RISK PER TRADE, PERCENT</label><input id="upRisk" type="number" min="0" step="any"><label for="upStop">STOP DISTANCE, PRICE UNITS (FROM THE PLAN BAR)</label><input id="upStop" type="number" min="0" step="any"><label for="upCap">DAILY LOSS CAP, IN R</label><input id="upCap" type="number" min="0" step="any"><div class="fb" style="grid-template-columns:1fr 1fr"><div class="fx o"><span class="lab">RISK AMOUNT</span><b id="upAmt">-</b></div><div class="fx o"><span class="lab">SIZE PER 1.00 PRICE MOVE</span><b id="upSz">-</b></div></div><div style="margin-top:6px"><span class="up-b" id="upDay">-</span></div></div>'
   +'<div><div class="lab">BACKUP</div><div class="lab" id="upBk" style="margin:6px 0;text-transform:none;letter-spacing:.02em"></div><div class="stabs"><button id="upBkNow" type="button">BACKUP NOW</button><button id="upPers" type="button">PROTECT STORAGE</button></div><div class="lab" id="upBkM" style="text-transform:none;letter-spacing:.02em"></div></div>'
   +'</div><div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">Built from the engine\'s saved resolved candidates, at your alert level and trading cost, with learned weights if learning is on. Interval is 95 percent. Picking the best level or band from many looks inflates results, so treat a pass as a lead, not proof.</div>';
@@ -86,6 +87,33 @@ function draw(){
       c.strokeStyle=eq>=0?'#2fe38a':'#ff4d5e';c.lineWidth=1.5;c.beginPath();cu.forEach((y,i)=>{if(i===0)c.moveTo(X(i),Y(y));else c.lineTo(X(i),Y(y));});c.stroke();
     }
   }
+  // edge trend: rolling expectancy plus a straight-line fit of R against trade number
+  (function(){
+    const n=v.length,vb2=$('upTrV'),tx=$('upTrT'),cv2=$('upTr');
+    const set=(t,c,m)=>{vb2.textContent=t;vb2.style.color=c;vb2.style.borderColor=c;tx.textContent=m;};
+    if(n<12){set('NEEDS 12 TRADES','var(--dim)','');$('upTrN').textContent='';const q=cv2.getContext&&cv2.clientWidth?cv2.getContext('2d'):null;if(q)q.clearRect(0,0,cv2.width,cv2.height);return;}
+    const wn=Math.max(8,Math.min(20,Math.floor(n/3))),roll=[];
+    for(let i=wn-1;i<n;i++){let a=0;for(let j=i-wn+1;j<=i;j++)a+=v[j];roll.push(a/wn);}
+    let mx=(n-1)/2,my=v.reduce((a,b)=>a+b,0)/n,sxx=0,sxy=0;
+    for(let i=0;i<n;i++){sxx+=(i-mx)*(i-mx);sxy+=(i-mx)*(v[i]-my);}
+    const b=sxy/sxx,a0=my-b*mx;let sse=0;for(let i=0;i<n;i++){const e=v[i]-(a0+b*i);sse+=e*e;}
+    const se=n>2?Math.sqrt(sse/(n-2)/sxx):0,t=se>0?b/se:0,per=b*100,last=roll[roll.length-1];
+    $('upTrN').textContent='/ WINDOW '+wn+' TRADES';
+    let tt,tc;
+    if(n<30){tt='TOO FEW TRADES TO CALL A TREND';tc='var(--amb)';}
+    else if(t>2){tt='EDGE IMPROVING';tc='var(--pos)';}else if(t<-2){tt='EDGE DETERIORATING';tc='var(--neg)';}else{tt='NO CLEAR TREND';tc='var(--dim)';}
+    set(tt,tc,'LAST '+wn+' TRADES '+f2(last)+' / FIT SLOPE '+(per>=0?'+':'')+per.toFixed(2)+'R PER 100 TRADES (T '+t.toFixed(1)+', NEEDS PLUS OR MINUS 2 TO COUNT)');
+    const w2=cv2.clientWidth,h2=cv2.clientHeight;if(!w2||!h2)return;
+    const dpr2=Math.min(window.devicePixelRatio||1,2);
+    if(cv2.width!==Math.round(w2*dpr2)||cv2.height!==Math.round(h2*dpr2)){cv2.width=Math.round(w2*dpr2);cv2.height=Math.round(h2*dpr2);}
+    const c=cv2.getContext('2d');c.setTransform(dpr2,0,0,dpr2,0,0);c.clearRect(0,0,w2,h2);
+    const f0=a0,f1=a0+b*(n-1),lo=Math.min(0,f0,f1,...roll),hi=Math.max(0,f0,f1,...roll),pad=(hi-lo)*0.12||0.5;
+    const Y=y=>h2-6-(y-(lo-pad))/((hi+pad)-(lo-pad))*(h2-12),X=i=>i/(n-1)*(w2-4)+2;
+    c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=1;c.beginPath();c.moveTo(0,Y(0));c.lineTo(w2,Y(0));c.stroke();
+    c.strokeStyle=last>=0?'#2fe38a':'#ff4d5e';c.lineWidth=1.5;c.beginPath();
+    roll.forEach((y,k)=>{const x=X(k+wn-1);if(k===0)c.moveTo(x,Y(y));else c.lineTo(x,Y(y));});c.stroke();
+    c.setLineDash([5,4]);c.strokeStyle='#f5a524';c.lineWidth=1.3;c.beginPath();c.moveTo(X(0),Y(f0));c.lineTo(X(n-1),Y(f1));c.stroke();c.setLineDash([]);
+  })();
   // risk desk
   const amt=(+P.bal||0)*(+P.risk||0)/100;
   $('upAmt').textContent=amt?amt.toFixed(2):'-';
