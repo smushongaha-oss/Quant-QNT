@@ -6,12 +6,13 @@
 const g=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
 const s=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 const $=id=>document.getElementById(id);
-const P=Object.assign({bal:1000,risk:1,stop:'',cap:3,tgt:2,key:'',bk:0,bkN:0},g('fat_up',{}));
+const P=Object.assign({sym:'ALL',bal:1000,risk:1,stop:'',cap:3,tgt:2,key:'',bk:0,bkN:0},g('fat_up',{}));
 const save=()=>s('fat_up',P);
 const NEU=[1,1,1,1,1];
 const f2=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
 
 function keys(){const a=[];try{for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.indexOf('cse_lset_')===0)a.push(n.slice(9));}}catch(e){}return a.sort();}
+const nm=sy=>{let m;if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^cry([A-Z]{3,5})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^R_(\d+)$/.exec(sy)))return 'V'+m[1];if((m=/^1HZ(\d+)V$/.exec(sy)))return 'V'+m[1]+' 1S';return String(sy).replace(/^OTC_/,'');};
 function rowsOf(key){const raw=g('cse_lset_'+key,[]);return Array.isArray(raw)?raw.filter(r=>Array.isArray(r)&&r.length===10).map(r=>({sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9]})).sort((a,b)=>a.t-b.t):[];}
 function weights(key,cfg){const k=(g('cse_learn',{keys:{}}).keys||{})[key];return cfg.learn!==false&&k&&Array.isArray(k.w)&&k.w.length===5?k.w:NEU;}
 function pick(rs,w,thr,tf){const last={},o=[];for(const x of rs){if(Math.round(wScore(x.p,w))<thr)continue;const k=x.sy+'|'+x.d;if(last[k]!==undefined&&x.t-last[k]<8*tf)continue;last[k]=x.t;o.push(x);}return o;}
@@ -25,9 +26,10 @@ function build(){
   document.head.appendChild(st);
   const sec=document.createElement('section');sec.className='p p-up';sec.id='upP';
   sec.innerHTML='<div class="ph">EDGE CHECK, RISK AND BACKUP <span class="r" id="upKeyR"></span></div>'
-  +'<div class="stabs"><select id="upKey" aria-label="Dataset"></select><select id="upTgt" aria-label="Target"><option value="1">AT 1R</option><option value="2">AT 2R</option><option value="3">AT 3R</option></select></div>'
+  +'<div class="stabs"><select id="upKey" aria-label="Dataset"></select><select id="upSym" aria-label="Symbol"></select><select id="upTgt" aria-label="Target"><option value="1">AT 1R</option><option value="2">AT 2R</option><option value="3">AT 3R</option></select></div>'
+  +'<div class="lab">BY SYMBOL AT YOUR ALERT LEVEL. TAP A ROW TO OPEN IT BELOW</div><div class="tw" id="upSL" style="max-height:230px;margin:6px 0 10px"></div>'
   +'<div class="up-g">'
-  +'<div><div class="lab">CONFIDENCE</div><div class="big dm" id="upBig" style="font-size:30px">--</div><div class="lab" id="upCI"></div><div style="margin-top:6px"><span class="up-b" id="upV">-</span></div><div class="lab" id="upBE" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
+  +'<div><div class="lab" id="upConfL">CONFIDENCE</div><div class="big dm" id="upBig" style="font-size:30px">--</div><div class="lab" id="upCI"></div><div style="margin-top:6px"><span class="up-b" id="upV">-</span></div><div class="lab" id="upBE" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">WALK-FORWARD, 4 CHRONOLOGICAL WINDOWS</div><div class="lad" id="upWF" style="margin-top:6px"></div><div class="lab" id="upWFv" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">EQUITY IN R <span id="upDD"></span></div><canvas id="upEq"></canvas></div>'
   +'<div><div class="lab">EDGE TREND, ROLLING EXPECTANCY <span id="upTrN"></span></div><canvas id="upTr"></canvas><div style="margin-top:6px"><span class="up-b" id="upTrV">-</span></div><div class="lab" id="upTrT" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
@@ -37,6 +39,8 @@ function build(){
   main.appendChild(sec);
   $('upTgt').value=String(P.tgt);$('upBal').value=P.bal;$('upRisk').value=P.risk;$('upStop').value=P.stop;$('upCap').value=P.cap;
   $('upKey').onchange=e=>{P.key=e.target.value;save();draw();};
+  $('upSym').onchange=e=>{P.sym=e.target.value;save();draw();};
+  $('upSL').onclick=e=>{const r=e.target.closest('tr[data-sy]');if(r){P.sym=r.dataset.sy;save();draw();}};
   $('upTgt').onchange=e=>{P.tgt=+e.target.value;save();draw();};
   [['upBal','bal'],['upRisk','risk'],['upStop','stop'],['upCap','cap']].forEach(([id,k])=>{$(id).oninput=e=>{P[k]=e.target.value===''?'':+e.target.value;save();draw();};});
   $('upBkNow').onclick=()=>{const b=$('lrExp');if(b)b.click();P.bk=Date.now();P.bkN=total();save();draw();};
@@ -56,9 +60,18 @@ function draw(){
   if(sel._h!==html){sel.innerHTML=html;sel._h=html;}
   if(!ks.includes(P.key))P.key=ks.includes(defKey(cfg))?defKey(cfg):(ks[0]||'');
   sel.value=P.key;
-  const key=P.key,tf=+(key.split('_')[1])||60,k=P.tgt,rs=key?rowsOf(key):[],thr=cfg.thr||70,spr=cfg.spr||{};
-  $('upKeyR').textContent=key?('ALERT AT '+thr+' / '+rs.length+' CANDIDATES'):'';
-  const pk=pick(rs,weights(key,cfg),thr,tf),v=pk.map(x=>rOf(x,k,spr)),S=stat(v);
+  const key=P.key,tf=+(key.split('_')[1])||60,k=P.tgt,rsAll=key?rowsOf(key):[],thr=cfg.thr||70,spr=cfg.spr||{};
+  const syms=[...new Set(rsAll.map(x=>x.sy))].sort(),w0=weights(key,cfg);
+  const shtml='<option value="ALL">ALL SYMBOLS POOLED</option>'+syms.map(x=>'<option value="'+x+'">'+nm(x)+'</option>').join('');
+  const ss=$('upSym');if(ss._h!==shtml){ss.innerHTML=shtml;ss._h=shtml;}
+  if(P.sym!=='ALL'&&!syms.includes(P.sym))P.sym='ALL';
+  ss.value=P.sym;
+  const rs=P.sym==='ALL'?rsAll:rsAll.filter(x=>x.sy===P.sym);
+  const lines=syms.map(sy=>{const vv=pick(rsAll.filter(x=>x.sy===sy),w0,thr,tf).map(x=>rOf(x,k,spr)),q=stat(vv);let vt='NOISE',vc='var(--amb)';if(q.n>=30){if(q.lo>0){vt='EDGE LIKELY';vc='var(--pos)';}else if(q.hi<0){vt='NEGATIVE';vc='var(--neg)';}else{vt='UNCLEAR';vc='var(--dim)';}}return {sy,q,vt,vc};}).sort((a,b)=>b.q.n-a.q.n);
+  $('upSL').innerHTML=lines.length?'<table><thead><tr><th>SYMBOL</th><th class="n">TRADES</th><th class="n">EXP AT '+k+'R</th><th class="n">95% RANGE</th><th>VERDICT</th></tr></thead><tbody>'+lines.map(l=>'<tr data-sy="'+l.sy+'" style="cursor:pointer'+(l.sy===P.sym?';background:#0e2a44':'')+'"><td>'+nm(l.sy)+'</td><td class="n">'+l.q.n+'</td><td class="n '+(l.q.m>0?'pos':l.q.m<0?'neg':'')+'">'+(l.q.n?f2(l.q.m):'-')+'</td><td class="n">'+(l.q.n?f2(l.q.lo)+' TO '+f2(l.q.hi):'-')+'</td><td style="color:'+l.vc+'">'+l.vt+'</td></tr>').join('')+'</tbody></table>':'<div class="dm" style="padding:8px">NO DATA YET</div>';
+  $('upConfL').textContent='CONFIDENCE / '+(P.sym==='ALL'?'ALL SYMBOLS POOLED':nm(P.sym));
+  $('upKeyR').textContent=key?('ALERT AT '+thr+' / '+rs.length+' CANDIDATES'+(P.sym==='ALL'?'':' / '+nm(P.sym))):'';
+  const pk=pick(rs,w0,thr,tf),v=pk.map(x=>rOf(x,k,spr)),S=stat(v);
   const big=$('upBig');
   if(S.n){big.textContent=f2(S.m);big.className='big '+(S.m>=0?'pos':'neg');}else{big.textContent='--';big.className='big dm';}
   $('upCI').textContent=S.n?'95% RANGE '+f2(S.lo)+' TO '+f2(S.hi)+' / N '+S.n:'WAITING FOR RESOLVED TRADES';
