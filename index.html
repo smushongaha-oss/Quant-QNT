@@ -213,7 +213,7 @@ select{max-width:100%;text-overflow:ellipsis}
 <body>
 <header class="hd">
   <div class="logo">FAT</div>
-  <div class="ttl"><div class="t1">FOCUS AUTO TRADERS <b>//</b> CONFLUENCE ENGINE</div><div class="t2">13 VOLATILITY INDICES / ZONE + STRUCTURE + CANDLE + MOMENTUM + REGIME</div></div>
+  <div class="ttl"><div class="t1">FOCUS AUTO TRADERS <b>//</b> CONFLUENCE ENGINE</div><div class="t2">UP TO 16 INSTRUMENTS / ZONE + STRUCTURE + CANDLE + MOMENTUM + REGIME</div></div>
   <div class="chip">SCORES OUT OF 100 / SELF-AUDITED / SELF-IMPROVING</div>
   <div class="hst">
     <div class="hs"><label>INDEX</label><select id="sym" aria-label="Index"></select></div>
@@ -227,7 +227,7 @@ select{max-width:100%;text-overflow:ellipsis}
     <button id="bSnd" type="button">SND</button>
   </div>
 </header>
-<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sLearn">LEARN</a><a href="#sHow">GUIDE</a></nav>
+<nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sLearn">LEARN</a><a href="#sEng">SWITCHES</a><a href="#upP">EDGE</a><a href="#sHow">GUIDE</a></nav>
 <div class="tick"><span class="tag">&#9679; LIVE FEED</span><div class="mqw"><div class="mq" id="mqTop"></div></div></div>
 
 <main class="grid">
@@ -379,7 +379,7 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="lab" id="lrMsg" style="min-height:12px;margin-bottom:4px;text-transform:none;letter-spacing:.02em"></div>
     <div id="lrBody"></div>
-    <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">The engine keeps every resolved candidate it has ever seen, scored with neutral weights. Every few minutes it searches for better weights on the older 70 percent of that history, then tests them on the newest 30 percent it did not tune on. New settings are adopted only if they are profitable on that unseen slice, beat the current settings by at least 0.10R and at least 2 standard errors, and at least 30 test trades exist. After adoption it keeps comparing the learned weights with neutral on trades that came afterwards and reverts if they trail. On derived indices outcomes are random, so expect it to stay neutral most of the time. That is the guard working, not a fault.</div>
+    <div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">The engine keeps every resolved candidate it has ever seen, scored with neutral weights. Every few minutes it searches for better weights on the older 70 percent of that history, then tests them on the newest 30 percent it did not tune on. New settings are adopted only if they are profitable on that unseen slice, beat the current settings by at least 0.10R and at least 2 standard errors, and at least 30 test trades exist. They must also pass a rolling walk-forward check on three later windows. After adoption it keeps comparing the learned weights with neutral on trades that came afterwards and reverts if they trail. On derived indices outcomes are random, so expect it to stay neutral most of the time. That is the guard working, not a fault.</div>
   </section>
 
   <section class="p p-learn" id="sEng">
@@ -399,9 +399,10 @@ select{max-width:100%;text-overflow:ellipsis}
       <p><b>Trade plan.</b> Entry at the signal close, stop beyond the zone or wick plus 0.15 ATR, targets at 1R, 2R and 3R. Stops are checked before targets inside the same candle, so results lean pessimistic.</p>
       <p><b>Timeframes.</b> Pick M1, M5, M15 or H1 as the entry timeframe. The bias timeframe above it is H1 for M1, M5 and M15, and H4 when you trade H1. Slower timeframes give fewer signals, so the audit fills up more slowly: H1 history covers about 25 days, M15 about 8 days, M5 about 3 days and M1 about 1 day.</p>
             <p><b>The audit.</b> Every signal scoring 40 or more is logged and resolved on later candles. Each target is counted on its own: a trade that touches 2R then stops out counts as a win at 1R and 2R and a loss at 3R. Backtest rows come from the loaded history. Live rows fired while this page was open and are saved in this browser.</p>
-      <p><b>The scanner and map.</b> All 13 Volatility indices stream over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
+      <p><b>The scanner and map.</b> Every scanned instrument (the 13 volatility indices by default, up to 16) streams over one connection. Each is scored on its last closed candle and ranked by confirmed signals first, then by how close price is to a well scored zone.</p>
       <p><b>Real markets.</b> Forex, gold, indices and crypto have spreads, commission and swaps, so enter your cost per trade in price units and the audit takes it off every trade. Candles after a weekend or session gap are skipped and kept out of the ATR. The session filter keeps alerts and stats to London and New York hours. Closed markets are marked and ranked last.</p>
-      <p><b>Self-improve.</b> Score weights for zone, structure, candle, momentum and regime start at 1.00 and can move between 0.50 and 1.50. The alert level can move between 50 and 90. The search runs on the older 70 percent of resolved candidates and must prove itself on the newest 30 percent, with a penalty for straying from neutral. Changes need to be profitable on the unseen slice, beat the current settings by 0.10R and 2 standard errors, rest on 30 test trades, and are held for 6 hours. After adoption a forward check compares learned against neutral on newer trades and reverts on failure. Tick AUTO ALERT LEVEL to let the learned level move your alert slider. Data lives in this browser, so use EXPORT DATA to keep it.</p>
+      <p><b>Strategy switches.</b> Regime filter keeps signals to trending or ranging conditions, measured by a 20 bar efficiency ratio. Break-even moves the stop to entry once 1R is touched. Edge entry places a limit order at the zone edge, or at the close if that is better, and cancels it after 5 bars if it is not filled. The audit, stats, tape and scanner follow the switches. The self-improve learner and the Edge panel always use the plain engine so their data stays comparable.</p>
+      <p><b>Self-improve.</b> Score weights for zone, structure, candle, momentum and regime start at 1.00 and can move between 0.50 and 1.50. The alert level can move between 50 and 90. The search runs on the older 70 percent of resolved candidates and must prove itself on the newest 30 percent, with a penalty for straying from neutral. Changes need to be profitable on the unseen slice, beat the current settings by 0.10R and 2 standard errors, rest on 30 test trades, and are held for 6 hours. They must also pass a rolling walk-forward check: re-tuned on three growing slices of history, the new settings have to stay profitable and beat neutral on at least two thirds of the windows that follow. After adoption a forward check compares learned against neutral on newer trades and reverts on failure. Tick AUTO ALERT LEVEL to let the learned level move your alert slider. Data lives in this browser, so use EXPORT DATA to keep it.</p>
       <p>Deriv synthetic indices are random number generated. Read the audit before you trust any score band, and ignore rows with fewer than 30 trades.</p>
     </div>
   </details>
@@ -518,6 +519,7 @@ function watchOf(X,i,px){
   const {A,Z,T,HT}=X;const a=A[i];
   if(!(a>0)||i<30)return null;
   if(X.gap&&(X.gap[i]||X.gap[i-1]))return null;
+  if(ENG_ON&&ENG.reg!=='off'){const e=effRatio(X.C,i,20);if(ENG.reg==='trend'?e<ENG.er:e>=ENG.er)return null;}
   let best=null;
   for(const z of Z){
     if(z.born>=i||z.dead<=i)continue;
@@ -1020,12 +1022,12 @@ function alertSig(s,sy){
   const t=$('toast');
   t.querySelector('.t1').textContent=(s.d===1?'BUY':'SELL')+' SIGNAL / SCORE '+s.score;
   t.querySelector('.t1').style.color=s.d===1?K.pos:K.neg;
-  t.querySelector('.t2').textContent=nameOf(sy)+' '+tfName()+' / '+s.pat+' AT '+s.kind+' / ENTRY '+fp(sy,s.entry);
+  t.querySelector('.t2').textContent=nameOf(sy)+' '+tfName()+' / '+s.pat+' AT '+s.kind+(s.lim?' / LIMIT ':' / ENTRY ')+fp(sy,s.entry);
   t.classList.add('show');clearTimeout(alertSig.h);alertSig.h=setTimeout(()=>t.classList.remove('show'),12000);
   beep();
   try{if('Notification' in window&&Notification.permission==='granted')new Notification((s.d===1?'Buy ':'Sell ')+nameOf(sy)+' ('+s.score+')',{body:s.pat+' at '+s.kind});}catch(e){}
   if(cfg.tok&&cfg.chat){
-    const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\nEntry '+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);
+    const txt=(s.d===1?'BUY ':'SELL ')+nameOf(sy)+' '+tfName()+' score '+s.score+'\n'+s.pat+' at '+s.kind+'\n'+(s.lim?'LIMIT ORDER, cancel if not filled in 5 bars. Entry ':'Entry ')+fp(sy,s.entry)+'  SL '+fp(sy,s.sl)+'\nTP1 '+fp(sy,s.tp[0])+'  TP2 '+fp(sy,s.tp[1])+'  TP3 '+fp(sy,s.tp[2]);
     fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent(txt)).catch(()=>{});
   }
 }
@@ -1171,7 +1173,7 @@ function renderPlan(act){
   const el=$('planBar');if(!el)return;
   if(!act){if(el.className!=='plan'){el.className='plan';}setH('planBar','');return;}
   const f=v=>v.toFixed(S.dp),rk=act.risk,d=act.d;
-  const h='<span class="side '+(d===1?'b':'s')+'">OPEN '+(d===1?'BUY':'SELL')+' '+act.score+'</span>'
+  const h='<span class="side '+(d===1?'b':'s')+'">'+(act.lim?'LIMIT ':'OPEN ')+(d===1?'BUY':'SELL')+' '+act.score+'</span>'
    +'<span>ENTRY <b>'+f(act.entry)+'</b></span>'
    +'<span class="sl">STOP LOSS <b>'+f(act.sl)+'</b></span>'
    +'<span class="tp">TP1 <b>'+f(act.tp[0])+'</b> 1R</span>'
