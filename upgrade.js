@@ -1,5 +1,5 @@
 /* FAT Confluence engine upgrade: CONFIDENCE, WALK-FORWARD, RISK, BACKUP.
-   Load with <script src="upgrade.js"></script> just before </body>. It reads the engine's own saved data and
+   Load it with a script tag whose src is upgrade.js, placed just before the closing body tag. It reads the engine's own saved data and
    never changes how scores or signals are made. */
 (()=>{
 'use strict';
@@ -49,10 +49,10 @@ function build(){
   $('upPers').onclick=()=>{try{navigator.storage.persist().then(ok=>{$('upBkM').textContent=ok?'STORAGE PROTECTED: THE BROWSER WILL NOT CLEAR THIS DATA UNDER SPACE PRESSURE.':'THE BROWSER DECLINED. TRY ADDING THE PAGE TO YOUR HOME SCREEN, AND KEEP BACKING UP.';});}catch(e){$('upBkM').textContent='NOT SUPPORTED HERE. KEEP BACKING UP.';}};
 }
 function total(){return keys().reduce((a,k)=>a+rowsOf(k).length,0);}
-function defKey(cfg){const sy=cfg.sym||'';const gp=/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy)?'SYNTH':/^frx/.test(sy)?'FOREX':/^cry/i.test(sy)?'CRYPTO':'';return gp+'_'+(cfg.tf||60);}
+function defKey(cfg,ks){const tfv=cfg.tf||60;if(ks){const hit=ks.find(k=>(+k.split('_')[1])===tfv&&rowsOf(k).some(r=>r.sy===cfg.sym));if(hit)return hit;}const sy=cfg.sym||'';const gp=/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy)?'SYNTH':/^frx/.test(sy)?'FOREX':/^cry/i.test(sy)?'CRYPTO':'';return gp+'_'+(cfg.tf||60);}
 function todayR(cfg,k){
   const off=4*3600,now=Date.now()/1000,start=Math.floor((now+off)/86400)*86400-off;let tot=0,n=0;
-  try{for(let i=0;i<localStorage.length;i++){const nm=localStorage.key(i);if(!nm||nm.indexOf('cse_arch_')!==0)continue;const a=g(nm,{});for(const x of Object.values(a)){if(!x||x.t<start||!(x.res==='sl'||x.res==='tp3'))continue;if((x.score||0)<(cfg.thr||70))continue;tot+=(x.reached>=k?k:-1);n++;}}}catch(e){}
+  try{for(let i=0;i<localStorage.length;i++){const nm=localStorage.key(i);if(!nm||nm.indexOf('cse_arch_')!==0)continue;const a=g(nm,{});for(const x of Object.values(a)){if(!x||x.t<start||!(x.res==='sl'||x.res==='tp3'))continue;if((x.score||0)<(cfg.thr||70))continue;tot+=(x.reached>=k?k:(x.be?0:-1));n++;}}}catch(e){}
   return{tot,n};
 }
 function draw(){
@@ -60,7 +60,7 @@ function draw(){
   const cfg=g('cse_set',{}),ks=keys(),sel=$('upKey');
   const html=ks.length?ks.map(k=>'<option value="'+k+'">'+k.replace('SYNTH','DERIVED').replace('_',' / TF ')+' ('+rowsOf(k).length+')</option>').join(''):'<option>NO DATA YET</option>';
   if(sel._h!==html){sel.innerHTML=html;sel._h=html;}
-  if(!ks.includes(P.key))P.key=ks.includes(defKey(cfg))?defKey(cfg):(ks[0]||'');
+  if(!ks.includes(P.key)){const dk=defKey(cfg,ks);P.key=ks.includes(dk)?dk:(ks[0]||'');}
   sel.value=P.key;
   const key=P.key,tf=+(key.split('_')[1])||60,k=P.tgt,rsAll=key?rowsOf(key):[],thr=cfg.thr||70,spr=cfg.spr||{};
   const syms=[...new Set(rsAll.map(x=>x.sy))].sort(),w0=weights(key,cfg);
