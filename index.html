@@ -325,7 +325,7 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="stabs">
       <input type="text" id="mkSearch" placeholder="SEARCH: EUR, GOLD, US 500" aria-label="Search instruments">
-      <button id="mkReal" type="button">SCAN REAL MARKETS</button><button id="mkVol" type="button">SCAN VOLATILITY INDICES</button>
+      <button id="mkReal" type="button">SCAN REAL MARKETS</button><button id="mkIdx" type="button">ADD ALL STOCK INDICES</button><button id="mkVol" type="button">SCAN VOLATILITY INDICES</button>
     </div>
     <div class="lab" id="mkMsg" style="margin-bottom:6px;min-height:12px"></div>
     <div class="mklist" id="mkList"></div>
@@ -945,6 +945,18 @@ function realPreset(){
   if(!pick.length){$('mkMsg').textContent='NO MATCH FOUND. USE SEARCH AND + SCAN TO ADD INSTRUMENTS.';return;}
   $('mkMsg').textContent='SCANNING '+pick.length+' REAL-MARKET INSTRUMENTS.';
   mkApplyWatch(pick);setFocus(pick[0]);
+}
+function idxPreset(){
+  const items=Object.values(S.cat).filter(x=>x.grp==='IDX');
+  if(!items.length){$('mkMsg').textContent='NO STOCK INDICES LISTED YET. WAIT A MOMENT, OR THEY MAY NOT BE OFFERED ON THIS CONNECTION.';return;}
+  let cur=((cfg.watch&&cfg.watch.length)?cfg.watch:DEF.map(d=>d[0])).slice();
+  const need=items.filter(x=>!cur.includes(x.sy)).length;
+  let dropped=0;
+  if(cur.length+need>MAXW){const keep=cur.filter(sy=>grpFor(sy)!=='SYNTH'||sy===cfg.sym);dropped=cur.length-keep.length;cur=keep;}
+  let added=0;
+  items.slice().sort((a,b)=>(b.open-a.open)||a.name.localeCompare(b.name)).forEach(x=>{if(!cur.includes(x.sy)&&cur.length<MAXW){cur.push(x.sy);added++;}});
+  $('mkMsg').textContent='ADDED '+added+' STOCK INDICES'+(dropped?' AND REMOVED '+dropped+' DERIVED INDICES TO MAKE ROOM':'')+(added<need?'. '+(need-added)+' DID NOT FIT, THE SCANNER HOLDS '+MAXW:'')+'. EACH ONE APPEARS IN THE EDGE PANEL ONCE IT HAS DATA.';
+  mkApplyWatch(cur);
 }
 function volPreset(){$('mkMsg').textContent='BACK TO THE 13 VOLATILITY INDICES.';mkApplyWatch(null);setFocus(DEF[0][0]);}
 
@@ -1917,7 +1929,7 @@ function init(){
   $('mkTabs').onclick=e=>{const b=e.target.closest('button[data-g]');if(!b)return;cfg.mk=b.dataset.g;persist();$('mkTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderMarkets();};
   $('mkSearch').oninput=renderMarkets;
   $('mkList').onclick=e=>{const b=e.target.closest('button[data-a]');if(!b)return;if(b.dataset.a==='chart'){setFocus(b.dataset.sy);window.scrollTo({top:0,behavior:'smooth'});}else toggleWatch(b.dataset.sy);};
-  $('mkReal').onclick=realPreset;$('mkVol').onclick=volPreset;
+  $('mkReal').onclick=realPreset;$('mkIdx').onclick=idxPreset;$('mkVol').onclick=volPreset;
   $('sessSel').value=cfg.sess;
   $('sessSel').onchange=e=>{cfg.sess=e.target.value;persist();if(S.X)derive();S.dirty=true;};
   $('sprIn').onchange=e=>{cfg.spr[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)derive();S.dirty=true;};
