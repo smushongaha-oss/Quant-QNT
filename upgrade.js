@@ -12,7 +12,8 @@ const NEU=[1,1,1,1,1];
 const f2=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
 
 function keys(){const a=[];try{for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.indexOf('cse_lset_')===0)a.push(n.slice(9));}}catch(e){}return a.sort();}
-const nm=sy=>{let m;if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^cry([A-Z]{3,5})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^R_(\d+)$/.exec(sy)))return 'V'+m[1];if((m=/^1HZ(\d+)V$/.exec(sy)))return 'V'+m[1]+' 1S';return String(sy).replace(/^OTC_/,'');};
+const nm=sy=>{let m;if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^cry([A-Z]{3,5})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^R_(\d+)$/.exec(sy)))return 'V'+m[1];if((m=/^1HZ(\d+)V$/.exec(sy)))return 'V'+m[1]+' 1S';const IX={OTC_SPC:'US 500',OTC_DJI:'WALL ST 30',OTC_NDX:'US TECH 100',OTC_FTSE:'UK 100',OTC_GDAXI:'GERMANY 40',OTC_N225:'JAPAN 225',OTC_AS51:'AUS 200',OTC_FCHI:'FRANCE 40',OTC_HSI:'HK 50',OTC_AEX:'NETH 25',OTC_IBEX35:'SPAIN 35',OTC_SX5E:'EURO 50',OTC_SSMI:'SWISS 20'};
+  if(IX[sy])return IX[sy];return String(sy).replace(/^OTC_/,'');};
 function rowsOf(key){const raw=g('cse_lset_'+key,[]);return Array.isArray(raw)?raw.filter(r=>Array.isArray(r)&&r.length===10).map(r=>({sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9]})).sort((a,b)=>a.t-b.t):[];}
 function weights(key,cfg){const k=(g('cse_learn',{keys:{}}).keys||{})[key];return cfg.learn!==false&&k&&Array.isArray(k.w)&&k.w.length===5?k.w:NEU;}
 function pick(rs,w,thr,tf){const last={},o=[];for(const x of rs){if(Math.round(wScore(x.p,w))<thr)continue;const k=x.sy+'|'+x.d;if(last[k]!==undefined&&x.t-last[k]<8*tf)continue;last[k]=x.t;o.push(x);}return o;}
