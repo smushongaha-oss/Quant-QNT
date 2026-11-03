@@ -1193,6 +1193,7 @@ function drawChart(){
   const n=C.length,V=Math.min(cfg.view||90,n),st=n-V;
   let mn=Infinity,mx=-Infinity;
   for(let i=st;i<n;i++){if(C[i].l<mn)mn=C[i].l;if(C[i].h>mx)mx=C[i].h;}
+  if(act){for(const q of [act.sl,act.entry,act.tp[0],act.tp[1],act.tp[2]]){if(q<mn)mn=q;if(q>mx)mx=q;}}
   const pd=(mx-mn)*0.1||1;mn-=pd;mx+=pd;
   const axis=Math.max(58,Math.ceil(g.measureText(mx.toFixed(S.dp)).width)+10),top=6,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/(V+Math.max(3,Math.round(V*0.08)));
   const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
