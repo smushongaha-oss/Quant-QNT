@@ -1,165 +1,101 @@
-/* FAT Confluence engine upgrade: CONFIDENCE, WALK-FORWARD, RISK, BACKUP.
-   Load it with a script tag whose src is upgrade.js, placed just before the closing body tag. It reads the engine's own saved data and
-  never changes how scores or signals are made. */
+/* FAT Confluence engine add-on: AI SECOND OPINION + AI SCOREBOARD.
+   Load with <script src="ai.js"></script> after upgrade.js. It never changes how scores or signals are made.
+   For every new live signal at your alert level it asks an LLM (Groq, OpenAI-compatible) for TAKE or SKIP,
+   using the engine's own saved history as evidence, then later grades the AI against the real outcome. */
 (()=>{
 'use strict';
 const g=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}};
 const s=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 const $=id=>document.getElementById(id);
-const P=Object.assign({sym:'ALL',bal:1000,risk:1,stop:'',cap:3,tgt:2,key:'',bk:0,bkN:0},g('fat_up',{}));
-const save=()=>s('fat_up',P);
-const NEU=[1,1,1,1,1];
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const P=Object.assign({key:'',model:'llama-3.3-70b-versatile',on:true,tg:false},g('fat_ai',{}));
+const saveP=()=>s('fat_ai',P);
+let LOG=g('fat_ai_log',{});
+const saveL=()=>{const ks=Object.keys(LOG);if(ks.length>400){ks.sort((a,b)=>LOG[a].t-LOG[b].t).slice(0,ks.length-400).forEach(k=>delete LOG[k]);}s('fat_ai_log',LOG);};
+const MAXP=[25,25,20,15,15];
 const f2=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
+let busy=false,msg='';
 
-function keys(){const a=[];try{for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.indexOf('cse_lset_')===0)a.push(n.slice(9));}}catch(e){}return a.sort();}
-const nm=sy=>{let m;if((m=/^frx([A-Z]{3})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^cry([A-Z]{3,5})([A-Z]{3})$/.exec(sy)))return m[1]+'/'+m[2];if((m=/^R_(\d+)$/.exec(sy)))return 'V'+m[1];if((m=/^1HZ(\d+)V$/.exec(sy)))return 'V'+m[1]+' 1S';const IX={OTC_SPC:'US 500',OTC_DJI:'WALL ST 30',OTC_NDX:'US TECH 100',OTC_FTSE:'UK 100',OTC_GDAXI:'GERMANY 40',OTC_N225:'JAPAN 225',OTC_AS51:'AUS 200',OTC_FCHI:'FRANCE 40',OTC_HSI:'HK 50',OTC_AEX:'NETH 25',OTC_IBEX35:'SPAIN 35',OTC_SX5E:'EURO 50',OTC_SSMI:'SWISS 20'};
-  if(IX[sy])return IX[sy];return String(sy).replace(/^OTC_/,'');};
-function rowsOf(key){const raw=g('cse_lset_'+key,[]);return Array.isArray(raw)?raw.filter(r=>Array.isArray(r)&&r.length===10).map(r=>({sy:r[0],t:r[1],d:r[2],p:r.slice(3,8),r:r[8],rk:r[9]})).sort((a,b)=>a.t-b.t):[];}
-function weights(key,cfg){const k=(g('cse_learn',{keys:{}}).keys||{})[key];return cfg.learn!==false&&k&&Array.isArray(k.w)&&k.w.length===5?k.w:NEU;}
-function pick(rs,w,thr,tf){const last={},o=[];for(const x of rs){if(Math.round(wScore(x.p,w))<thr)continue;const k=x.sy+'|'+x.d;if(last[k]!==undefined&&x.t-last[k]<8*tf)continue;last[k]=x.t;o.push(x);}return o;}
-const rOf=(x,k,spr)=>(x.r>=k?k:-1)-(x.rk>0?((spr&&spr[x.sy])||0)/x.rk:0);
-function stat(v){const n=v.length;if(!n)return{n:0,m:0,se:0,lo:0,hi:0};let a=0,q=0;for(const x of v){a+=x;q+=x*x;}const m=a/n,sd=Math.sqrt(Math.max(0,q/(n)-m*m)),se=n>1?sd/Math.sqrt(n-1):0;return{n,m,se,lo:m-1.96*se,hi:m+1.96*se};}
-
-function build(){
-  const main=document.querySelector('main.grid');if(!main||$('upP'))return;
-  const st=document.createElement('style');
-  st.textContent='.p-up{grid-column:span 12}.up-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px}.up-g input{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;text-transform:none}.up-g label{display:block;font-size:10px;color:var(--dim);letter-spacing:.1em;margin:6px 0 3px}.up-b{display:inline-block;padding:2px 8px;border:1px solid var(--bd);font-size:10.5px;letter-spacing:.1em}#upEq,#upTr{height:150px}';
-  document.head.appendChild(st);
-  const sec=document.createElement('section');sec.className='p p-up';sec.id='upP';
-  sec.innerHTML='<div class="ph">EDGE CHECK, RISK AND BACKUP <span class="r" id="upKeyR"></span></div>'
-  +'<div class="stabs"><select id="upKey" aria-label="Dataset"></select><select id="upSym" aria-label="Symbol"></select><select id="upTgt" aria-label="Target"><option value="1">AT 1R</option><option value="2">AT 2R</option><option value="3">AT 3R</option></select></div>'
-  +'<div class="lab">BY SYMBOL AT YOUR ALERT LEVEL. TAP A ROW TO OPEN IT BELOW</div><div class="tw" id="upSL" style="max-height:230px;margin:6px 0 10px"></div>'
-  +'<div class="up-g">'
-  +'<div><div class="lab" id="upConfL">CONFIDENCE</div><div class="big dm" id="upBig" style="font-size:30px">--</div><div class="lab" id="upCI"></div><div style="margin-top:6px"><span class="up-b" id="upV">-</span></div><div class="lab" id="upBE" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
-  +'<div><div class="lab">WALK-FORWARD, 4 CHRONOLOGICAL WINDOWS</div><div class="lad" id="upWF" style="margin-top:6px"></div><div class="lab" id="upWFv" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
-  +'<div><div class="lab">EQUITY IN R <span id="upDD"></span></div><canvas id="upEq"></canvas></div>'
-  +'<div><div class="lab">EDGE TREND, ROLLING EXPECTANCY <span id="upTrN"></span></div><canvas id="upTr"></canvas><div style="margin-top:6px"><span class="up-b" id="upTrV">-</span></div><div class="lab" id="upTrT" style="margin-top:6px;text-transform:none;letter-spacing:.02em"></div></div>'
-  +'<div><div class="lab">RISK DESK</div><label for="upBal">ACCOUNT BALANCE</label><input id="upBal" type="number" min="0" step="any"><label for="upRisk">RISK PER TRADE, PERCENT</label><input id="upRisk" type="number" min="0" step="any"><label for="upStop">STOP DISTANCE, PRICE UNITS (FROM THE PLAN BAR)</label><input id="upStop" type="number" min="0" step="any"><label for="upCap">DAILY LOSS CAP, IN R</label><input id="upCap" type="number" min="0" step="any"><div class="fb" style="grid-template-columns:1fr 1fr"><div class="fx o"><span class="lab">RISK AMOUNT</span><b id="upAmt">-</b></div><div class="fx o"><span class="lab">SIZE PER 1.00 PRICE MOVE</span><b id="upSz">-</b></div></div><div style="margin-top:6px"><span class="up-b" id="upDay">-</span></div></div>'
-  +'<div><div class="lab">BACKUP</div><div class="lab" id="upBk" style="margin:6px 0;text-transform:none;letter-spacing:.02em"></div><div class="stabs"><button id="upBkNow" type="button">BACKUP NOW</button><button id="upPers" type="button">PROTECT STORAGE</button></div><div class="lab" id="upBkM" style="text-transform:none;letter-spacing:.02em"></div></div>'
-  +'</div><div class="lab" style="margin-top:12px">WHAT PREDICTS A WIN <span id="upCmpR"></span></div><div class="tw" id="upCmp" style="max-height:260px;margin:6px 0"></div><div class="lab" id="upCmpN" style="text-transform:none;letter-spacing:.02em;line-height:1.5"></div>'
-  +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em">Built from the engine\'s saved resolved candidates, at your alert level and trading cost, with learned weights if learning is on. Interval is 95 percent. Picking the best level or band from many looks inflates results, so treat a pass as a lead, not proof.</div>';
-  main.appendChild(sec);
-  $('upTgt').value=String(P.tgt);$('upBal').value=P.bal;$('upRisk').value=P.risk;$('upStop').value=P.stop;$('upCap').value=P.cap;
-  $('upKey').onchange=e=>{P.key=e.target.value;save();draw();};
-  $('upSym').onchange=e=>{P.sym=e.target.value;save();draw();};
-  $('upSL').onclick=e=>{const r=e.target.closest('tr[data-sy]');if(r){P.sym=r.dataset.sy;save();draw();}};
-  $('upTgt').onchange=e=>{P.tgt=+e.target.value;save();draw();};
-  [['upBal','bal'],['upRisk','risk'],['upStop','stop'],['upCap','cap']].forEach(([id,k])=>{$(id).oninput=e=>{P[k]=e.target.value===''?'':+e.target.value;save();draw();};});
-  $('upBkNow').onclick=()=>{const b=$('lrExp');if(b)b.click();P.bk=Date.now();P.bkN=total();save();draw();};
-  $('upPers').onclick=()=>{try{navigator.storage.persist().then(ok=>{$('upBkM').textContent=ok?'STORAGE PROTECTED: THE BROWSER WILL NOT CLEAR THIS DATA UNDER SPACE PRESSURE.':'THE BROWSER DECLINED. TRY ADDING THE PAGE TO YOUR HOME SCREEN, AND KEEP BACKING UP.';});}catch(e){$('upBkM').textContent='NOT SUPPORTED HERE. KEEP BACKING UP.';}};
+function stat(v){const n=v.length;if(!n)return{n:0,m:0,lo:0,hi:0};let a=0,q=0;for(const x of v){a+=x;q+=x*x;}const m=a/n,sd=Math.sqrt(Math.max(0,q/n-m*m)),se=n>1?sd/Math.sqrt(n-1):0;return{n,m,lo:m-1.96*se,hi:m+1.96*se};}
+function histStats(sy,tf,score){
+  const out=[];
+  try{for(let i=0;i<localStorage.length;i++){const n=localStorage.key(i);if(n&&n.indexOf('cse_lset_')===0&&+n.split('_').pop()===tf){const raw=g(n,[]);if(Array.isArray(raw))for(const r of raw){if(Array.isArray(r)&&r.length===10&&r[0]===sy){let num=0,den=0;for(let k=0;k<5;k++){num+=r[3+k];den+=MAXP[k];}out.push({sc:100*num/den,r:r[8]});}}}}}catch(e){}
+  const band=out.filter(x=>Math.abs(x.sc-score)<=10),R=(l,k)=>l.map(x=>x.r>=k?k:-1);
+  const ex=l=>({n:l.length,hit1:l.length?Math.round(100*l.filter(x=>x.r>=1).length/l.length):null,hit2:l.length?Math.round(100*l.filter(x=>x.r>=2).length/l.length):null,exp2:l.length?+stat(R(l,2)).m.toFixed(2):null});
+  return{symbolAll:ex(out),similarScore:ex(band)};
 }
-function total(){return keys().reduce((a,k)=>a+rowsOf(k).length,0);}
-function defKey(cfg,ks){const tfv=cfg.tf||60;if(ks){const hit=ks.find(k=>(+k.split('_')[1])===tfv&&rowsOf(k).some(r=>r.sy===cfg.sym));if(hit)return hit;}const sy=cfg.sym||'';const gp=/^(R_|1HZ|BOOM|CRASH|JD|RDBULL|RDBEAR|stpRNG|WLD|DEX)/i.test(sy)?'SYNTH':/^frx/.test(sy)?'FOREX':/^cry/i.test(sy)?'CRYPTO':'';return gp+'_'+(cfg.tf||60);}
-function todayR(cfg,k){
-  const off=4*3600,now=Date.now()/1000,start=Math.floor((now+off)/86400)*86400-off;let tot=0,n=0;
-  try{for(let i=0;i<localStorage.length;i++){const nm=localStorage.key(i);if(!nm||nm.indexOf('cse_arch_')!==0)continue;const a=g(nm,{});for(const x of Object.values(a)){if(!x||x.t<start||!(x.res==='sl'||x.res==='tp3'))continue;if((x.score||0)<(cfg.thr||70))continue;tot+=(x.reached>=k?k:(x.be?0:-1));n++;}}}catch(e){}
-  return{tot,n};
+function pending(){
+  const cfg=g('cse_set',{}),thr=cfg.thr||70,now=Date.now()/1000,out=[];
+  try{for(let i=0;i<localStorage.length;i++){const nm=localStorage.key(i);if(!nm||nm.indexOf('cse_arch_')!==0)continue;
+    const rest=nm.slice(9),tf=+rest.split('_').pop(),sy=rest.slice(0,rest.lastIndexOf('_')),a=g(nm,{});
+    for(const x of Object.values(a)){if(!x||x.src!=='live')continue;const id=sy+'|'+tf+'|'+x.t+'|'+x.d;
+      if(LOG[id]){if(!LOG[id].done&&(x.res==='sl'||x.res==='tp3')){LOG[id].done=1;LOG[id].r2=x.reached>=2?2:(x.be?0:-1);LOG[id].r1=x.reached>=1?1:(x.be?0:-1);}continue;}
+      if((x.score||0)<thr||now-x.t>3*tf+60||x.res!=='open')continue;out.push({id,sy,tf,x});}}}catch(e){}
+  return out;
+}
+function candles(sy,tf){
+  const eps=['wss://ws.derivws.com/websockets/v3?app_id=1089','wss://ws.binaryws.com/websockets/v3?app_id=1089'];
+  const one=u=>new Promise(res=>{let ws,done=false;const fin=v=>{if(done)return;done=true;try{ws.close();}catch(e){}res(v);};
+    try{ws=new WebSocket(u);}catch(e){return res(null);}
+    const to=setTimeout(()=>fin(null),6000);
+    ws.onopen=()=>{try{ws.send(JSON.stringify({ticks_history:sy,adjust_start_time:1,count:30,end:'latest',granularity:tf,style:'candles'}));}catch(e){fin(null);}};
+    ws.onmessage=ev=>{try{const d=JSON.parse(ev.data);clearTimeout(to);fin(Array.isArray(d.candles)?d.candles.map(c=>[+c.open,+c.high,+c.low,+c.close]):null);}catch(e){fin(null);}};
+    ws.onerror=()=>fin(null);});
+  return one(eps[0]).then(r=>r||one(eps[1]));
+}
+async function ask(p){
+  const {sy,tf,x}=p,h=histStats(sy,tf,x.score),cd=await candles(sy,tf);
+  const ctx={instrument:sy,timeframeSeconds:tf,side:x.d===1?'BUY':'SELL',score:x.score,componentsOutOf:{zone:[x.parts&&x.parts[0],25],structure:[x.parts&&x.parts[1],25],candle:[x.parts&&x.parts[2],20],momentum:[x.parts&&x.parts[3],15],regime:[x.parts&&x.parts[4],15]},pattern:x.pat,zoneType:x.kind,priorZoneTouches:x.touches,htfBias:x.hb,tfTrend:x.tr,riskToStopPriceUnits:x.risk,historyForThisInstrument:h,recentCandlesOHLC_oldestFirst_lastIsCurrentForming:cd||'unavailable'};
+  const sys='You are a strict risk filter for a rules-based trading engine. Judge ONLY from the data given. Rules: (1) if historyForThisInstrument has fewer than 30 similar trades or non-positive expectancy, answer SKIP. (2) Derived/synthetic indices (R_*, 1HZ*) are random number generated, so be skeptical. (3) Penalise counter-trend setups (side against htfBias) and weak components. (4) Use recentCandlesOHLC to check whether price already ran far from the zone, is exhausted, or is chopping, but never override rule 1 with a chart read. (5) Never invent statistics. Reply with JSON only: {"verdict":"TAKE"|"SKIP","confidence":0-100,"reason":"one short sentence citing the numbers"}.';
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+P.key},body:JSON.stringify({model:P.model,temperature:0,response_format:{type:'json_object'},messages:[{role:'system',content:sys},{role:'user',content:JSON.stringify(ctx)}]})});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json(),o=JSON.parse(j.choices[0].message.content);
+  return{verdict:o.verdict==='TAKE'?'TAKE':'SKIP',conf:Math.max(0,Math.min(100,+o.confidence||0)),reason:String(o.reason||'').slice(0,220)};
+}
+async function work(){
+  const list=pending();saveL();
+  if(!P.on||!P.key||busy||!list.length)return;
+  busy=true;const p=list[0];
+  try{
+    const o=await ask(p);
+    LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:o.verdict,conf:o.conf,reason:o.reason,at:Date.now(),done:0};saveL();msg='';
+    const cfg=g('cse_set',{});
+    if(P.tg&&cfg.tok&&cfg.chat)fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('AI '+o.verdict+' ('+o.conf+'%) '+p.sy+' '+(p.x.d===1?'BUY':'SELL')+' score '+p.x.score+'\n'+o.reason)).catch(()=>{});
+  }catch(e){msg='AI CALL FAILED: '+esc(e.message)+'. CHECK THE KEY AND MODEL.';LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:'ERR',conf:0,reason:'',at:Date.now(),done:1};}
+  busy=false;
+}
+function build(){
+  const main=document.querySelector('main.grid');if(!main||$('aiP'))return;
+  const sec=document.createElement('section');sec.className='p p-up';sec.id='aiP';
+  sec.innerHTML='<div class="ph">AI SECOND OPINION AND SCOREBOARD <span class="r" id="aiR"></span></div>'
+  +'<div class="up-g"><div><label for="aiKey">GROQ API KEY</label><input id="aiKey" type="password" autocomplete="off" placeholder="gsk_..."><label for="aiModel">MODEL</label><input id="aiModel" type="text" autocomplete="off"><div class="stabs" style="margin-top:8px"><button id="aiOn" type="button"></button><button id="aiTg" type="button"></button></div><div class="lab" id="aiMsg" style="text-transform:none;letter-spacing:.02em"></div></div>'
+  +'<div><div class="lab">AI GRADED AGAINST REAL OUTCOMES, AT 2R</div><div class="big dm" id="aiBig" style="font-size:26px">--</div><div class="lab" id="aiSub" style="text-transform:none;letter-spacing:.02em"></div><div style="margin-top:6px"><span class="up-b" id="aiV">-</span></div></div></div>'
+  +'<div class="lab" style="margin-top:10px">LATEST AI VERDICTS</div><div class="tw" id="aiList" style="max-height:240px;margin:6px 0"></div>'
+  +'<div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em;line-height:1.5">The AI only reviews new live signals at your alert level, using this engine\'s own saved history as evidence. Its verdicts are stored and graded once the trade resolves. It earns trust only when signals it said TAKE beat the ones it said SKIP with at least 30 of each, and the gap holds at a 95 percent bar. Until then, treat it as a commentary, not a filter. The key stays in this browser and is sent only to Groq. Sound and Telegram work only while this page is open.</div>';
+  main.appendChild(sec);
+  $('aiKey').value=P.key;$('aiModel').value=P.model;
+  $('aiKey').onchange=e=>{P.key=e.target.value.trim();saveP();};
+  $('aiModel').onchange=e=>{P.model=e.target.value.trim()||'llama-3.3-70b-versatile';saveP();};
+  $('aiOn').onclick=()=>{P.on=!P.on;saveP();draw();};
+  $('aiTg').onclick=()=>{P.tg=!P.tg;saveP();draw();};
 }
 function draw(){
-  build();if(!$('upP'))return;
-  const cfg=g('cse_set',{}),ks=keys(),sel=$('upKey');
-  const html=ks.length?ks.map(k=>'<option value="'+k+'">'+k.replace('SYNTH','DERIVED').replace('_',' / TF ')+' ('+rowsOf(k).length+')</option>').join(''):'<option>NO DATA YET</option>';
-  if(sel._h!==html){sel.innerHTML=html;sel._h=html;}
-  if(!ks.includes(P.key)){const dk=defKey(cfg,ks);P.key=ks.includes(dk)?dk:(ks[0]||'');}
-  sel.value=P.key;
-  const key=P.key,tf=+(key.split('_')[1])||60,k=P.tgt,rsAll=key?rowsOf(key):[],thr=cfg.thr||70,spr=cfg.spr||{};
-  const syms=[...new Set(rsAll.map(x=>x.sy))].sort(),w0=weights(key,cfg);
-  const shtml='<option value="ALL">ALL SYMBOLS POOLED</option>'+syms.map(x=>'<option value="'+x+'">'+nm(x)+'</option>').join('');
-  const ss=$('upSym');if(ss._h!==shtml){ss.innerHTML=shtml;ss._h=shtml;}
-  if(P.sym!=='ALL'&&!syms.includes(P.sym))P.sym='ALL';
-  ss.value=P.sym;
-  const rs=P.sym==='ALL'?rsAll:rsAll.filter(x=>x.sy===P.sym);
-  const lines=syms.map(sy=>{const vv=pick(rsAll.filter(x=>x.sy===sy),w0,thr,tf).map(x=>rOf(x,k,spr)),q=stat(vv);let vt='NOISE',vc='var(--amb)';if(q.n>=30){if(q.lo>0){vt='EDGE LIKELY';vc='var(--pos)';}else if(q.hi<0){vt='NEGATIVE';vc='var(--neg)';}else{vt='UNCLEAR';vc='var(--dim)';}}return {sy,q,vt,vc};}).sort((a,b)=>b.q.n-a.q.n);
-  $('upSL').innerHTML=lines.length?'<table><thead><tr><th>SYMBOL</th><th class="n">TRADES</th><th class="n">EXP AT '+k+'R</th><th class="n">95% RANGE</th><th>VERDICT</th></tr></thead><tbody>'+lines.map(l=>'<tr data-sy="'+l.sy+'" style="cursor:pointer'+(l.sy===P.sym?';background:#0e2a44':'')+'"><td>'+nm(l.sy)+'</td><td class="n">'+l.q.n+'</td><td class="n '+(l.q.m>0?'pos':l.q.m<0?'neg':'')+'">'+(l.q.n?f2(l.q.m):'-')+'</td><td class="n">'+(l.q.n?f2(l.q.lo)+' TO '+f2(l.q.hi):'-')+'</td><td style="color:'+l.vc+'">'+l.vt+'</td></tr>').join('')+'</tbody></table>':'<div class="dm" style="padding:8px">NO DATA YET</div>';
-  $('upConfL').textContent='CONFIDENCE / '+(P.sym==='ALL'?'ALL SYMBOLS POOLED':nm(P.sym));
-  $('upKeyR').textContent=key?('ALERT AT '+thr+' / '+rs.length+' CANDIDATES'+(P.sym==='ALL'?'':' / '+nm(P.sym))):'';
-  const pk=pick(rs,w0,thr,tf),v=pk.map(x=>rOf(x,k,spr)),S=stat(v);
-  const big=$('upBig');
-  if(S.n){big.textContent=f2(S.m);big.className='big '+(S.m>=0?'pos':'neg');}else{big.textContent='--';big.className='big dm';}
-  $('upCI').textContent=S.n?'95% RANGE '+f2(S.lo)+' TO '+f2(S.hi)+' / N '+S.n:'WAITING FOR RESOLVED TRADES';
-  const vb=$('upV');let vt='NOISE: UNDER 30 TRADES',vc='var(--amb)';
-  if(S.n>=30){if(S.lo>0){vt='EDGE LIKELY';vc='var(--pos)';}else if(S.hi<0){vt='NEGATIVE EDGE';vc='var(--neg)';}else{vt='NOT SIGNIFICANT';vc='var(--dim)';}}
-  vb.textContent=vt;vb.style.color=vc;vb.style.borderColor=vc;
-  const wins=pk.filter(x=>x.r>=k).length,ac=pk.length?pk.reduce((a,x)=>a+(x.rk>0?((spr[x.sy]||0)/x.rk):0),0)/pk.length:0;
-  $('upBE').textContent=pk.length?('WIN RATE '+Math.round(100*wins/pk.length)+'% AGAINST A BREAK-EVEN OF '+Math.round(100*(1+ac)/(k+1))+'% AT '+k+'R'+(ac>0?', COST '+ac.toFixed(2)+'R PER TRADE':'')+'.'):'';
-  // walk-forward
-  const W=4,sz=Math.floor(v.length/W),wf=[];
-  if(sz>=8)for(let i=0;i<W;i++)wf.push(stat(v.slice(i*sz,i===W-1?v.length:(i+1)*sz)));
-  $('upWF').innerHTML=wf.length?wf.map((x,i)=>'<div class="lr" style="grid-template-columns:44px 1fr 90px"><span>W'+(i+1)+'</span><div class="bar"><i class="'+(x.m>=0?'s':'')+'" style="width:'+Math.min(100,Math.abs(x.m)/1.5*100)+'%;'+(x.m<0?'background:var(--neg)':'')+'"></i></div><span>'+f2(x.m)+' N'+x.n+'</span></div>').join(''):'<div class="dm">NEEDS ABOUT 32 TRADES AT YOUR LEVEL</div>';
-  const pos=wf.filter(x=>x.m>0).length;
-  $('upWFv').textContent=wf.length?(pos>=3?'STABLE: '+pos+' OF 4 WINDOWS PROFITABLE.':pos===2?'MIXED: 2 OF 4 WINDOWS PROFITABLE.':'UNSTABLE: ONLY '+pos+' OF 4 WINDOWS PROFITABLE.')+' A real edge should not live in one stretch only.':'';
-  // equity
-  const cv=$('upEq'),dpr=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;
-  if(w&&h){
-    if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
-    const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);
-    let eq=0,pk2=0,dd=0,ls=0,ml=0;const cu=[0];
-    for(const x of v){eq+=x;cu.push(eq);if(eq>pk2)pk2=eq;if(pk2-eq>dd)dd=pk2-eq;if(x<0){ls++;if(ls>ml)ml=ls;}else ls=0;}
-    $('upDD').textContent=v.length?'/ MAX DRAWDOWN '+dd.toFixed(1)+'R / LONGEST LOSING RUN '+ml:'';
-    if(cu.length>2){
-      const mn=Math.min(...cu,0),mx=Math.max(...cu,0.5),X=i=>i/(cu.length-1)*(w-4)+2,Y=y=>h-6-(y-mn)/(mx-mn||1)*(h-12);
-      c.strokeStyle='rgba(255,255,255,.25)';c.beginPath();c.moveTo(0,Y(0));c.lineTo(w,Y(0));c.stroke();
-      c.strokeStyle=eq>=0?'#2fe38a':'#ff4d5e';c.lineWidth=1.5;c.beginPath();cu.forEach((y,i)=>{if(i===0)c.moveTo(X(i),Y(y));else c.lineTo(X(i),Y(y));});c.stroke();
-    }
-  }
-  // component test: does a higher score part mean a better trade? plain engine, all candidates, no alert level
-  (function(){
-    const all=pick(rs,NEU,0,tf),NM=['ZONE','STRUCTURE','CANDLE','MOMENTUM','REGIME'],box=$('upCmp');
-    $('upCmpR').textContent='/ '+(P.sym==='ALL'?'ALL SYMBOLS POOLED':nm(P.sym))+' / '+all.length+' SPACED CANDIDATES AT '+k+'R';
-    if(all.length<30){box.innerHTML='<div class="dm" style="padding:8px">NEEDS MORE CANDIDATES (AT LEAST 30)</div>';$('upCmpN').textContent='';return;}
-    const rows2=NM.map((n,i)=>{
-      const vals=all.map(x=>x.p[i]),sv=vals.slice().sort((a,b)=>a-b),med=sv[sv.length>>1];
-      let hi=[],lo=[];all.forEach(x=>{(x.p[i]>med?hi:lo).push(rOf(x,k,spr));});
-      if(hi.length<8){hi=[];lo=[];all.forEach(x=>{(x.p[i]>=med?hi:lo).push(rOf(x,k,spr));});}
-      if(hi.length<8||lo.length<8)return {n,none:true};
-      const a=stat(hi),b=stat(lo),d=a.m-b.m,se=Math.sqrt(a.se*a.se+b.se*b.se),z=2.58;
-      let vt='NOT PROVEN',vc='var(--dim)';
-      if(a.n<20||b.n<20){vt='NOISE';vc='var(--amb)';}else if(d-z*se>0){vt='PREDICTIVE';vc='var(--pos)';}else if(d+z*se<0){vt='INVERSE';vc='var(--neg)';}
-      return {n,a,b,d,se,vt,vc};
-    });
-    box.innerHTML='<table><thead><tr><th>COMPONENT</th><th class="n">HIGH HALF</th><th class="n">LOW HALF</th><th class="n">DIFFERENCE</th><th>VERDICT</th></tr></thead><tbody>'+rows2.map(r=>r.none?'<tr><td>'+r.n+'</td><td class="n" colspan="3">NO SPREAD, VALUE BARELY CHANGES</td><td class="dm">-</td></tr>':'<tr><td>'+r.n+'</td><td class="n">'+f2(r.a.m)+' N'+r.a.n+'</td><td class="n">'+f2(r.b.m)+' N'+r.b.n+'</td><td class="n '+(r.d>0?'pos':r.d<0?'neg':'')+'">'+f2(r.d)+'</td><td style="color:'+r.vc+'">'+r.vt+'</td></tr>').join('')+'</tbody></table>';
-    $('upCmpN').textContent='Each row splits the trades at the median of that part and compares average R. A part counts as predictive only if the gap stays above zero at a strict 99 percent bar, because five parts are tested at once. If none passes, the score is not adding information on this symbol yet.';
-  })();
-  // edge trend: rolling expectancy plus a straight-line fit of R against trade number
-  (function(){
-    const n=v.length,vb2=$('upTrV'),tx=$('upTrT'),cv2=$('upTr');
-    const set=(t,c,m)=>{vb2.textContent=t;vb2.style.color=c;vb2.style.borderColor=c;tx.textContent=m;};
-    if(n<12){set('NEEDS 12 TRADES','var(--dim)','');$('upTrN').textContent='';const q=cv2.getContext&&cv2.clientWidth?cv2.getContext('2d'):null;if(q)q.clearRect(0,0,cv2.width,cv2.height);return;}
-    const wn=Math.max(8,Math.min(20,Math.floor(n/3))),roll=[];
-    for(let i=wn-1;i<n;i++){let a=0;for(let j=i-wn+1;j<=i;j++)a+=v[j];roll.push(a/wn);}
-    let mx=(n-1)/2,my=v.reduce((a,b)=>a+b,0)/n,sxx=0,sxy=0;
-    for(let i=0;i<n;i++){sxx+=(i-mx)*(i-mx);sxy+=(i-mx)*(v[i]-my);}
-    const b=sxy/sxx,a0=my-b*mx;let sse=0;for(let i=0;i<n;i++){const e=v[i]-(a0+b*i);sse+=e*e;}
-    const se=n>2?Math.sqrt(sse/(n-2)/sxx):0,t=se>0?b/se:0,per=b*100,last=roll[roll.length-1];
-    $('upTrN').textContent='/ WINDOW '+wn+' TRADES';
-    let tt,tc;
-    if(n<30){tt='TOO FEW TRADES TO CALL A TREND';tc='var(--amb)';}
-    else if(t>2){tt='EDGE IMPROVING';tc='var(--pos)';}else if(t<-2){tt='EDGE DETERIORATING';tc='var(--neg)';}else{tt='NO CLEAR TREND';tc='var(--dim)';}
-    set(tt,tc,'LAST '+wn+' TRADES '+f2(last)+' / FIT SLOPE '+(per>=0?'+':'')+per.toFixed(2)+'R PER 100 TRADES (T '+t.toFixed(1)+', NEEDS PLUS OR MINUS 2 TO COUNT)');
-    const w2=cv2.clientWidth,h2=cv2.clientHeight;if(!w2||!h2)return;
-    const dpr2=Math.min(window.devicePixelRatio||1,2);
-    if(cv2.width!==Math.round(w2*dpr2)||cv2.height!==Math.round(h2*dpr2)){cv2.width=Math.round(w2*dpr2);cv2.height=Math.round(h2*dpr2);}
-    const c=cv2.getContext('2d');c.setTransform(dpr2,0,0,dpr2,0,0);c.clearRect(0,0,w2,h2);
-    const f0=a0,f1=a0+b*(n-1),lo=Math.min(0,f0,f1,...roll),hi=Math.max(0,f0,f1,...roll),pad=(hi-lo)*0.12||0.5;
-    const Y=y=>h2-6-(y-(lo-pad))/((hi+pad)-(lo-pad))*(h2-12),X=i=>i/(n-1)*(w2-4)+2;
-    c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=1;c.beginPath();c.moveTo(0,Y(0));c.lineTo(w2,Y(0));c.stroke();
-    c.strokeStyle=last>=0?'#2fe38a':'#ff4d5e';c.lineWidth=1.5;c.beginPath();
-    roll.forEach((y,k)=>{const x=X(k+wn-1);if(k===0)c.moveTo(x,Y(y));else c.lineTo(x,Y(y));});c.stroke();
-    c.setLineDash([5,4]);c.strokeStyle='#f5a524';c.lineWidth=1.3;c.beginPath();c.moveTo(X(0),Y(f0));c.lineTo(X(n-1),Y(f1));c.stroke();c.setLineDash([]);
-  })();
-  // risk desk
-  const amt=(+P.bal||0)*(+P.risk||0)/100;
-  $('upAmt').textContent=amt?amt.toFixed(2):'-';
-  $('upSz').textContent=amt&&+P.stop>0?(amt/+P.stop).toPrecision(4):'-';
-  const td=todayR(cfg,k),db=$('upDay'),cap=+P.cap||0;
-  let dt='TODAY: '+f2(td.tot)+' OVER '+td.n+' LIVE TRADES',dc='var(--dim)';
-  if(cap>0&&td.tot<=-cap){dt+=' / CAP HIT, STOP TRADING TODAY';dc='var(--neg)';}else if(cap>0&&td.tot<=-cap*0.66){dt+=' / NEAR YOUR CAP';dc='var(--amb)';}
-  db.textContent=dt;db.style.color=dc;db.style.borderColor=dc;
-  // backup
-  const tot=total(),age=P.bk?Math.round((Date.now()-P.bk)/3600000):null,fresh=tot-(P.bkN||0);
-  const late=age===null||age>24||fresh>150;
-  $('upBk').innerHTML=(age===null?'NO BACKUP YET. ':'LAST BACKUP '+(age<1?'UNDER AN HOUR':age+' HOURS')+' AGO. ')+tot+' CANDIDATES SAVED, '+Math.max(0,fresh)+' NEW SINCE THE LAST BACKUP.'+(late&&tot>0?' <b style="color:var(--amb)">BACK UP NOW.</b>':'');
+  build();if(!$('aiP'))return;
+  $('aiOn').textContent=P.on?'AI REVIEW ON':'AI REVIEW OFF';$('aiOn').classList.toggle('on',P.on);
+  $('aiTg').textContent=P.tg?'SEND VERDICT TO TELEGRAM: ON':'SEND VERDICT TO TELEGRAM: OFF';$('aiTg').classList.toggle('on',P.tg);
+  $('aiMsg').textContent=P.key?msg:'ENTER A GROQ KEY TO START. NO KEY, NO AI CALLS.';
+  const all=Object.values(LOG).filter(x=>x.verdict!=='ERR'),done=all.filter(x=>x.done&&x.r2!==undefined);
+  const T=stat(done.filter(x=>x.verdict==='TAKE').map(x=>x.r2)),K=stat(done.filter(x=>x.verdict==='SKIP').map(x=>x.r2));
+  $('aiR').textContent=all.length+' REVIEWED / '+done.length+' RESOLVED';
+  const big=$('aiBig'),v=$('aiV');let vt='NOT ENOUGH DATA: NEEDS 30 TAKE AND 30 SKIP',vc='var(--amb)';
+  if(T.n&&K.n){const d=T.m-K.m;big.textContent=f2(d);big.className='big '+(d>=0?'pos':'neg');
+    if(T.n>=30&&K.n>=30){const se=Math.sqrt(((T.hi-T.lo)/3.92)**2+((K.hi-K.lo)/3.92)**2);if(d-1.96*se>0){vt='AI ADDS VALUE';vc='var(--pos)';}else if(d+1.96*se<0){vt='AI HURTS: IGNORE IT';vc='var(--neg)';}else{vt='NOT PROVEN';vc='var(--dim)';}}}
+  else{big.textContent='--';big.className='big dm';}
+  $('aiSub').textContent='TAKE: '+(T.n?f2(T.m)+' OVER '+T.n:'-')+' / SKIP: '+(K.n?f2(K.m)+' OVER '+K.n:'-')+' / BIG NUMBER IS TAKE MINUS SKIP';
+  v.textContent=vt;v.style.color=vc;v.style.borderColor=vc;
+  const rows=Object.values(LOG).sort((a,b)=>b.at-a.at).slice(0,15);
+  $('aiList').innerHTML=rows.length?'<table><thead><tr><th>TIME</th><th>SYMBOL</th><th>SIDE</th><th class="n">SCORE</th><th>AI</th><th class="n">CONF</th><th>RESULT</th><th>WHY</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+new Date(x.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Muscat',hour12:false})+'</td><td>'+esc(x.sy)+'</td><td class="'+(x.d===1?'pos':'neg')+'">'+(x.d===1?'BUY':'SELL')+'</td><td class="n">'+x.score+'</td><td style="color:'+(x.verdict==='TAKE'?'var(--pos)':x.verdict==='SKIP'?'var(--amb)':'var(--neg)')+'">'+x.verdict+'</td><td class="n">'+x.conf+'</td><td>'+(x.done&&x.r2!==undefined?f2(x.r2)+' AT 2R':'OPEN')+'</td><td style="white-space:normal;text-transform:none;min-width:220px">'+esc(x.reason)+'</td></tr>').join('')+'</tbody></table>':'<div class="dm" style="padding:8px">NO AI VERDICTS YET. THEY APPEAR WHEN A LIVE SIGNAL FIRES AT YOUR ALERT LEVEL.</div>';
 }
-const go=()=>{try{draw();}catch(e){}};
-window.addEventListener('load',()=>{setTimeout(go,1500);setInterval(go,5000);});
+const go=()=>{try{draw();work();}catch(e){}};
+window.addEventListener('load',()=>{setTimeout(go,2000);setInterval(go,5000);});
 })();
