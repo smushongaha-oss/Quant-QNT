@@ -66,7 +66,10 @@ async function work(){
 }
 function build(){
   const main=document.querySelector('main.grid');if(!main||$('aiP'))return;
-  const sec=document.createElement('section');sec.className='p p-up';sec.id='aiP';
+  const st=document.createElement('style');
+  st.textContent='#aiP{grid-column:1/-1}#aiP .up-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px}#aiP .up-g input{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:5px 8px;font-family:var(--m);font-size:12px;text-transform:none}#aiP .up-g label{display:block;font-size:10px;color:var(--dim);letter-spacing:.1em;margin:6px 0 3px}#aiP .up-b{display:inline-block;padding:2px 8px;border:1px solid var(--bd);font-size:10.5px;letter-spacing:.1em}';
+  document.head.appendChild(st);
+  const sec=document.createElement('section');sec.className='p';sec.id='aiP';
   sec.innerHTML='<div class="ph">AI SECOND OPINION AND SCOREBOARD <span class="r" id="aiR"></span></div>'
   +'<div class="up-g"><div><label for="aiKey">GROQ API KEY</label><input id="aiKey" type="password" autocomplete="off" placeholder="gsk_..."><label for="aiModel">MODEL</label><input id="aiModel" type="text" autocomplete="off"><div class="stabs" style="margin-top:8px"><button id="aiOn" type="button"></button><button id="aiTg" type="button"></button></div><div class="lab" id="aiMsg" style="text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">AI GRADED AGAINST REAL OUTCOMES, AT 2R</div><div class="big dm" id="aiBig" style="font-size:26px">--</div><div class="lab" id="aiSub" style="text-transform:none;letter-spacing:.02em"></div><div style="margin-top:6px"><span class="up-b" id="aiV">-</span></div></div></div>'
