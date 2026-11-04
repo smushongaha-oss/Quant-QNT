@@ -64,7 +64,7 @@ select:focus-visible,button:focus-visible{outline:1px solid var(--amb);outline-o
 .chh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .chh b{font-family:var(--o);font-size:17px;font-weight:700;color:#fff}
 canvas{display:block;width:100%}
-#cvChart{height:430px;flex:1;min-width:0;width:auto}#cvTl{height:100%;min-height:250px;flex:1}
+#cvChart{height:430px;flex:1;min-width:0;width:auto}#cvLine{height:150px;margin-top:8px;margin-right:215px;flex:none}@media(max-width:899px){#cvLine{margin-right:0}}.p-chart.full #cvLine{height:130px;margin-top:6px}@media(max-height:520px){#cvLine{margin-right:0}}#cvTl{height:100%;min-height:250px;flex:1}
 .zl{font-size:10.5px;margin-top:6px}
 .zr{display:grid;grid-template-columns:58px 1fr 54px;gap:6px;padding:2px 4px;align-items:center;position:relative}
 .zr.s{background:rgba(255,77,94,.07);color:#ff8d98}.zr.d{background:rgba(47,227,138,.07);color:#7defb4}
@@ -242,6 +242,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <canvas id="cvChart"></canvas>
       <div class="chside"><div class="ph" style="margin-top:2px">ZONE LADDER <span class="r" id="zlR"></span></div><div class="zl" id="zl"></div></div>
     </div>
+    <canvas id="cvLine" aria-label="Closing price line chart"></canvas>
   </section>
 
   <section class="p p-audit" id="sAudit">
@@ -1196,6 +1197,7 @@ function drawChart(){
   if(act){for(const q of [act.sl,act.entry,act.tp[0],act.tp[1],act.tp[2]]){if(q<mn)mn=q;if(q>mx)mx=q;}}
   const pd=(mx-mn)*0.1||1;mn-=pd;mx+=pd;
   const axis=Math.max(58,Math.ceil(g.measureText(mx.toFixed(S.dp)).width)+10),top=6,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/(V+Math.max(3,Math.round(V*0.08)));
+  S.axisW=axis;
   const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
   g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
   const lyT=y(C[n-1].c);
@@ -1268,6 +1270,50 @@ function drawChart(){
   for(let i=st+Math.floor(V/8);i<n;i+=Math.max(10,Math.round(V/(cfg.tf>=900?3:4))))g.fillText(clkM(C[i].t),x(i),Hh-3);
   const chg=(C[n-1].c-C[st].c)/C[st].c*100;
   $('chPx').innerHTML=lp.toFixed(S.dp)+' <span style="font-size:11px;color:'+(chg>=0?K.pos:K.neg)+'">'+(chg>=0?'+':'')+chg.toFixed(2)+'%</span>';
+}
+function drawLine(){
+  const cv=$('cvLine');if(!cv)return;
+  const f=fit(cv);if(!f)return;
+  const {g,w:W,h:Hh}=f,C=S.C,X=S.X;
+  g.font='11px "Share Tech Mono",monospace';
+  if(!X||C.length<20){g.fillStyle=K.dim;g.textAlign='center';g.fillText('LOADING CLOSING PRICES',W/2,Hh/2);return;}
+  const n=C.length,V=Math.min(cfg.view||90,n),st=n-V,axis=S.axisW||58,top=18,bot=14,pw=W-axis,ph=Hh-top-bot,bw=pw/(V+Math.max(3,Math.round(V*0.08)));
+  let mn=Infinity,mx=-Infinity;
+  for(let i=st;i<n;i++){const c=C[i].c;if(c<mn)mn=c;if(c>mx)mx=c;}
+  const pd=(mx-mn)*0.12||1;mn-=pd;mx+=pd;
+  const x=i=>(i-st+0.5)*bw,y=p=>top+(mx-p)/(mx-mn)*ph;
+  g.strokeStyle=K.grid;g.fillStyle=K.dim;g.textAlign='left';g.lineWidth=1;
+  const lyT=y(C[n-1].c);
+  for(let k=0;k<=3;k++){const p=mn+(mx-mn)*k/3,yy=y(p);g.beginPath();g.moveTo(0,yy);g.lineTo(pw,yy);g.stroke();if(Math.abs(yy-lyT)>11)g.fillText(p.toFixed(S.dp),pw+4,yy+3);}
+  g.save();g.beginPath();g.rect(0,top,pw,ph);g.clip();
+  const up=C[n-1].c>=C[st].c,col=up?K.pos:K.neg,rgb=up?'47,227,138':'255,77,94';
+  const grad=g.createLinearGradient(0,top,0,top+ph);grad.addColorStop(0,'rgba('+rgb+',.26)');grad.addColorStop(1,'rgba('+rgb+',0)');
+  g.beginPath();g.moveTo(x(st),top+ph);for(let i=st;i<n;i++)g.lineTo(x(i),y(C[i].c));g.lineTo(x(n-1),top+ph);g.closePath();g.fillStyle=grad;g.fill();
+  const ln=(arr,c,wd)=>{g.strokeStyle=c;g.lineWidth=wd;g.beginPath();let on=false;for(let i=st;i<n;i++){const v=arr[i];if(!(v===v)||v<mn||v>mx){on=false;continue;}if(!on){g.moveTo(x(i),y(v));on=true;}else g.lineTo(x(i),y(v));}g.stroke();};
+  ln(X.s10,K.yel,1);ln(X.s20,K.blu,1);
+  g.strokeStyle=col;g.lineWidth=1.9;g.lineJoin='round';g.beginPath();
+  for(let i=st;i<n;i++){if(i===st)g.moveTo(x(i),y(C[i].c));else g.lineTo(x(i),y(C[i].c));}
+  g.stroke();
+  g.textAlign='center';
+  for(const s of S.sigs){
+    if(s.i===undefined||s.i<st||s.i>=n||!C[s.i]||C[s.i].t!==s.t)continue;
+    const xx=x(s.i),yy=y(C[s.i].c),c2=s.d===1?K.pos:K.neg;
+    g.fillStyle=c2;g.beginPath();
+    if(s.d===1){g.moveTo(xx,yy+3);g.lineTo(xx-4,yy+10);g.lineTo(xx+4,yy+10);}else{g.moveTo(xx,yy-3);g.lineTo(xx-4,yy-10);g.lineTo(xx+4,yy-10);}
+    g.fill();
+  }
+  g.restore();
+  const lp=C[n-1].c,ly=y(lp);
+  g.setLineDash([2,3]);g.strokeStyle='rgba(215,230,245,.5)';g.lineWidth=1;g.beginPath();g.moveTo(0,ly);g.lineTo(pw,ly);g.stroke();g.setLineDash([]);
+  g.fillStyle=K.amb;g.fillRect(pw,ly-8,axis,16);g.fillStyle='#120a00';g.textAlign='left';g.fillText(lp.toFixed(S.dp),pw+3,ly+3);
+  g.fillStyle=K.dim;g.textAlign='left';g.fillText('CLOSE LINE',4,11);
+  g.fillStyle=K.yel;g.fillRect(84,6,10,2);g.fillStyle=K.dim;g.fillText('SMA 10',98,11);
+  g.fillStyle=K.blu;g.fillRect(146,6,10,2);g.fillStyle=K.dim;g.fillText('SMA 20',160,11);
+  const tr=X.T[n-1],hb=X.HT[n-1],wd=v=>v===1?'UP':v===-1?'DOWN':'RANGE',wc=v=>v===1?K.pos:v===-1?K.neg:K.dim;
+  g.textAlign='right';g.fillStyle=wc(tr);g.fillText(tfName()+' TREND '+wd(tr),pw-4,11);
+  g.fillStyle=wc(hb);g.fillText(HN()+' BIAS '+wd(hb),pw-(g.measureText(tfName()+' TREND '+wd(tr)).width+22),11);
+  g.fillStyle=K.dim;g.textAlign='center';
+  for(let i=st+Math.floor(V/8);i<n;i+=Math.max(10,Math.round(V/(cfg.tf>=900?3:4))))g.fillText(clkM(C[i].t),x(i),Hh-3);
 }
 function drawTimeline(){
   const f=fit($('cvTl'));if(!f)return;
@@ -1889,7 +1935,7 @@ function frame(now){
   if(now-lastUi>500||S.dirty){
     lastUi=now;
     safe(computeScan);safe(renderHeader);safe(renderTickers);safe(renderCaps);safe(renderScanList);safe(mpRefresh);
-    if(S.dirty){S.dirty=false;[renderAudit,LRN.render,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawTimeline,drawFunnel].forEach(safe);}
+    if(S.dirty){S.dirty=false;[renderAudit,LRN.render,renderVerdict,renderZones,renderInputs,renderFills,renderTape,renderFunBoxes,renderStats2,drawChart,drawLine,drawTimeline,drawFunnel].forEach(safe);}
     if(S.wd){S.wd=false;safe(renderWire);}
   }
   if(VIS.shell)safe(()=>drawShell(now));
@@ -1938,8 +1984,8 @@ function init(){
   $('sprIn').onchange=e=>{cfg.spr[cfg.sym]=Math.max(0,+e.target.value||0);persist();updateCost();if(S.X)derive();S.dirty=true;};
   const syncView=()=>document.querySelectorAll('#chView button').forEach(b=>b.classList.toggle('on',+b.dataset.v===cfg.view));
   syncView();
-  $('chView').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;cfg.view=+b.dataset.v;persist();syncView();drawChart();};
-  const setFull=on=>{$('sChart').classList.toggle('full',on);document.body.classList.toggle('chfull',on);$('chFull').textContent=on?'EXIT FULL SCREEN':'FULL SCREEN';requestAnimationFrame(()=>{drawChart();});if(on)window.scrollTo(0,0);};
+  $('chView').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;cfg.view=+b.dataset.v;persist();syncView();drawChart();drawLine();};
+  const setFull=on=>{$('sChart').classList.toggle('full',on);document.body.classList.toggle('chfull',on);$('chFull').textContent=on?'EXIT FULL SCREEN':'FULL SCREEN';requestAnimationFrame(()=>{drawChart();drawLine();});if(on)window.scrollTo(0,0);};
   $('chFull').onclick=()=>setFull(!$('sChart').classList.contains('full'));
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('sChart').classList.contains('full'))setFull(false);});
   if('IntersectionObserver' in window){
