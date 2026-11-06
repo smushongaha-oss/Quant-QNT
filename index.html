@@ -423,7 +423,7 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
     <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
     <div class="sw2" style="margin-top:4px"><div id="swTblS"></div><div id="swTblA"></div></div>
-    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KELLY sizes, CLOSER settles. Derived and synthetic indices are hard-blocked. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades.</div>
+    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KMJ sizes, CLOSER settles. Derived and synthetic indices are hard-blocked. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades.</div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -2047,7 +2047,7 @@ init();
 const SWM=(function(){
 const SYNB=/^(R_|1HZ|JD|BOOM|CRASH|stpRNG|RDBEAR|RDBULL|WLD|DRIFT|DEX)/i;
 const E=()=>window.FATX,grpFor=sy=>E()?E().grpFor(sy):'OTHER',isClosed=sy=>E()?E().isClosed(sy):false,stateOf=sy=>E().stateOf(sy),nameFor=sy=>E()?E().nameFor(sy):sy,clk=ms=>E()?E().clk(ms):new Date(ms).toLocaleTimeString(),cfgSym=()=>E()?E().cfg().sym:null,realPreset=()=>E().realPreset();
-const AGN=[['SPOTTER','#2fe38a'],['TAKER','#37d6ff'],['EDGE','#ff4d5e'],['PRIOR','#f5a524'],['CONFLUENCE','#4aa8ff'],['KELLY','#b18cff'],['CLOSER','#ff8f6b']];
+const AGN=[['SPOTTER','#2fe38a'],['TAKER','#37d6ff'],['EDGE','#ff4d5e'],['PRIOR','#f5a524'],['CONFLUENCE','#4aa8ff'],['KMJ','#b18cff'],['CLOSER','#ff8f6b']];
 const WT={SPOTTER:.25,TAKER:.2,EDGE:.15,PRIOR:.1,CONFLUENCE:.3};
 const B={},V={},SCR={},DEC={};let TR=[],run=false,live=false,ws=null,bal=1000,pnl=0,n=0,wins=0,cons=0,hist=[],res=[],opens=[],lastT=0,halted=null,rid=0,gen=0,sel=null,PK=[],lastP={};
 const g=id=>document.getElementById(id),nv=id=>+g(id).value;
@@ -2077,7 +2077,7 @@ function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)retu
 const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
 const amt=stake();if(amt>bal){log('Stake exceeds balance','X');return}lastT=Date.now();
-pkt('CORE','KELLY','#b18cff');setTimeout(()=>pkt('KELLY','SPOTTER','#b18cff'),500);
+pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
 if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:'USD',duration:nv('swDur'),duration_unit:'s',symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 function tick(sy,p){if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
