@@ -208,6 +208,14 @@ select{max-width:100%;text-overflow:ellipsis}
 .lrl{display:grid;gap:5px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .lrl .fc span{text-transform:none;letter-spacing:.02em}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#sSwarm{grid-column:span 12}#sSwarm .rw{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin:6px 0}
+#sSwarm label{display:block;font-size:9px;color:var(--dim2);letter-spacing:.12em;margin-bottom:2px}
+#sSwarm input[type=text],#sSwarm input[type=number],#sSwarm input[type=password]{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:4px 6px;font-family:var(--m);font-size:12px;border-radius:0}
+#sSwarm .bt{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}#sSwarm .go{border-color:var(--pos);color:var(--pos)}#sSwarm .kl{border-color:var(--neg);color:var(--neg)}
+#sSwarm .sw2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px}@media(max-width:899px){#sSwarm .sw2{grid-template-columns:1fr}}
+#cvSwarm{height:300px}#swLog{height:300px;overflow:auto;font-size:10.5px;line-height:1.5}#swLog .W{color:var(--pos)}#swLog .L{color:var(--neg)}#swLog .X{color:var(--amb)}#swLog .I{color:var(--cy)}
+#swSt{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0}#swSt b{font-family:var(--o);font-weight:500;font-size:14px;color:#fff;display:block}
 </style>
 </head>
 <body>
@@ -386,6 +394,34 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="ph">STRATEGY SWITCHES <span class="r" id="engR"></span></div>
     <div class="stabs"><select id="engReg" aria-label="Regime filter"><option value="off">REGIME FILTER OFF</option><option value="trend">TREND ONLY</option><option value="range">RANGE ONLY</option></select><select id="engEr" aria-label="Efficiency threshold"><option value="0.2">ER 0.20</option><option value="0.3">ER 0.30</option><option value="0.4">ER 0.40</option><option value="0.5">ER 0.50</option></select><button id="engBe" type="button"></button><button id="engEdge" type="button"></button></div>
     <div class="lab" style="text-transform:none;letter-spacing:.02em;line-height:1.5">Regime filter uses a 20 bar efficiency ratio: near 1 is a clean trend, near 0 is chop. Break-even moves the stop to entry once 1R is touched, so a trade that reaches 1R and comes back counts as 0R. Edge entry places a limit order at the zone edge, or at the close if that is better, and cancels it if it is not filled within 5 bars, so unfilled trades drop out of the stats. The page reloads when you change a switch. To compare fairly set STATS to BACKTEST ONLY and change one switch at a time. The learner and the Edge panel always use the plain engine so their data stays comparable.</div>
+  </section>
+
+  
+  <section class="p" id="sSwarm">
+    <div class="ph">SWARM SCALPER <span class="r" id="swState">IDLE</span></div>
+    <div id="swSt">
+      <div><span class="lab">MODE</span><b id="swMode">PAPER</b></div>
+      <div><span class="lab">BALANCE</span><b id="swBal">-</b></div>
+      <div><span class="lab">SESSION P&amp;L</span><b id="swPnl">0.00</b></div>
+      <div><span class="lab">TRADES / WIN</span><b id="swWr">0 / -</b></div>
+      <div><span class="lab">OPEN</span><b id="swOpen">0</b></div>
+      <div><span class="lab">LIVE CONSENSUS</span><b id="swCons">-</b></div>
+    </div>
+    <div class="rw">
+      <div><label>API TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="demo token first"></div>
+      <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
+      <div><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
+      <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
+      <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".5" value="2"></div>
+      <div><label>COOLDOWN SEC</label><input id="swCd" type="number" value="20"></div>
+      <div><label>MAX SESSION LOSS</label><input id="swMxL" type="number" value="10"></div>
+      <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
+      <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
+      <div><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
+    </div>
+    <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button></div>
+    <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
+    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KELLY sizes, CLOSER settles. Derived and synthetic indices are hard-blocked. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades.</div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -779,7 +815,7 @@ function connect(retry){
     }else if(d.msg_type==='tick'&&d.tick){
       const sy=d.tick.underlying_symbol||d.tick.symbol,pr=+d.tick.quote,e2=+d.tick.epoch;
       if(!sy||!(pr===pr))return;
-      const r=R[sy]||(R[sy]={});r.px=pr;PULSE[sy]=1;
+      const r=R[sy]||(R[sy]={});r.px=pr;PULSE[sy]=1;try{SWM.tick(sy,pr,e2)}catch(e){}
       const now=Date.now();
       if(sy===cfg.sym||now-(S.tickAt[sy]||0)>5000){S.tickAt[sy]=now;wlog('&#9664;','TICK',sy+' '+pr,sy===cfg.sym?'a':'d');}
       if(sy===cfg.sym){
@@ -1999,10 +2035,92 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
+window.FATX={cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
 })();
 </script>
+
+<script>
+/* ---------- SWARM SCALPER (merged module) ---------- */
+const SWM=(function(){
+const SYNB=/^(R_|1HZ|JD|BOOM|CRASH|stpRNG|RDBEAR|RDBULL|WLD|DRIFT|DEX)/i;
+const E=()=>window.FATX,grpFor=sy=>E()?E().grpFor(sy):'OTHER',isClosed=sy=>E()?E().isClosed(sy):false,stateOf=sy=>E().stateOf(sy),nameFor=sy=>E()?E().nameFor(sy):sy,clk=ms=>E()?E().clk(ms):new Date(ms).toLocaleTimeString(),cfgSym=()=>E()?E().cfg().sym:null,realPreset=()=>E().realPreset();
+const AGN=[['SPOTTER','#2fe38a'],['TAKER','#37d6ff'],['EDGE','#ff4d5e'],['PRIOR','#f5a524'],['CONFLUENCE','#4aa8ff'],['KELLY','#b18cff'],['CLOSER','#ff8f6b']];
+const WT={SPOTTER:.25,TAKER:.2,EDGE:.15,PRIOR:.1,CONFLUENCE:.3};
+const B={},V={},SCR={},DEC={};let run=false,live=false,ws=null,bal=1000,pnl=0,n=0,wins=0,cons=0,hist=[],res=[],opens=[],lastT=0,halted=null,rid=0,gen=0,sel=null,PK=[],lastP={};
+const g=id=>document.getElementById(id),nv=id=>+g(id).value;
+const log=(m,c)=>{const l=g('swLog');if(!l)return;const d=document.createElement('div');d.className=c||'I';d.textContent=clk(Date.now())+' '+m;l.prepend(d);while(l.children.length>80)l.lastChild.remove()};
+const cl=x=>Math.max(-1,Math.min(1,x));
+const ema=(a,p)=>{const k=2/(p+1);let e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e};
+const sdv=a=>{const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/a.length)};
+function rsi(a,p){let G=0,L=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];d>0?G+=d:L-=d}return L==0?100:100-100/(1+G/L)}
+const allowed=sy=>!SYNB.test(sy)&&grpFor(sy)!=='SYNTH'&&!isClosed(sy);
+function votes(sy){const a=B[sy];if(!a||a.length<40)return null;const s=a.slice(-20),st=sdv(s)||1e-9,v={};
+v.SPOTTER=cl((ema(a.slice(-40),5)-ema(a.slice(-40),20))/(st*.5));
+let u=0;for(let i=a.length-20;i<a.length;i++)u+=Math.sign(a[i]-a[i-1]);v.TAKER=u/20;
+const r=rsi(a,14);v.EDGE=r<30?(30-r)/30:r>70?-(r-70)/30:0;
+const z=(a[a.length-1]-s.reduce((x,y)=>x+y,0)/20)/st;v.PRIOR=Math.abs(z)>1.5?cl(-z/2.5):0;
+if(sdv(a.slice(-30))<1e-12)return null;
+let c=0;try{const m=stateOf(sy);if(m.mode==='sig')c=m.side*Math.min(1,m.val/100+.2);else if(m.mode==='setup')c=m.side*.4;else if(m.mode==='watch'&&m.dist<.3)c=m.side*.25}catch(e){}
+v.CONFLUENCE=c;return v}
+const score=v=>Object.keys(WT).reduce((t,k)=>t+WT[k]*v[k],0);
+function stake(){const r=res.slice(-30),p=r.length>=10?Math.min(.65,Math.max(.5,r.filter(x=>x>0).length/r.length)):.52,b=.85,f=(p*b-(1-p))/b;
+const s=f>0?bal*f*.25:nv('swMin');return +Math.max(nv('swMin'),Math.min(s,bal*nv('swMaxP')/100)).toFixed(2)}
+function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
+function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
+function record(p,sy,d){pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
+if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
+function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
+const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
+if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
+const amt=stake();if(amt>bal){log('Stake exceeds balance','X');return}lastT=Date.now();
+pkt('CORE','KELLY','#b18cff');setTimeout(()=>pkt('KELLY','SPOTTER','#b18cff'),500);
+if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:'USD',duration:nv('swDur'),duration_unit:'s',symbol:sy}}));opens.push({sy,d,amt,pend:id});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
+else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
+function tick(sy,p){if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
+if(!run)return;
+opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*.85:-o.amt;record(p===o.entry?0:w?o.amt*.85:-o.amt,o.sy,o.d);return false});
+const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
+if(sy===cfgSym()||!sel)sel=sel||sy;
+const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
+if(!halted&&Math.abs(s)>=nv('swThr'))trade(sy,s,v)}
+/* live socket (trading only) */
+function openWs(){const my=gen;try{ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089')}catch(e){log('Cannot open trading socket here. Open this file directly in your browser.','L');stopAll('BLOCKED');return}
+ws.onopen=()=>ws.send(JSON.stringify({authorize:g('swTok').value.trim()}));
+ws.onerror=()=>log('Trading socket error (blocked or offline).','L');
+ws.onclose=()=>{if(my===gen&&run&&live&&!halted){log('Trading link lost, retry 3s','X');setTimeout(()=>my===gen&&run&&openWs(),3000)}};
+ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id)opens=opens.filter(o=>o.pend!==m.req_id);return}
+if(m.msg_type==='authorize'){bal=+m.authorize.balance;hist=[bal];log('Authorized '+m.authorize.loginid+(m.authorize.is_virtual?' (DEMO)':' (REAL MONEY)'),m.authorize.is_virtual?'W':'X')}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;bal=m.buy.balance_after;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);const p=+c.profit;bal+=p;record(p,o.sy,o.d)}}}}
+function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
+g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
+const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' non-derived instruments':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs()}
+function stopAll(m){run=false;gen++;g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
+/* graph */
+const POS={};let cv,cx2;
+function draw(t){requestAnimationFrame(draw);if(!cv||!cv.offsetParent)return;const w=cv.width=cv.clientWidth*2,h=cv.height=cv.clientHeight*2,x=cv.getContext('2d'),cx=w/2,cy=h/2,rad=Math.min(w,h)*.34,ph=t*.0002;
+const sy=sel||cfgSym(),s=SCR[sy]||0,v=V[sy]||{},col=s>=0?'47,227,138':'255,77,94';POS.CORE=[cx,cy];x.clearRect(0,0,w,h);
+AGN.forEach((a,i)=>{const an=ph+i*Math.PI*2/AGN.length;POS[a[0]]=[cx+Math.cos(an)*rad*1.3,cy+Math.sin(an)*rad*.8]});
+AGN.forEach(a=>{const q=POS[a[0]],val=WT[a[0]]?Math.abs(v[a[0]]||0):.3;x.strokeStyle=a[1]+'55';x.lineWidth=1+val*4;x.beginPath();x.moveTo(cx,cy);x.lineTo(q[0],q[1]);x.stroke()});
+PK=PK.filter(k=>{k.t+=k.s;if(k.t>=1)return false;const a=POS[k.a],b=POS[k.b];x.beginPath();x.arc(a[0]+(b[0]-a[0])*k.t,a[1]+(b[1]-a[1])*k.t,6,0,7);x.fillStyle=k.c;x.shadowColor=k.c;x.shadowBlur=16;x.fill();x.shadowBlur=0;return true});
+const r0=40+Math.abs(s)*60,gr=x.createRadialGradient(cx,cy,4,cx,cy,r0);gr.addColorStop(0,'#fff');gr.addColorStop(1,'rgba('+col+',0)');x.fillStyle=gr;x.beginPath();x.arc(cx,cy,r0,0,7);x.fill();
+AGN.forEach(a=>{const q=POS[a[0]],val=WT[a[0]]?Math.abs(v[a[0]]||0):(a[0]==='CLOSER'&&opens.length?1:.3),pu=1+Math.sin(t*.004+a[0].length)*.1;
+x.beginPath();x.arc(q[0],q[1],(26+val*16)*pu,0,7);x.fillStyle=a[1]+'22';x.fill();x.beginPath();x.arc(q[0],q[1],(12+val*8)*pu,0,7);x.fillStyle=a[1];x.shadowColor=a[1];x.shadowBlur=14;x.fill();x.shadowBlur=0;
+x.fillStyle=a[1];x.font='15px monospace';x.textAlign='center';x.fillText(a[0],q[0],q[1]+44)});
+x.fillStyle='#d7e6f5';x.font='bold 22px monospace';x.textAlign='center';x.fillText((nameFor(sy)||sy).slice(0,16)+'  '+(s>0?'BUY ':s<0?'SELL ':'')+Math.abs(s).toFixed(2),cx,h-18)}
+function ui(){const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
+set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos)':'var(--neg)');set('swWr',n+' / '+(n?Math.round(wins/n*100)+'%':'-'));set('swOpen',opens.length);
+const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
+if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING'}
+function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
+g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
+cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];log('Graph focus: '+nameFor(sel),'I')}};
+setInterval(ui,500);requestAnimationFrame(draw)}
+return{tick,init,stop:stopAll}})();
+</script>
+<script>try{SWM.init()}catch(e){console.error(e)}</script>
 <script src="upgrade.js"></script>
-<script src="ai.js"></script>
 </body>
 </html>
