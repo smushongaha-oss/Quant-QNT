@@ -214,7 +214,7 @@ select{max-width:100%;text-overflow:ellipsis}
 #sSwarm input[type=text],#sSwarm input[type=number],#sSwarm input[type=password]{width:100%;background:#08111b;border:1px solid var(--bd);color:var(--ink);padding:4px 6px;font-family:var(--m);font-size:12px;border-radius:0}
 #sSwarm .bt{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}#sSwarm .go{border-color:var(--pos);color:var(--pos)}#sSwarm .kl{border-color:var(--neg);color:var(--neg)}
 #sSwarm .sw2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px}@media(max-width:899px){#sSwarm .sw2{grid-template-columns:1fr}}
-#cvSwarm{height:300px}#swLog{height:300px;overflow:auto;font-size:10.5px;line-height:1.5}#swLog .W{color:var(--pos)}#swLog .L{color:var(--neg)}#swLog .X{color:var(--amb)}#swLog .I{color:var(--cy)}
+#sSwarm table{width:100%;border-collapse:collapse;font-size:10.5px}#sSwarm th{color:var(--dim2);font-weight:400;text-align:left;font-size:9px;letter-spacing:.1em}#sSwarm td,#sSwarm th{padding:2px 4px;border-bottom:1px solid var(--bd)}#cvSwarm{height:300px}#swLog{height:300px;overflow:auto;font-size:10.5px;line-height:1.5}#swLog .W{color:var(--pos)}#swLog .L{color:var(--neg)}#swLog .X{color:var(--amb)}#swLog .I{color:var(--cy)}
 #swSt{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0}#swSt b{font-family:var(--o);font-weight:500;font-size:14px;color:#fff;display:block}
 </style>
 </head>
@@ -419,8 +419,10 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
       <div><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
     </div>
-    <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button></div>
+    <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button></div>
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
+    <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
+    <div class="sw2" style="margin-top:4px"><div id="swTblS"></div><div id="swTblA"></div></div>
     <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KELLY sizes, CLOSER settles. Derived and synthetic indices are hard-blocked. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades.</div>
   </section>
 
@@ -2047,7 +2049,7 @@ const SYNB=/^(R_|1HZ|JD|BOOM|CRASH|stpRNG|RDBEAR|RDBULL|WLD|DRIFT|DEX)/i;
 const E=()=>window.FATX,grpFor=sy=>E()?E().grpFor(sy):'OTHER',isClosed=sy=>E()?E().isClosed(sy):false,stateOf=sy=>E().stateOf(sy),nameFor=sy=>E()?E().nameFor(sy):sy,clk=ms=>E()?E().clk(ms):new Date(ms).toLocaleTimeString(),cfgSym=()=>E()?E().cfg().sym:null,realPreset=()=>E().realPreset();
 const AGN=[['SPOTTER','#2fe38a'],['TAKER','#37d6ff'],['EDGE','#ff4d5e'],['PRIOR','#f5a524'],['CONFLUENCE','#4aa8ff'],['KELLY','#b18cff'],['CLOSER','#ff8f6b']];
 const WT={SPOTTER:.25,TAKER:.2,EDGE:.15,PRIOR:.1,CONFLUENCE:.3};
-const B={},V={},SCR={},DEC={};let run=false,live=false,ws=null,bal=1000,pnl=0,n=0,wins=0,cons=0,hist=[],res=[],opens=[],lastT=0,halted=null,rid=0,gen=0,sel=null,PK=[],lastP={};
+const B={},V={},SCR={},DEC={};let TR=[],run=false,live=false,ws=null,bal=1000,pnl=0,n=0,wins=0,cons=0,hist=[],res=[],opens=[],lastT=0,halted=null,rid=0,gen=0,sel=null,PK=[],lastP={};
 const g=id=>document.getElementById(id),nv=id=>+g(id).value;
 const log=(m,c)=>{const l=g('swLog');if(!l)return;const d=document.createElement('div');d.className=c||'I';d.textContent=clk(Date.now())+' '+m;l.prepend(d);while(l.children.length>80)l.lastChild.remove()};
 const cl=x=>Math.max(-1,Math.min(1,x));
@@ -2068,7 +2070,7 @@ function stake(){const r=res.slice(-30),p=r.length>=10?Math.min(.65,Math.max(.5,
 const s=f>0?bal*f*.25:nv('swMin');return +Math.max(nv('swMin'),Math.min(s,bal*nv('swMaxP')/100)).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
-function record(p,sy,d){pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur')});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
 if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
@@ -2076,11 +2078,11 @@ const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
 const amt=stake();if(amt>bal){log('Stake exceeds balance','X');return}lastT=Date.now();
 pkt('CORE','KELLY','#b18cff');setTimeout(()=>pkt('KELLY','SPOTTER','#b18cff'),500);
-if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:'USD',duration:nv('swDur'),duration_unit:'s',symbol:sy}}));opens.push({sy,d,amt,pend:id});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
-else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
+if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:'USD',duration:nv('swDur'),duration_unit:'s',symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
+else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 function tick(sy,p){if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
-opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*.85:-o.amt;record(p===o.entry?0:w?o.amt*.85:-o.amt,o.sy,o.d);return false});
+opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*.85:-o.amt;record(p===o.entry?0:w?o.amt*.85:-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 if(sy===cfgSym()||!sel)sel=sel||sy;
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
@@ -2093,7 +2095,7 @@ ws.onclose=()=>{if(my===gen&&run&&live&&!halted){log('Trading link lost, retry 3
 ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id)opens=opens.filter(o=>o.pend!==m.req_id);return}
 if(m.msg_type==='authorize'){bal=+m.authorize.balance;hist=[bal];log('Authorized '+m.authorize.loginid+(m.authorize.is_virtual?' (DEMO)':' (REAL MONEY)'),m.authorize.is_virtual?'W':'X')}
 else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;bal=m.buy.balance_after;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
-else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);const p=+c.profit;bal+=p;record(p,o.sy,o.d)}}}}
+else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);const p=+c.profit;bal+=p;record(p,o.sy,o.d,o)}}}}
 function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
 const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' non-derived instruments':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs()}
@@ -2110,11 +2112,24 @@ AGN.forEach(a=>{const q=POS[a[0]],val=WT[a[0]]?Math.abs(v[a[0]]||0):(a[0]==='CLO
 x.beginPath();x.arc(q[0],q[1],(26+val*16)*pu,0,7);x.fillStyle=a[1]+'22';x.fill();x.beginPath();x.arc(q[0],q[1],(12+val*8)*pu,0,7);x.fillStyle=a[1];x.shadowColor=a[1];x.shadowBlur=14;x.fill();x.shadowBlur=0;
 x.fillStyle=a[1];x.font='15px monospace';x.textAlign='center';x.fillText(a[0],q[0],q[1]+44)});
 x.fillStyle='#d7e6f5';x.font='bold 22px monospace';x.textAlign='center';x.fillText((nameFor(sy)||sy).slice(0,16)+'  '+(s>0?'BUY ':s<0?'SELL ':'')+Math.abs(s).toFixed(2),cx,h-18)}
+
+let tl=-1;
+function tbl(){if(tl===TR.length)return;tl=TR.length;const S={},A={};
+TR.forEach(r=>{const x=S[r.sy]||(S[r.sy]={n:0,w:0,p:0});x.n++;if(r.p>0)x.w++;x.p+=r.p;
+for(const k in WT){const q=r.v&&r.v[k]||0;if(q&&Math.sign(q)===(r.d==='CALL'?1:-1)){const y=A[k]||(A[k]={n:0,w:0,p:0});y.n++;if(r.p>0)y.w++;y.p+=r.p}}});
+const row=(a,x)=>'<tr><td>'+a+'</td><td>'+x.n+'</td><td>'+Math.round(x.w/x.n*100)+'%</td><td style="color:'+(x.p>=0?'var(--pos)':'var(--neg)')+'">'+x.p.toFixed(2)+'</td></tr>';
+const mk=(h,o,f)=>'<table><tr><th>'+h+'</th><th>N</th><th>WIN</th><th>P&amp;L</th></tr>'+(Object.keys(o).sort((a,b)=>o[b].p-o[a].p).map(k=>row(f(k),o[k])).join('')||'<tr><td colspan="4" class="dm">NO TRADES YET</td></tr>')+'</table>';
+g('swTblS').innerHTML=mk('INSTRUMENT',S,nameFor);g('swTblA').innerHTML=mk('AGENT (WHEN IT AGREED)',A,k=>k)}
+function csv(){if(!TR.length){log('No trades to export yet','X');return}
+const ks=Object.keys(WT),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+const rows=[['time','mode','instrument','symbol','direction','stake','pnl','win','score','duration_s'].concat(ks).join(',')].concat(TR.map(r=>[new Date(r.t).toISOString(),r.mode,q(nameFor(r.sy)),r.sy,r.d,r.amt,r.p.toFixed(2),r.p>0?1:0,(+r.s).toFixed(3),r.dur].concat(ks.map(k=>(r.v&&r.v[k]!=null?(+r.v[k]).toFixed(3):''))).join(',')));
+const url=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='swarm-trades-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);log('Exported '+TR.length+' trades','I')}
 function ui(){const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
 set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos)':'var(--neg)');set('swWr',n+' / '+(n?Math.round(wins/n*100)+'%':'-'));set('swOpen',opens.length);
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
-if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING'}
+if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING';tbl()}
 function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
+try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];log('Graph focus: '+nameFor(sel),'I')}};
 setInterval(ui,500);requestAnimationFrame(draw)}
