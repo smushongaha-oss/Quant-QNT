@@ -2091,13 +2091,13 @@ const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(
 if(!halted&&Math.abs(s)>=nv('swThr'))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let authed=false,cur='USD',tries=0,lastSx=0;
-async function openWs(){const my=gen;authed=false;const H={'Authorization':'Bearer '+g('swTok').value.trim(),'Deriv-App-ID':g('swApp').value.trim()},B0='https://api.derivws.com/trading/v1/options/accounts';
+async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
 const fail=(m)=>{log(m,'L');if(my===gen){if(++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else setTimeout(()=>my===gen&&run&&openWs(),4000)}};
-try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok)return fail('Account list failed (HTTP '+r.status+'). Check the App ID is a PAT-type app and the token has trade scope.');
+try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,220)}catch(e){}return fail('Account list failed (HTTP '+r.status+'). Deriv said: '+(bt||'no body')+' | token '+TK.length+' chars, app id '+AP.length+' chars'+(/^\d+$/.test(AP)?'':' (APP ID IS NOT ALL DIGITS)')+(TK.length<12?' (TOKEN LOOKS TOO SHORT)':''))}
 let j=await r.json();let arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
 const idOf=a=>a.account_id||a.id||a.loginid||a.login_id,isDemo=a=>/demo|virtual/i.test(String(a.account_type||a.type||'')+String(a.is_virtual===1||a.is_virtual===true?'demo':''))||/^VR/i.test(String(idOf(a)||''));
 const acc=arr.find(a=>want==='demo'?isDemo(a):!isDemo(a));if(!acc)return fail('No '+want.toUpperCase()+' account found on this token ('+arr.length+' accounts returned).');
-const id=idOf(acc);r=await fetch(B0+'/'+encodeURIComponent(id)+'/otp',{method:'POST',headers:H});if(!r.ok)return fail('OTP request failed (HTTP '+r.status+').');
+const id=idOf(acc);r=await fetch(B0+'/'+encodeURIComponent(id)+'/otp',{method:'POST',headers:H});if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,220)}catch(e){}return fail('OTP request failed (HTTP '+r.status+'): '+(bt||'no body'))}
 j=await r.json();const url=j.data&&j.data.url;if(!url)return fail('No WebSocket URL in OTP response.');
 if(my!==gen)return;ws=new WebSocket(url);
 ws.onopen=()=>{ws.send(JSON.stringify({balance:1,subscribe:1}))};
