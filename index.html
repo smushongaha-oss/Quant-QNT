@@ -2122,8 +2122,8 @@ all.forEach(c=>{const t=c.contract_type||'?';(sum[t]=sum[t]||new Set()).add(c.ex
 log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]].join('/')+')').join(' ')||'nothing listed'),'I');
 const rf=all.filter(c=>c.contract_type==='CALL');
 DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladder(),i:0};return}
-if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X')}}
-else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X');opens.forEach(o=>{if(o.cid){ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Re-checking open contract #'+o.cid,'I')}})}}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);record(+c.profit,o.sy,o.d,o)}}}}
 catch(e){fail('Cannot reach Deriv from this page ('+(e&&e.name||'error')+'). If this is a CORS block, the browser is refusing the REST call; tell me and I will add a relay.')}}
 
@@ -2178,7 +2178,7 @@ function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll(
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(()=>{[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(ui,500);requestAnimationFrame(draw)}
+setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(ui,500);requestAnimationFrame(draw)}
 return{tick,init,stop:stopAll}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
