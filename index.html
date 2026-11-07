@@ -408,7 +408,9 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><span class="lab">LIVE CONSENSUS</span><b id="swCons">-</b></div>
     </div>
     <div class="rw">
-      <div><label>API TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="demo token first"></div>
+      <div><label>DERIV APP ID (NEW API)</label><input id="swApp" type="text" inputmode="numeric" autocomplete="off" placeholder="from developers.deriv.com"></div>
+      <div><label>PAT TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="trade scope"></div>
+      <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
       <div><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
@@ -2076,9 +2078,9 @@ if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MA
 function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
 const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-const amt=stake();if(amt>bal){log('Stake exceeds balance','X');return}lastT=Date.now();
+if(live&&!authed)return;const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
-if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:'USD',duration:nv('swDur'),duration_unit:'s',symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
+if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:cur,duration:nv('swDur'),duration_unit:'s',underlying_symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 function tick(sy,p){if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
@@ -2087,16 +2089,26 @@ const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 if(sy===cfgSym()||!sel)sel=sel||sy;
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
 if(!halted&&Math.abs(s)>=nv('swThr'))trade(sy,s,v)}
-/* live socket (trading only) */
-function openWs(){const my=gen;try{ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089')}catch(e){log('Cannot open trading socket here. Open this file directly in your browser.','L');stopAll('BLOCKED');return}
-ws.onopen=()=>ws.send(JSON.stringify({authorize:g('swTok').value.trim()}));
-ws.onerror=()=>log('Trading socket error (blocked or offline).','L');
-ws.onclose=()=>{if(my===gen&&run&&live&&!halted){log('Trading link lost, retry 3s','X');setTimeout(()=>my===gen&&run&&openWs(),3000)}};
+/* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
+let authed=false,cur='USD',tries=0,lastSx=0;
+async function openWs(){const my=gen;authed=false;const H={'Authorization':'Bearer '+g('swTok').value.trim(),'Deriv-App-ID':g('swApp').value.trim()},B0='https://api.derivws.com/trading/v1/options/accounts';
+const fail=(m)=>{log(m,'L');if(my===gen){if(++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else setTimeout(()=>my===gen&&run&&openWs(),4000)}};
+try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok)return fail('Account list failed (HTTP '+r.status+'). Check the App ID is a PAT-type app and the token has trade scope.');
+let j=await r.json();let arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
+const idOf=a=>a.account_id||a.id||a.loginid||a.login_id,isDemo=a=>/demo|virtual/i.test(String(a.account_type||a.type||'')+String(a.is_virtual===1||a.is_virtual===true?'demo':''))||/^VR/i.test(String(idOf(a)||''));
+const acc=arr.find(a=>want==='demo'?isDemo(a):!isDemo(a));if(!acc)return fail('No '+want.toUpperCase()+' account found on this token ('+arr.length+' accounts returned).');
+const id=idOf(acc);r=await fetch(B0+'/'+encodeURIComponent(id)+'/otp',{method:'POST',headers:H});if(!r.ok)return fail('OTP request failed (HTTP '+r.status+').');
+j=await r.json();const url=j.data&&j.data.url;if(!url)return fail('No WebSocket URL in OTP response.');
+if(my!==gen)return;ws=new WebSocket(url);
+ws.onopen=()=>{ws.send(JSON.stringify({balance:1,subscribe:1}))};
+ws.onerror=()=>log('Trading socket error.','L');
+ws.onclose=()=>{authed=false;if(my===gen&&run&&!halted){log('Trading link lost, reconnecting in 4s','X');setTimeout(()=>my===gen&&run&&openWs(),4000)}};
 ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id)opens=opens.filter(o=>o.pend!==m.req_id);return}
-if(m.msg_type==='authorize'){bal=+m.authorize.balance;hist=[bal];log('Authorized '+m.authorize.loginid+(m.authorize.is_virtual?' (DEMO)':' (REAL MONEY)'),m.authorize.is_virtual?'W':'X')}
-else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;bal=m.buy.balance_after;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
-else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);const p=+c.profit;bal+=p;record(p,o.sy,o.d,o)}}}}
-function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
+if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X')}}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);record(+c.profit,o.sy,o.d,o)}}}}
+catch(e){fail('Cannot reach Deriv from this page ('+(e&&e.name||'error')+'). If this is a CORS block, the browser is refusing the REST call; tell me and I will add a relay.')}}
+function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
 const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' non-derived instruments':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs()}
 function stopAll(m){run=false;gen++;g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
