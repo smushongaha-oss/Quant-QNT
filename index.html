@@ -2092,13 +2092,15 @@ if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parame
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 let feedOn=false,pw=null;
 function tick(sy,p){if(feedOn)return;core(sy,p)}
-function core(sy,p){if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
+const LT={};let selLock=0;
+function isBest(sy){const me=Math.abs(SCR[sy]||0),nw=Date.now();for(const k in SCR){if(k===sy||nw-(LT[k]||0)>15000)continue;if(DURS[k]&&DURS[k].skip)continue;if(Math.abs(SCR[k])>me&&allowed(k))return false}return true}
+function core(sy,p){LT[sy]=Date.now();if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
 opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*.85:-o.amt;record(p===o.entry?0:w?o.amt*.85:-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
-if(sy===cfgSym()||!sel)sel=sel||sy;
+
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&Math.abs(s)>=nv('swThr'))trade(sy,s,v)}
+if(!halted&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2115,10 +2117,11 @@ ws.onerror=()=>log('Trading socket error.','L');
 ws.onclose=()=>{authed=false;if(my===gen&&run&&!halted){log('Trading link lost, reconnecting in 4s','X');setTimeout(()=>my===gen&&run&&openWs(),4000)}};
 ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id){const bo=opens.find(o=>o.pend===m.req_id);opens=opens.filter(o=>o.pend!==m.req_id);const cs=cfMap[m.req_id];if(cs){DURS[cs]={list:ladder(),i:0};log('Could not read availability for '+nameFor(cs)+', trying durations in turn','X')}
 else if(bo&&m.msg_type==='buy'&&/duration/i.test(m.error.message||'')&&DURS[bo.sy]&&DURS[bo.sy].list&&!DURS[bo.sy].locked){const d=DURS[bo.sy];d.i++;lastT=0;if(d.i>=d.list.length){DURS[bo.sy]={skip:true};log('No valid duration found for '+nameFor(bo.sy)+', skipping it','X')}else log('Trying '+d.list[d.i][0]+d.list[d.i][1]+' next for '+nameFor(bo.sy),'I')}}return}
-if(m.msg_type==='contracts_for'&&m.contracts_for){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,av=(m.contracts_for.available||[]).filter(c=>c.contract_type==='CALL');
-if(!av.length){DURS[sy]={skip:true};log(nameFor(sy)+': no Rise/Fall offered, skipping it','X')}
-else if(av.every(c=>c.expiry_type==='daily')){DURS[sy]={list:[[1,'d']],i:0};log(nameFor(sy)+': daily Rise/Fall only','I')}
-else{DURS[sy]={list:ladder(),i:0};log(nameFor(sy)+': Rise/Fall offered, finding a valid duration','I')}return}
+if(m.msg_type==='contracts_for'&&m.contracts_for){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,all=m.contracts_for.available||[],sum={};
+all.forEach(c=>{const t=c.contract_type||'?';(sum[t]=sum[t]||new Set()).add(c.expiry_type||'?')});
+log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]].join('/')+')').join(' ')||'nothing listed'),'I');
+const rf=all.filter(c=>c.contract_type==='CALL');
+DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladder(),i:0};return}
 if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X')}}
 else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;delete o.pend;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);record(+c.profit,o.sy,o.d,o)}}}}
@@ -2166,15 +2169,16 @@ function csv(){if(!TR.length){log('No trades to export yet','X');return}
 const ks=Object.keys(WT),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
 const rows=[['time','mode','instrument','symbol','direction','stake','pnl','win','score','duration_s'].concat(ks).join(',')].concat(TR.map(r=>[new Date(r.t).toISOString(),r.mode,q(nameFor(r.sy)),r.sy,r.d,r.amt,r.p.toFixed(2),r.p>0?1:0,(+r.s).toFixed(3),r.dur].concat(ks.map(k=>(r.v&&r.v[k]!=null?(+r.v[k]).toFixed(3):''))).join(',')));
 const url=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='swarm-trades-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);log('Exported '+TR.length+' trades','I')}
-function ui(){const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
+function autoFocus(){if(Date.now()<selLock)return;let b=null,bs=-1;const nw=Date.now();for(const k in SCR){if(nw-(LT[k]||0)>15000||!allowed(k))continue;const x=Math.abs(SCR[k]);if(x>bs){bs=x;b=k}}if(b)sel=b}
+function ui(){autoFocus();const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
 set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos)':'var(--neg)');set('swWr',n+' / '+(n?Math.round(wins/n*100)+'%':'-'));set('swOpen',opens.length);
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
 if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING';tbl()}
 function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
-cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(ui,500);requestAnimationFrame(draw)}
+cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
+setInterval(()=>{[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(ui,500);requestAnimationFrame(draw)}
 return{tick,init,stop:stopAll}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
