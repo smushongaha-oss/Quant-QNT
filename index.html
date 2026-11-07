@@ -414,11 +414,13 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
       <div><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
-      <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".5" value="2"></div>
+      <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".1" value="0.5"></div>
       <div><label>COOLDOWN SEC</label><input id="swCd" type="number" value="20"></div>
       <div><label>MAX SESSION LOSS</label><input id="swMxL" type="number" value="10"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
+      <div><label>SIZING</label><select id="swSz" style="width:100%"><option value="fixed">FIXED (MIN STAKE)</option><option value="kmj">KMJ KELLY (100+ TRADES)</option></select></div>
+      <div><label>PAYOUT % (PAPER + KELLY)</label><input id="swPay" type="number" value="78"></div>
       <div><label>MARKETS</label><select id="swMk" style="width:100%"><option value="all">ALL (REAL + DERIVED)</option><option value="real">REAL ONLY</option></select></div>
       <div><label>SYMBOL FEED</label><select id="swFeed" style="width:100%"><option value="all">ALL OPEN SYMBOLS</option><option value="eng">ENGINE SCANNER ONLY</option></select></div>
       <div><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
@@ -2072,8 +2074,9 @@ if(sdv(a.slice(-30))<1e-12)return null;
 let c=0;try{const m=stateOf(sy);if(m.mode==='sig')c=m.side*Math.min(1,m.val/100+.2);else if(m.mode==='setup')c=m.side*.4;else if(m.mode==='watch'&&m.dist<.3)c=m.side*.25}catch(e){}
 v.CONFLUENCE=c;return v}
 const score=v=>Object.keys(WT).reduce((t,k)=>t+WT[k]*v[k],0);
-function stake(){const r=res.slice(-30),p=r.length>=10?Math.min(.65,Math.max(.5,r.filter(x=>x>0).length/r.length)):.52,b=.85,f=(p*b-(1-p))/b;
-const s=f>0?bal*f*.25:nv('swMin');return +Math.max(nv('swMin'),Math.min(s,bal*nv('swMaxP')/100)).toFixed(2)}
+function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')+pnl;let st=mn;
+if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(x=>x>0).length/100,be=1/(1+pay);if(w>be+.03){const q=Math.min(w,.62),f=(q*pay-(1-q))/pay;st=Math.max(mn,bal*f*.25)}}
+st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
 function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur')});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
@@ -2086,7 +2089,7 @@ function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
 function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
 const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl<nv('swMin')){halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
 if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:cur,duration:curDur(sy)[0],duration_unit:curDur(sy)[1],underlying_symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
@@ -2096,7 +2099,7 @@ const LT={};let selLock=0;
 function isBest(sy){const me=Math.abs(SCR[sy]||0),nw=Date.now();for(const k in SCR){if(k===sy||nw-(LT[k]||0)>15000)continue;if(DURS[k]&&DURS[k].skip)continue;if(Math.abs(SCR[k])>me&&allowed(k))return false}return true}
 function core(sy,p){LT[sy]=Date.now();if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
-opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*.85:-o.amt;record(p===o.entry?0:w?o.amt*.85:-o.amt,o.sy,o.d,o);return false});
+opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
