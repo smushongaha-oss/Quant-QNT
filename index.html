@@ -419,6 +419,8 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>MAX SESSION LOSS</label><input id="swMxL" type="number" value="10"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
+      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option></select></div>
+      <div><label>SWARM CONFIRM (ENGINE MODE)</label><select id="swCf" style="width:100%"><option value="notopp">NOT OPPOSED</option><option value="agree">MUST AGREE</option><option value="off">OFF</option></select></div>
       <div><label>SIZING</label><select id="swSz" style="width:100%"><option value="fixed">FIXED (MIN STAKE)</option><option value="kmj">KMJ KELLY (100+ TRADES)</option></select></div>
       <div><label>PAYOUT % (PAPER + KELLY)</label><input id="swPay" type="number" value="78"></div>
       <div><label>MARKETS</label><select id="swMk" style="width:100%"><option value="all">ALL (REAL + DERIVED)</option><option value="real">REAL ONLY</option></select></div>
@@ -430,7 +432,7 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
     <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
     <div class="sw2" style="margin-top:4px"><div id="swTblS"></div><div id="swTblA"></div></div>
-    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KMJ sizes, CLOSER settles. MARKETS decides whether derived and synthetic indices are included (REAL ONLY skips them). SYMBOL FEED set to ALL OPEN SYMBOLS gives the swarm its own price feed for up to MAX SYMBOLS open instruments across every market, not only the ones your scanner watches. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades.</div>
+    <div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em">Four tick agents (SPOTTER trend, TAKER momentum, EDGE RSI fade, PRIOR band fade) and your confluence engine (CONFLUENCE, zone signals) vote on every non-derived instrument in the scanner. KMJ sizes, CLOSER settles. MARKETS decides whether derived and synthetic indices are included (REAL ONLY skips them). SYMBOL FEED set to ALL OPEN SYMBOLS gives the swarm its own price feed for up to MAX SYMBOLS open instruments across every market, not only the ones your scanner watches. Paper mode simulates fills at an 85% payout on live ticks; live mode needs a Deriv token with trade scope. Rise/Fall needs over 54% wins to break even. Never run live before a few hundred paper trades. TRIGGER set to ENGINE BEST READY trades the strongest ready signal from your scanner (score at or above ALERT AT, ranked like BEST READY at the top), and uses the four tick agents only as a confirmation. The scanner holds up to 16 instruments, so use LOAD REAL MARKETS or the MARKETS tab to choose them.</div>
   </section>
 
   <details class="p p-how" id="sHow">
@@ -2044,7 +2046,7 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+window.FATX={scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
 })();
 </script>
@@ -2103,7 +2105,7 @@ opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+if(!halted&&g('swTrig').value==='swarm'&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2146,7 +2148,7 @@ pick.forEach((sy,i)=>{B[sy]=B[sy]||[];setTimeout(()=>pw&&pw.readyState===1&&pw.s
 else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&run)core(sy,+t.quote)}}}
 function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
-const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();if(g('swFeed').value==='all')openFeed()}
+const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};if(g('swTrig').value==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(g('swFeed').value==='all')openFeed()}
 function stopAll(m){run=false;gen++;closeFeed();g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
 /* graph */
 const POS={};let cv,cx2;
@@ -2173,6 +2175,17 @@ const ks=Object.keys(WT),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
 const rows=[['time','mode','instrument','symbol','direction','stake','pnl','win','score','duration_s'].concat(ks).join(',')].concat(TR.map(r=>[new Date(r.t).toISOString(),r.mode,q(nameFor(r.sy)),r.sy,r.d,r.amt,r.p.toFixed(2),r.p>0?1:0,(+r.s).toFixed(3),r.dur].concat(ks.map(k=>(r.v&&r.v[k]!=null?(+r.v[k]).toFixed(3):''))).join(',')));
 const url=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='swarm-trades-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);log('Exported '+TR.length+' trades','I')}
 function autoFocus(){if(Date.now()<selLock)return;let b=null,bs=-1;const nw=Date.now();for(const k in SCR){if(nw-(LT[k]||0)>15000||!allowed(k))continue;const x=Math.abs(SCR[k]);if(x>bs){bs=x;b=k}}if(b)sel=b}
+
+let TRD={},lastSk={};
+function engineScan(){if(!run||halted||g('swTrig').value!=='engine'||!E()||!E().scan)return;
+const L=E().scan()||[];let pick=null;
+for(const it of L){const st=it.st;if(!st||st.mode!=='sig'||!st.sig||!allowed(it.sy))continue;if(DURS[it.sy]&&DURS[it.sy].skip)continue;const key=it.sy+':'+st.sig.t;if(TRD[key])continue;pick={it,key};break}
+if(!pick){if(Date.now()>selLock){const t=L.find(x=>x.st&&x.st.rank>0&&allowed(x.sy));if(t)sel=t.sy}return}
+const {it,key}=pick,sy=it.sy,side=it.st.side,v=votes(sy),cf=g('swCf').value;let ss=0;
+if(v)for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];
+if(cf!=='off'){if(!v)return;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(Date.now()-(lastSk[key]||0)>30000){lastSk[key]=Date.now();log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}return}}
+const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
+if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W')}}
 function ui(){autoFocus();const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
 set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos)':'var(--neg)');set('swWr',n+' / '+(n?Math.round(wins/n*100)+'%':'-'));set('swOpen',opens.length);
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
@@ -2181,7 +2194,7 @@ function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll(
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(ui,500);requestAnimationFrame(draw)}
+setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(engineScan,1000);setInterval(ui,500);requestAnimationFrame(draw)}
 return{tick,init,stop:stopAll}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
