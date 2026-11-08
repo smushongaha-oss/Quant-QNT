@@ -1964,7 +1964,7 @@ const LRN=(()=>{
     $('lrOn').onclick=()=>{cfg.learn=!cfg.learn;persist();applyAll();};
     $('lrAuto').onclick=()=>{
       cfg.autothr=!cfg.autothr;
-      if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
+    if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
       persist();syncBtns();S.dirty=true;
     };
     $('lrRun').onclick=run;$('lrReset').onclick=reset;
