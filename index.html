@@ -2051,7 +2051,7 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset,volPreset};
 init();
 })();
 </script>
@@ -2071,7 +2071,7 @@ const cl=x=>Math.max(-1,Math.min(1,x));
 const ema=(a,p)=>{const k=2/(p+1);let e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e};
 const sdv=a=>{const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/a.length)};
 function rsi(a,p){let G=0,L=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];d>0?G+=d:L-=d}return L==0?100:100-100/(1+G/L)}
-const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all')return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
+const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all')return false;if(scalpOn&&!der)return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
 function votes(sy){const a=B[sy];if(!a||a.length<40)return null;const s=a.slice(-20),st=sdv(s)||1e-9,v={};
 v.SPOTTER=cl((ema(a.slice(-40),5)-ema(a.slice(-40),20))/(st*.5));
 let u=0;for(let i=a.length-20;i<a.length;i++)u+=Math.sign(a[i]-a[i-1]);v.TAKER=u/20;
@@ -2086,7 +2086,7 @@ function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')
 if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(x=>x>0).length/100,be=1/(1+pay);if(w>be+.03){const q=Math.min(w,.62),f=(q*pay-(1-q))/pay;st=Math.max(mn,bal*f*.25)}}
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
-function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
+function halt(r){halted=r;haltAt=Date.now();g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
 function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:''});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
 if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
@@ -2094,7 +2094,7 @@ const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[
 function ladder(){const w=nv('swDur'),k0=LAD.findIndex(e=>LS(e)>=w),k=k0<0?LAD.length-1:k0;return LAD.slice(k).concat(LAD.slice(0,k).reverse())}
 const GOOD={};
 function grpKey(sy){return MK[sy]||grpFor(sy)}
-function ladderFor(sy){const b=ladder(),g=GOOD[grpKey(sy)];return g?[g].concat(b.filter(e=>!(e[0]===g[0]&&e[1]===g[1]))):b}
+function ladderFor(sy){const okD=e=>!scalpOn||LS(e)<=Math.max(60,nv('swDur')*4),b=ladder().filter(okD),g=GOOD[grpKey(sy)];return (g&&okD(g)?[g]:[]).concat(b.filter(e=>!(g&&e[0]===g[0]&&e[1]===g[1])))}
 function sendBuy(o){const e=curDur(o.sy);if(!e||!ws||ws.readyState!==1)return;const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:o.amt,req_id:id,parameters:{amount:o.amt,basis:'stake',contract_type:o.d,currency:cur,duration:e[0],duration_unit:e[1],underlying_symbol:o.sy}}))}
 function durFor(sy){if(DURS[sy])return DURS[sy];if(!cfReq[sy]&&ws&&authed){const id=++rid;cfReq[sy]=id;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}));log('Checking Rise/Fall availability for '+nameFor(sy),'I')}return null}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
@@ -2117,7 +2117,7 @@ const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
 if(!halted&&(g('swTrig').value==='swarm'||g('swTrig').value==='hybrid')&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
-let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
+let scalpOn=false,haltAt=0,startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
 const fail=(m)=>{log(m,'L');if(my===gen){if(++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else setTimeout(()=>my===gen&&run&&openWs(),4000)}};
 try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,220)}catch(e){}return fail('Account list failed (HTTP '+r.status+'). Deriv said: '+(bt||'no body')+' | token '+TK.length+' chars, app id '+AP.length+' chars'+(/^\d+$/.test(AP)?'':' (APP ID IS NOT ALL DIGITS)')+(TK.length<12?' (TOKEN LOOKS TOO SHORT)':''))}
@@ -2136,7 +2136,7 @@ if(m.msg_type==='contracts_for'&&m.contracts_for){const sy=cfMap[m.req_id]||m.co
 all.forEach(c=>{const t=c.contract_type||'?';(sum[t]=sum[t]||new Set()).add(c.expiry_type||'?')});
 log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]].join('/')+')').join(' ')||'nothing listed'),'I');
 const rf=all.filter(c=>c.contract_type==='CALL');
-DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladderFor(sy),i:0};return}
+{const L=ladderFor(sy),dly=rf.length&&rf.every(c=>c.expiry_type==='daily');DURS[sy]=(scalpOn&&dly)||!L.length?{skip:true}:dly?{list:[[1,'d']],i:0}:{list:L,i:0}}return}
 if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X');opens.forEach(o=>{if(o.cid){ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Re-checking open contract #'+o.cid,'I')}})}}
 else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;o.cd=curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'';o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);record(+c.profit,o.sy,o.d,o)}}}}
@@ -2195,7 +2195,7 @@ if(Date.now()>selLock)sel=cands[0].sy;
 if(mineOpens().length>=maxOpen()||Date.now()-lastT<nv('swCd')*1000)return;
 for(const it of cands){const sy=it.sy,side=it.st.side,key=sy+':'+it.st.sig.t;if(mineOpens().some(o=>o.sy===sy))continue;
 const v=votes(sy);let ss=0;if(v)for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];
-if(cf!=='off'){if(!v)continue;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(Date.now()-(lastSk[key]||0)>30000){lastSk[key]=Date.now();log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}continue}}
+if(cf!=='off'){if(!v)continue;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(!lastSk[key]){lastSk[key]=1;log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}continue}}
 const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
@@ -2213,18 +2213,18 @@ set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
 if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING';tbl()}
 function saveOpen(){try{localStorage.setItem('swm_open',JSON.stringify(opens.filter(o=>o.cid).map(o=>({cid:o.cid,sy:o.sy,d:o.d,amt:o.amt,s:o.s,v:o.v,cd:o.cd,pr:o.pr,t0:o.t0}))))}catch(e){}}
-function init(){cv=g('cvSwarm');if(!cv)return;try{opens=(JSON.parse(localStorage.getItem('swm_open')||'[]')).filter(o=>o.cid&&Date.now()-o.t0<86400000);if(opens.length)log('Restored '+opens.length+' unsettled live contract(s) from last session. Press START with your token to settle them.','X')}catch(e){opens=[]}g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
+function init(){cv=g('cvSwarm');if(!cv)return;try{opens=(JSON.parse(localStorage.getItem('swm_open')||'[]')).filter(o=>o.cid&&Date.now()-o.t0<86400000);if(opens.length)log('Restored '+opens.length+' unsettled live contract(s) from last session. Press START with your token to settle them.','X')}catch(e){opens=[]}g('swGo').onclick=()=>run?stopAll():(scalpOn=false,start());g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swTrig').onchange=modeUi;loadCred();{const b=document.getElementById('bScalp');if(b)b.onclick=scalp}modeUi();
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(saveOpen,2000);setInterval(engineScan,250);setInterval(ui,500);requestAnimationFrame(draw)}
+setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(saveOpen,2000);setInterval(()=>{if(run&&scalpOn&&halted==='MAX LOSING STREAK'&&Date.now()-haltAt>300000){halted=null;cons=0;log('AUTO-RESUME after 5 min streak pause','W')}},5000);setInterval(engineScan,250);setInterval(ui,500);requestAnimationFrame(draw)}
 const CK='swm_cred';
 function saveCred(){try{if(g('swRem').checked)localStorage.setItem(CK,JSON.stringify({a:g('swApp').value,t:g('swTok').value,c:g('swAcc').value}));else localStorage.removeItem(CK)}catch(e){}}
 function loadCred(){try{const c=JSON.parse(localStorage.getItem(CK)||'null');if(c){g('swApp').value=c.a||'';g('swTok').value=c.t||'';g('swAcc').value=c.c||'demo';g('swRem').checked=true}}catch(e){}}
 function scalp(){if(run){stopAll();return}
 const s=(i,v)=>{g(i).value=v};s('swTrig','hybrid');s('swDur',15);s('swCd',5);s('swThr',.45);s('swCf','notopp');s('swConf','1');s('swMo',3);modeUi();
-start();if(run)log('ONE-CLICK SCALP: engine zone signals + swarm votes, 15s contracts, 5s cooldown, '+(live?'LIVE '+g('swAcc').value.toUpperCase():'PAPER'),'W')}
+scalpOn=true;try{E().volPreset()}catch(e){}start();if(!run)scalpOn=false;else log('AUTO SCALP: volatility indices only (they offer short contracts), instruments without short contracts are skipped, streak pauses auto-resume. Session loss limit stays final. Mode: '+(live?'LIVE '+g('swAcc').value.toUpperCase():'PAPER'),'W')}
 return{tick,init,stop:stopAll,poke:engineScan,score:sy=>SCR[sy]||0,scalp}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
