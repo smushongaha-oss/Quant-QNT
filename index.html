@@ -2087,7 +2087,7 @@ if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;haltAt=Date.now();g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
-function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:''});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+function record(p,sy,d,o){CLS[sy]=Date.now();TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:''});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
 if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[30,'m'],[1,'h'],[2,'h'],[4,'h'],[8,'h'],[1,'d']],LS=e=>e[0]*({s:1,m:60,h:3600,d:86400})[e[1]];
@@ -2098,7 +2098,7 @@ function ladderFor(sy){const okD=e=>!scalpOn||LS(e)<=Math.max(60,nv('swDur')*4),
 function sendBuy(o){const e=curDur(o.sy);if(!e||!ws||ws.readyState!==1)return;const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:o.amt,req_id:id,parameters:{amount:o.amt,basis:'stake',contract_type:o.d,currency:cur,duration:e[0],duration_unit:e[1],underlying_symbol:o.sy}}))}
 function durFor(sy){if(DURS[sy])return DURS[sy];if(!cfReq[sy]&&ws&&authed){const id=++rid;cfReq[sy]=id;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}));log('Checking Rise/Fall availability for '+nameFor(sy),'I')}return null}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
-function trade(sy,s,v){if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
+function trade(sy,s,v){if(scalpOn&&Date.now()-(CLS[sy]||0)<Math.max(60000,nv('swDur')*4000))return;if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
 const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
 if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
@@ -2115,9 +2115,9 @@ opens=opens.filter(o=>{if(live||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)retur
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&(g('swTrig').value==='swarm'||g('swTrig').value==='hybrid')&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+{const tg=g('swTrig').value,pv=PS[sy]||0,fresh=Math.abs(pv)<nv('swThr')||Math.sign(pv)!==Math.sign(s);PS[sy]=s;if(!halted&&(tg==='swarm'||tg==='hybrid')&&Math.abs(s)>=nv('swThr')&&isBest(sy)&&(tg==='swarm'||(fresh&&Math.sign(v.CONFLUENCE)===Math.sign(s))))trade(sy,s,v)}}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
-let scalpOn=false,haltAt=0,startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
+let PS={},CLS={},scalpOn=false,haltAt=0,startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
 const fail=(m)=>{log(m,'L');if(my===gen){if(++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else setTimeout(()=>my===gen&&run&&openWs(),4000)}};
 try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,220)}catch(e){}return fail('Account list failed (HTTP '+r.status+'). Deriv said: '+(bt||'no body')+' | token '+TK.length+' chars, app id '+AP.length+' chars'+(/^\d+$/.test(AP)?'':' (APP ID IS NOT ALL DIGITS)')+(TK.length<12?' (TOKEN LOOKS TOO SHORT)':''))}
