@@ -233,6 +233,7 @@ select{max-width:100%;text-overflow:ellipsis}
     <div class="hs"><label>MUSCAT</label><b id="hClk">--:--:--</b></div>
     <div class="hs"><label>LINK</label><div class="st" id="st"><i></i><span>CONNECTING</span></div></div>
     <button id="bSnd" type="button">SND</button>
+    <button id="bScalp" type="button" style="border-color:var(--pos);color:var(--pos);font-family:var(--o);font-size:12px;padding:6px 12px">&#9889; ONE-CLICK SCALP</button>
   </div>
 </header>
 <nav class="jump" aria-label="Jump to section"><a href="#sChart">CHART</a><a href="#sAudit">AUDIT</a><a href="#sVerd">VERDICT</a><a href="#sScan">SCANNER</a><a href="#sMap">MAP</a><a href="#shellP">SHELL</a><a href="#sTape">TAPE</a><a href="#sMkts">MARKETS</a><a href="#sStat">STATS</a><a href="#sAlrt">ALERTS</a><a href="#sLearn">LEARN</a><a href="#sEng">SWITCHES</a><a href="#upP">EDGE</a><a href="#sHow">GUIDE</a></nav>
@@ -407,28 +408,30 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><span class="lab">OPEN</span><b id="swOpen">0</b></div>
       <div><span class="lab">LIVE CONSENSUS</span><b id="swCons">-</b></div>
     </div>
+    <div id="swLink" style="font-size:11px;line-height:1.5;padding:6px 8px;border:1px solid var(--bd);margin:6px 0;color:var(--cy)">ENGINE LINK: starts when you press START SWARM</div>
     <div class="rw">
       <div><label>DERIV APP ID (NEW API)</label><input id="swApp" type="text" inputmode="numeric" autocomplete="off" placeholder="from developers.deriv.com"></div>
       <div><label>PAT TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="trade scope"></div>
       <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
-      <div><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
+      <div data-m="swarm"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
       <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".1" value="0.5"></div>
+      <div><label>MAX OPEN TRADES</label><input id="swMo" type="number" value="3"></div>
       <div><label>COOLDOWN SEC</label><input id="swCd" type="number" value="20"></div>
       <div><label>MAX SESSION LOSS</label><input id="swMxL" type="number" value="10"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
-      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option></select></div>
-      <div><label>SWARM CONFIRM (ENGINE MODE)</label><select id="swCf" style="width:100%"><option value="notopp">NOT OPPOSED</option><option value="agree">MUST AGREE</option><option value="off">OFF</option></select></div>
+      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="hybrid">HYBRID: ENGINE + SWARM</option><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option></select></div>
+      <div data-m="engine"><label>SWARM CONFIRM (ENGINE MODE)</label><select id="swCf" style="width:100%"><option value="notopp">NOT OPPOSED</option><option value="agree">MUST AGREE</option><option value="off">OFF</option></select></div>
       <div><label>SIZING</label><select id="swSz" style="width:100%"><option value="fixed">FIXED (MIN STAKE)</option><option value="kmj">KMJ KELLY (100+ TRADES)</option></select></div>
       <div><label>PAYOUT % (PAPER + KELLY)</label><input id="swPay" type="number" value="78"></div>
       <div><label>MARKETS</label><select id="swMk" style="width:100%"><option value="all">ALL (REAL + DERIVED)</option><option value="real">REAL ONLY</option></select></div>
-      <div><label>SYMBOL FEED</label><select id="swFeed" style="width:100%"><option value="all">ALL OPEN SYMBOLS</option><option value="eng">ENGINE SCANNER ONLY</option></select></div>
-      <div><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
-      <div><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
+      <div data-m="swarm"><label>SYMBOL FEED</label><select id="swFeed" style="width:100%"><option value="all">ALL OPEN SYMBOLS</option><option value="eng">ENGINE SCANNER ONLY</option></select></div>
+      <div data-m="swarm"><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
+      <div data-m="swarm"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
     </div>
-    <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button></div>
+    <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button><label style="display:inline-flex;gap:4px;align-items:center;margin:0"><input type="checkbox" id="swRem"> REMEMBER KEYS ON THIS DEVICE</label></div>
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
     <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
     <div class="sw2" style="margin-top:4px"><div id="swTblS"></div><div id="swTblA"></div></div>
@@ -1099,6 +1102,7 @@ function stateOf(sy){
 }
 function computeScan(){
   SCN=SYMS.map(([sy,nm])=>({sy,short:shortOf(nm),st:stateOf(sy)})).sort((a,b)=>b.st.rank-a.st.rank);
+  try{SWM.poke()}catch(e){}
 }
 
 /* ---------- DOM panels ---------- */
@@ -1112,6 +1116,7 @@ function renderHeader(){
   const b=SCN[0];
   $('hBest').textContent=b&&b.st.rank>0?b.short+' '+b.st.val:'-';
   $('hBest').style.color=b&&b.st.rank>0?(b.st.side===1?K.pos:K.neg):'#fff';
+  try{if(b&&b.st.rank>0){const q=SWM.score(b.sy);$('hBest').textContent+=' | SW '+(q>=0?'+':'')+q.toFixed(2)}}catch(e){}
 }
 function renderAudit(){
   const D=S.D;
@@ -2046,7 +2051,7 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
 })();
 </script>
@@ -2076,7 +2081,8 @@ if(sdv(a.slice(-30))<1e-12)return null;
 let c=0;try{const m=stateOf(sy);if(m.mode==='sig')c=m.side*Math.min(1,m.val/100+.2);else if(m.mode==='setup')c=m.side*.4;else if(m.mode==='watch'&&m.dist<.3)c=m.side*.25}catch(e){}
 v.CONFLUENCE=c;return v}
 const score=v=>Object.keys(WT).reduce((t,k)=>t+WT[k]*v[k],0);
-function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')+pnl;let st=mn;
+const mineOpens=()=>opens.filter(o=>live?true:!o.cid),expo=()=>mineOpens().reduce((t,o)=>t+(+o.amt||0),0),maxOpen=()=>Math.max(1,Math.floor(nv('swMo'))||1);
+function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')+pnl-expo();let st=mn;
 if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(x=>x>0).length/100,be=1/(1+pay);if(w>be+.03){const q=Math.min(w,.62),f=(q*pay-(1-q))/pay;st=Math.max(mn,bal*f*.25)}}
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
@@ -2092,10 +2098,10 @@ function ladderFor(sy){const b=ladder(),g=GOOD[grpKey(sy)];return g?[g].concat(b
 function sendBuy(o){const e=curDur(o.sy);if(!e||!ws||ws.readyState!==1)return;const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:o.amt,req_id:id,parameters:{amount:o.amt,basis:'stake',contract_type:o.d,currency:cur,duration:e[0],duration_unit:e[1],underlying_symbol:o.sy}}))}
 function durFor(sy){if(DURS[sy])return DURS[sy];if(!cfReq[sy]&&ws&&authed){const id=++rid;cfReq[sy]=id;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}));log('Checking Rise/Fall availability for '+nameFor(sy),'I')}return null}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
-function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
+function trade(sy,s,v){if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
 const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(nv('swMxL')+pnl<nv('swMin')){halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
 if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
@@ -2105,11 +2111,11 @@ const LT={};let selLock=0;
 function isBest(sy){const me=Math.abs(SCR[sy]||0),nw=Date.now();for(const k in SCR){if(k===sy||nw-(LT[k]||0)>15000)continue;if(DURS[k]&&DURS[k].skip)continue;if(Math.abs(SCR[k])>me&&allowed(k))return false}return true}
 function core(sy,p){LT[sy]=Date.now();if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
-opens=opens.filter(o=>{if(live||o.pend||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
+opens=opens.filter(o=>{if(live||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&g('swTrig').value==='swarm'&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+if(!halted&&(g('swTrig').value==='swarm'||g('swTrig').value==='hybrid')&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2150,9 +2156,9 @@ for(let i=0;pick.length<cap&&keys.some(k=>by[k][i]);i++)keys.forEach(k=>{if(by[k
 feedOn=true;log('Feed: subscribing to '+pick.length+' open symbols across '+keys.length+' markets ('+keys.join(', ')+')','W');
 pick.forEach((sy,i)=>{B[sy]=B[sy]||[];setTimeout(()=>pw&&pw.readyState===1&&pw.send(JSON.stringify({ticks:sy,subscribe:1})),i*120)})}
 else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&run)core(sy,+t.quote)}}}
-function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=[];bal=live?0:nv('swPb');hist=[bal];
+function start(){saveCred();run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=opens.filter(o=>o.cid);if(opens.length)log('Keeping '+opens.length+' unsettled live contract(s); they settle once connected','X');bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
-const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};if(g('swTrig').value==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(g('swFeed').value==='all')openFeed()}
+const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};if(g('swTrig').value!=='swarm')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(g('swFeed').value==='all')openFeed()}
 function stopAll(m){run=false;gen++;closeFeed();g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
 /* graph */
 const POS={};let cv,cx2;
@@ -2181,25 +2187,45 @@ const url=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),a=d
 function autoFocus(){if(Date.now()<selLock)return;let b=null,bs=-1;const nw=Date.now();for(const k in SCR){if(nw-(LT[k]||0)>15000||!allowed(k))continue;const x=Math.abs(SCR[k]);if(x>bs){bs=x;b=k}}if(b)sel=b}
 
 let TRD={},lastSk={};
-function engineScan(){if(!run||halted||g('swTrig').value!=='engine'||!E()||!E().scan)return;
-const L=E().scan()||[];let pick=null;
-for(const it of L){const st=it.st;if(!st||st.mode!=='sig'||!st.sig||!allowed(it.sy))continue;if(DURS[it.sy]&&DURS[it.sy].skip)continue;const key=it.sy+':'+st.sig.t;if(TRD[key])continue;pick={it,key};break}
-if(!pick){if(Date.now()>selLock){const t=L.find(x=>x.st&&x.st.rank>0&&allowed(x.sy));if(t)sel=t.sy}return}
-const {it,key}=pick,sy=it.sy,side=it.st.side,v=votes(sy),cf=g('swCf').value;let ss=0;
-if(v)for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];
-if(cf!=='off'){if(!v)return;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(Date.now()-(lastSk[key]||0)>30000){lastSk[key]=Date.now();log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}return}}
+function engineScan(){if(!run||halted||g('swTrig').value==='swarm'||!E()||!E().scan)return;
+const L=E().scan()||[],cf=g('swCf').value;
+const cands=L.filter(it=>{const st=it.st;return st&&st.mode==='sig'&&st.sig&&allowed(it.sy)&&!(DURS[it.sy]&&DURS[it.sy].skip)&&!TRD[it.sy+':'+st.sig.t]});
+if(!cands.length){if(Date.now()>selLock){const t=L.find(x=>x.st&&x.st.rank>0&&allowed(x.sy));if(t)sel=t.sy}return}
+if(Date.now()>selLock)sel=cands[0].sy;
+if(mineOpens().length>=maxOpen()||Date.now()-lastT<nv('swCd')*1000)return;
+for(const it of cands){const sy=it.sy,side=it.st.side,key=sy+':'+it.st.sig.t;if(mineOpens().some(o=>o.sy===sy))continue;
+const v=votes(sy);let ss=0;if(v)for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];
+if(cf!=='off'){if(!v)continue;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(Date.now()-(lastSk[key]||0)>30000){lastSk[key]=Date.now();log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}continue}}
 const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
-if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W')}}
-function ui(){autoFocus();const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
+if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
+
+function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='swarm')return 'Swarm consensus mode: trades when the tick agents agree above the threshold.';
+const L=(E()&&E().scan&&E().scan())||[];let al='';try{al=E().cfg().thr}catch(e){}const slots=mineOpens().length+'/'+maxOpen()+' slots';
+const sigs=L.filter(x=>x.st&&x.st.mode==='sig'&&x.st.sig),it=sigs.find(x=>!TRD[x.sy+':'+x.st.sig.t])||sigs[0];
+if(!it){const t=L.find(x=>x.st&&x.st.rank>0);return 'ENGINE: no signal at or above '+al+(t?' (closest: '+nameFor(t.sy)+')':'')+' | '+slots}
+const st=it.st,sy=it.sy,key=sy+':'+st.sig.t,side=st.side;let why='READY, will trade';
+if(halted)why='HALTED ('+halted+')';else if(live&&!authed)why='connecting to Deriv';else if(!allowed(sy))why='market closed or filtered by MARKETS';else if(TRD[key])why='already traded this signal';else if(mineOpens().length>=maxOpen())why='all slots busy';else if(mineOpens().some(o=>o.sy===sy))why='already open on this instrument';else if(Date.now()-lastT<nv('swCd')*1000)why='cooldown '+Math.ceil((nv('swCd')*1000-(Date.now()-lastT))/1000)+'s';else if(live&&DURS[sy]&&DURS[sy].skip)why='no valid duration for this instrument';else if(live&&!DURS[sy])why='checking allowed durations';
+else{const cf=g('swCf').value;if(cf!=='off'){const v=votes(sy);if(!v)why='warming up price history';else{let ss=0;for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];const a=ss*side;if(cf==='notopp'?a<-.1:a<.1)why='waiting, swarm '+(cf==='agree'?'does not agree':'opposes')}}}
+return 'ENGINE: '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' '+st.val+' (alert '+al+') | SWARM: '+why+' | '+slots}
+function modeUi(){const m=g('swTrig').value;document.querySelectorAll('#sSwarm [data-m]').forEach(e=>{e.style.display=(e.dataset.m===m||m==='hybrid')?'':'none'})}
+function ui(){autoFocus();{const b=document.getElementById('bScalp');if(b){b.textContent=run?'\u25A0 STOP SCALP':'\u26A1 ONE-CLICK SCALP';b.style.color=b.style.borderColor=run?'var(--neg)':'var(--pos)'}}g('swLink').textContent=linkStatus();const set=(i,t,c)=>{const e=g(i);if(e){e.textContent=t;if(c)e.style.color=c}};
 set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos)':'var(--neg)');set('swWr',n+' / '+(n?Math.round(wins/n*100)+'%':'-'));set('swOpen',opens.length);
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
 if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING';tbl()}
-function init(){cv=g('cvSwarm');if(!cv)return;g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
+function saveOpen(){try{localStorage.setItem('swm_open',JSON.stringify(opens.filter(o=>o.cid).map(o=>({cid:o.cid,sy:o.sy,d:o.d,amt:o.amt,s:o.s,v:o.v,cd:o.cd,pr:o.pr,t0:o.t0}))))}catch(e){}}
+function init(){cv=g('cvSwarm');if(!cv)return;try{opens=(JSON.parse(localStorage.getItem('swm_open')||'[]')).filter(o=>o.cid&&Date.now()-o.t0<86400000);if(opens.length)log('Restored '+opens.length+' unsettled live contract(s) from last session. Press START with your token to settle them.','X')}catch(e){opens=[]}g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
+g('swTrig').onchange=modeUi;loadCred();{const b=document.getElementById('bScalp');if(b)b.onclick=scalp}modeUi();
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(engineScan,1000);setInterval(ui,500);requestAnimationFrame(draw)}
-return{tick,init,stop:stopAll}})();
+setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=curDur(o.sy)?LS(curDur(o.sy)):300;if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(saveOpen,2000);setInterval(engineScan,250);setInterval(ui,500);requestAnimationFrame(draw)}
+const CK='swm_cred';
+function saveCred(){try{if(g('swRem').checked)localStorage.setItem(CK,JSON.stringify({a:g('swApp').value,t:g('swTok').value,c:g('swAcc').value}));else localStorage.removeItem(CK)}catch(e){}}
+function loadCred(){try{const c=JSON.parse(localStorage.getItem(CK)||'null');if(c){g('swApp').value=c.a||'';g('swTok').value=c.t||'';g('swAcc').value=c.c||'demo';g('swRem').checked=true}}catch(e){}}
+function scalp(){if(run){stopAll();return}
+const s=(i,v)=>{g(i).value=v};s('swTrig','hybrid');s('swDur',15);s('swCd',5);s('swThr',.45);s('swCf','notopp');s('swConf','1');s('swMo',3);modeUi();
+start();if(run)log('ONE-CLICK SCALP: engine zone signals + swarm votes, 15s contracts, 5s cooldown, '+(live?'LIVE '+g('swAcc').value.toUpperCase():'PAPER'),'W')}
+return{tick,init,stop:stopAll,poke:engineScan,score:sy=>SCR[sy]||0,scalp}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
 <script src="upgrade.js"></script>
