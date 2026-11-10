@@ -1964,7 +1964,7 @@ const LRN=(()=>{
     $('lrOn').onclick=()=>{cfg.learn=!cfg.learn;persist();applyAll();};
     $('lrAuto').onclick=()=>{
       cfg.autothr=!cfg.autothr;
-    if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
+      if(cfg.autothr){const k=st.keys[keyOf(cfg.sym)];if(k&&k.thr!=null)cfg.thr=k.thr;}
       persist();syncBtns();S.dirty=true;
     };
     $('lrRun').onclick=run;$('lrReset').onclick=reset;
@@ -2081,11 +2081,15 @@ if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
-function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur')});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:''});if(TR.length>5000)TR.shift();try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
 if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[30,'m'],[1,'h'],[2,'h'],[4,'h'],[8,'h'],[1,'d']],LS=e=>e[0]*({s:1,m:60,h:3600,d:86400})[e[1]];
 function ladder(){const w=nv('swDur'),k0=LAD.findIndex(e=>LS(e)>=w),k=k0<0?LAD.length-1:k0;return LAD.slice(k).concat(LAD.slice(0,k).reverse())}
+const GOOD={};
+function grpKey(sy){return MK[sy]||grpFor(sy)}
+function ladderFor(sy){const b=ladder(),g=GOOD[grpKey(sy)];return g?[g].concat(b.filter(e=>!(e[0]===g[0]&&e[1]===g[1]))):b}
+function sendBuy(o){const e=curDur(o.sy);if(!e||!ws||ws.readyState!==1)return;const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:o.amt,req_id:id,parameters:{amount:o.amt,basis:'stake',contract_type:o.d,currency:cur,duration:e[0],duration_unit:e[1],underlying_symbol:o.sy}}))}
 function durFor(sy){if(DURS[sy])return DURS[sy];if(!cfReq[sy]&&ws&&authed){const id=++rid;cfReq[sy]=id;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}));log('Checking Rise/Fall availability for '+nameFor(sy),'I')}return null}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
 function trade(sy,s,v){if(opens.length>=1||Date.now()-lastT<nv('swCd')*1000)return;
@@ -2093,7 +2097,7 @@ const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
 if(live&&!authed)return;if(nv('swMxL')+pnl<nv('swMin')){halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
-if(live){const id=++rid;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:cur,duration:curDur(sy)[0],duration_unit:curDur(sy)[1],underlying_symbol:sy}}));opens.push({sy,d,amt,pend:id,s,v:Object.assign({},v)});log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
+if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 let feedOn=false,pw=null;
 function tick(sy,p){if(feedOn)return;core(sy,p)}
@@ -2120,15 +2124,15 @@ if(my!==gen)return;ws=new WebSocket(url);
 ws.onopen=()=>{ws.send(JSON.stringify({balance:1,subscribe:1}))};
 ws.onerror=()=>log('Trading socket error.','L');
 ws.onclose=()=>{authed=false;if(my===gen&&run&&!halted){log('Trading link lost, reconnecting in 4s','X');setTimeout(()=>my===gen&&run&&openWs(),4000)}};
-ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id){const bo=opens.find(o=>o.pend===m.req_id);opens=opens.filter(o=>o.pend!==m.req_id);const cs=cfMap[m.req_id];if(cs){DURS[cs]={list:ladder(),i:0};log('Could not read availability for '+nameFor(cs)+', trying durations in turn','X')}
-else if(bo&&m.msg_type==='buy'&&/duration/i.test(m.error.message||'')&&DURS[bo.sy]&&DURS[bo.sy].list&&!DURS[bo.sy].locked){const d=DURS[bo.sy];d.i++;lastT=0;if(d.i>=d.list.length){DURS[bo.sy]={skip:true};log('No valid duration found for '+nameFor(bo.sy)+', skipping it','X')}else log('Trying '+d.list[d.i][0]+d.list[d.i][1]+' next for '+nameFor(bo.sy),'I')}}return}
+ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id){const bo=opens.find(o=>o.pend===m.req_id);opens=opens.filter(o=>o.pend!==m.req_id);const cs=cfMap[m.req_id];if(cs){DURS[cs]={list:ladderFor(cs),i:0};log('Could not read availability for '+nameFor(cs)+', trying durations in turn','X')}
+else if(bo&&m.msg_type==='buy'&&/duration/i.test(m.error.message||'')&&DURS[bo.sy]&&DURS[bo.sy].list&&!DURS[bo.sy].locked){const d=DURS[bo.sy];d.i++;lastT=0;if(d.i>=d.list.length){DURS[bo.sy]={skip:true};log('No valid duration found for '+nameFor(bo.sy)+', skipping it','X')}else{log('Trying '+d.list[d.i][0]+d.list[d.i][1]+' next for '+nameFor(bo.sy),'I');opens.push(bo);setTimeout(()=>{if(opens.includes(bo))sendBuy(bo)},350)}}}return}
 if(m.msg_type==='contracts_for'&&m.contracts_for){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,all=m.contracts_for.available||[],sum={};
 all.forEach(c=>{const t=c.contract_type||'?';(sum[t]=sum[t]||new Set()).add(c.expiry_type||'?')});
 log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]].join('/')+')').join(' ')||'nothing listed'),'I');
 const rf=all.filter(c=>c.contract_type==='CALL');
-DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladder(),i:0};return}
+DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladderFor(sy),i:0};return}
 if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X');opens.forEach(o=>{if(o.cid){ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Re-checking open contract #'+o.cid,'I')}})}}
-else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;o.cd=curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'';o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);record(+c.profit,o.sy,o.d,o)}}}}
 catch(e){fail('Cannot reach Deriv from this page ('+(e&&e.name||'error')+'). If this is a CORS block, the browser is refusing the REST call; tell me and I will add a relay.')}}
 
@@ -2172,7 +2176,7 @@ const mk=(h,o,f)=>'<table><tr><th>'+h+'</th><th>N</th><th>WIN</th><th>P&amp;L</t
 g('swTblS').innerHTML=mk('INSTRUMENT',S,nameFor);g('swTblA').innerHTML=mk('AGENT (WHEN IT AGREED)',A,k=>k)}
 function csv(){if(!TR.length){log('No trades to export yet','X');return}
 const ks=Object.keys(WT),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
-const rows=[['time','mode','instrument','symbol','direction','stake','pnl','win','score','duration_s'].concat(ks).join(',')].concat(TR.map(r=>[new Date(r.t).toISOString(),r.mode,q(nameFor(r.sy)),r.sy,r.d,r.amt,r.p.toFixed(2),r.p>0?1:0,(+r.s).toFixed(3),r.dur].concat(ks.map(k=>(r.v&&r.v[k]!=null?(+r.v[k]).toFixed(3):''))).join(',')));
+const rows=[['time','mode','instrument','symbol','direction','stake','pnl','win','score','duration_s','contract_duration','payout_ratio'].concat(ks).join(',')].concat(TR.map(r=>[new Date(r.t).toISOString(),r.mode,q(nameFor(r.sy)),r.sy,r.d,r.amt,r.p.toFixed(2),r.p>0?1:0,(+r.s).toFixed(3),r.dur,r.cd||'',(r.pr===''||r.pr==null)?'':(+r.pr).toFixed(3)].concat(ks.map(k=>(r.v&&r.v[k]!=null?(+r.v[k]).toFixed(3):''))).join(',')));
 const url=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='swarm-trades-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);log('Exported '+TR.length+' trades','I')}
 function autoFocus(){if(Date.now()<selLock)return;let b=null,bs=-1;const nw=Date.now();for(const k in SCR){if(nw-(LT[k]||0)>15000||!allowed(k))continue;const x=Math.abs(SCR[k]);if(x>bs){bs=x;b=k}}if(b)sel=b}
 
