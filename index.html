@@ -427,6 +427,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div data-m="digits"><label>MIN Z-SCORE (0 = EVERY TICK)</label><input id="swZ" type="number" step=".1" value="0"></div>
       <div data-m="digits"><label>STATS WINDOW (TICKS)</label><input id="swWin" type="number" value="200"></div>
       <div data-m="digits"><label>MAX TRADES / MINUTE</label><input id="swTpm" type="number" value="3"></div>
+      <div data-m="digits"><label>TARGET WIN CHANCE % (TIE-BREAK)</label><input id="swTw" type="number" value="60"></div>
       <div data-m="digits"><label>MAX HOUSE EDGE % (SKIP IF WORSE)</label><input id="swHe" type="number" step=".5" value="6"></div>
       <div data-m="engine"><label>SWARM CONFIRM (ENGINE MODE)</label><select id="swCf" style="width:100%"><option value="notopp">NOT OPPOSED</option><option value="agree">MUST AGREE</option><option value="off">OFF</option></select></div>
       <div><label>SIZING</label><select id="swSz" style="width:100%"><option value="fixed">FIXED (MIN STAKE)</option><option value="kmj">KMJ KELLY (100+ TRADES)</option></select></div>
@@ -2220,7 +2221,7 @@ const over=b=>{let c=0;for(let i=b+1;i<10;i++)c+=cnt[i];return c},under=b=>{let 
 const add=(side,b)=>{const p=pTh(side,b);if(p<=0||p>=1)return;const ph=(side==='OVER'?over(b):under(b))/n,pr=prOf(side,b);cand.push({side,b,p,ph,pr,ev:p*(1+pr)-1,z:(ph-p)/Math.sqrt(p*(1-p)/n)})};
 if(mode==='auto'||mode==='ev'){for(let b=0;b<=8;b++)add('OVER',b);for(let b=1;b<=9;b++)add('UNDER',b)}
 else if(mode==='over')add('OVER',Math.max(0,Math.min(8,fb)));else add('UNDER',Math.max(1,Math.min(9,fb)));
-if(mode==='ev')cand.sort((x,y)=>y.ev-x.ev);else cand.sort((x,y)=>y.z-x.z);return cand[0]||null}
+if(mode==='ev'){cand.sort((x,y)=>y.ev-x.ev);if(!cand.length)return null;const tw=(nv('swTw')||60)/100,top=cand[0].ev,pool=cand.filter(c=>c.ev>=top-.005);pool.sort((x,y)=>Math.abs(x.p-tw)-Math.abs(y.p-tw));return pool[0]}cand.sort((x,y)=>y.z-x.z);return cand[0]||null}
 function digitTick(sy,p){if(!run)return;const d=digitOf(sy,p),win=Math.max(50,Math.floor(nv('swWin'))||200),a=DG[sy]||(DG[sy]=[]);TKN[sy]=(TKN[sy]||0)+1;
 opens=opens.filter(o=>{if(live||!o.dg||o.cid||o.pend||o.sy!==sy||TKN[sy]<=o.n0)return true;const w=o.side==='OVER'?d>o.bar:d<o.bar,pf=w?o.amt*o.pr:-o.amt;bal+=pf;record(pf,o.sy,o.d,o);return false});
 a.push(d);if(a.length>win)a.shift();
