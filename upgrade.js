@@ -14,7 +14,7 @@ let LOG=g('fat_ai_log',{});
 const saveL=()=>{const ks=Object.keys(LOG);if(ks.length>400){ks.sort((a,b)=>LOG[a].t-LOG[b].t).slice(0,ks.length-400).forEach(k=>delete LOG[k]);}s('fat_ai_log',LOG);};
 const MAXP=[25,25,20,15,15];
 const f2=v=>(v>=0?'+':'')+v.toFixed(2)+'R';
-let busy=false,msg='';
+let busy=false,msg=(()=>{try{return localStorage.getItem('fat_ai_err')||''}catch(e){return''}})();const keepMsg=m=>{msg=m;try{localStorage.setItem('fat_ai_err',m)}catch(e){}};
 
 function stat(v){const n=v.length;if(!n)return{n:0,m:0,lo:0,hi:0};let a=0,q=0;for(const x of v){a+=x;q+=x*x;}const m=a/n,sd=Math.sqrt(Math.max(0,q/n-m*m)),se=n>1?sd/Math.sqrt(n-1):0;return{n,m,lo:m-1.96*se,hi:m+1.96*se};}
 function histStats(sy,tf,score){
@@ -29,6 +29,7 @@ function pending(){
   try{for(let i=0;i<localStorage.length;i++){const nm=localStorage.key(i);if(!nm||nm.indexOf('cse_arch_')!==0)continue;
     const rest=nm.slice(9),tf=+rest.split('_').pop(),sy=rest.slice(0,rest.lastIndexOf('_')),a=g(nm,{});
     for(const x of Object.values(a)){if(!x||x.src!=='live')continue;const id=sy+'|'+tf+'|'+x.t+'|'+x.d;
+      {const L=LOG[id];if(L&&L.verdict==='ERR'&&(L.n||1)<3&&Date.now()-L.at>60000&&x.res==='open'&&now-x.t<=3*tf+60){out.push({id,sy,tf,x});continue;}}
       if(LOG[id]){if(!LOG[id].done&&(x.res==='sl'||x.res==='tp3')){LOG[id].done=1;LOG[id].r2=x.reached>=2?2:(x.be?0:-1);LOG[id].r1=x.reached>=1?1:(x.be?0:-1);}continue;}
       if((x.score||0)<thr||now-x.t>3*tf+60||x.res!=='open')continue;out.push({id,sy,tf,x});}}}catch(e){}
   return out;
@@ -58,10 +59,10 @@ async function work(){
   busy=true;const p=list[0];
   try{
     const o=await ask(p);
-    LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:o.verdict,conf:o.conf,reason:o.reason,at:Date.now(),done:0};saveL();msg='';
+    LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:o.verdict,conf:o.conf,reason:o.reason,at:Date.now(),done:0};saveL();keepMsg('');
     const cfg=g('cse_set',{});
     if(P.tg&&cfg.tok&&cfg.chat)fetch('https://api.telegram.org/bot'+encodeURIComponent(cfg.tok)+'/sendMessage?chat_id='+encodeURIComponent(cfg.chat)+'&text='+encodeURIComponent('AI '+o.verdict+' ('+o.conf+'%) '+p.sy+' '+(p.x.d===1?'BUY':'SELL')+' score '+p.x.score+'\n'+o.reason)).catch(()=>{});
-  }catch(e){msg='AI CALL FAILED: '+esc(e.message)+'. CHECK THE KEY AND MODEL.';LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:'ERR',conf:0,reason:'',at:Date.now(),done:1};}
+  }catch(e){keepMsg('AI CALL FAILED: '+e.message+'. CHECK THE KEY AND MODEL.');LOG[p.id]={sy:p.sy,tf:p.tf,t:p.x.t,d:p.x.d,score:p.x.score,verdict:'ERR',conf:0,reason:String(e.message).slice(0,160),n:((LOG[p.id]&&LOG[p.id].n)||0)+1,at:Date.now(),done:1};saveL();}
   busy=false;
 }
 function build(){
@@ -71,7 +72,7 @@ function build(){
   document.head.appendChild(st);
   const sec=document.createElement('section');sec.className='p';sec.id='aiP';
   sec.innerHTML='<div class="ph">AI SECOND OPINION AND SCOREBOARD <span class="r" id="aiR"></span></div>'
-  +'<div class="up-g"><div><label for="aiKey">GROQ API KEY</label><input id="aiKey" type="password" autocomplete="off" placeholder="gsk_..."><label for="aiModel">MODEL</label><input id="aiModel" type="text" autocomplete="off"><div class="stabs" style="margin-top:8px"><button id="aiOn" type="button"></button><button id="aiTg" type="button"></button></div><div class="lab" id="aiMsg" style="text-transform:none;letter-spacing:.02em"></div></div>'
+  +'<div class="up-g"><div><label for="aiKey">GROQ API KEY</label><input id="aiKey" type="password" autocomplete="off" placeholder="gsk_..."><label for="aiModel">MODEL</label><input id="aiModel" type="text" autocomplete="off"><div class="stabs" style="margin-top:8px"><button id="aiOn" type="button"></button><button id="aiTg" type="button"></button><button id="aiTest" type="button">TEST KEY</button></div><div class="lab" id="aiMsg" style="text-transform:none;letter-spacing:.02em"></div></div>'
   +'<div><div class="lab">AI GRADED AGAINST REAL OUTCOMES, AT 2R</div><div class="big dm" id="aiBig" style="font-size:26px">--</div><div class="lab" id="aiSub" style="text-transform:none;letter-spacing:.02em"></div><div style="margin-top:6px"><span class="up-b" id="aiV">-</span></div></div></div>'
   +'<div class="lab" style="margin-top:10px">LATEST AI VERDICTS</div><div class="tw" id="aiList" style="max-height:240px;margin:6px 0"></div>'
   +'<div class="lab" style="margin-top:6px;text-transform:none;letter-spacing:.02em;line-height:1.5">The AI only reviews new live signals at your alert level, using this engine\'s own saved history as evidence. Its verdicts are stored and graded once the trade resolves. It earns trust only when signals it said TAKE beat the ones it said SKIP with at least 30 of each, and the gap holds at a 95 percent bar. Until then, treat it as a commentary, not a filter. The key stays in this browser and is sent only to Groq. Sound and Telegram work only while this page is open.</div>';
@@ -81,6 +82,11 @@ function build(){
   $('aiModel').onchange=e=>{P.model=e.target.value.trim()||'llama-3.3-70b-versatile';saveP();};
   $('aiOn').onclick=()=>{P.on=!P.on;saveP();draw();};
   $('aiTg').onclick=()=>{P.tg=!P.tg;saveP();draw();};
+  $('aiTest').onclick=async()=>{P.key=$('aiKey').value.trim();P.model=$('aiModel').value.trim()||P.model;saveP();if(!P.key){keepMsg('TEST: NO KEY ENTERED');return draw();}keepMsg('TESTING...');draw();
+    try{const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{Authorization:'Bearer '+P.key}});
+      if(!r.ok)keepMsg('TEST: KEY REJECTED, HTTP '+r.status+(r.status===401?' (WRONG, EXPIRED OR MALFORMED KEY: PASTE ONLY THE gsk_ KEY)':''));
+      else{const ids=((await r.json()).data||[]).map(m=>m.id);keepMsg(ids.indexOf(P.model)>=0?'TEST: KEY OK, MODEL FOUND.':'TEST: KEY OK BUT MODEL NOT AVAILABLE. TRY: '+ids.filter(i=>/llama|qwen|gpt/.test(i)).slice(0,4).join(', '));}}
+    catch(e){keepMsg('TEST: NETWORK ERROR: '+e.message);}draw();};
 }
 function draw(){
   build();if(!$('aiP'))return;
