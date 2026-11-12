@@ -417,9 +417,10 @@ select{max-width:100%;text-overflow:ellipsis}
       <div data-m="swarm"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
       <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".1" value="0.5"></div>
-      <div><label>MAX OPEN TRADES</label><input id="swMo" type="number" value="3"></div>
-      <div><label>COOLDOWN SEC</label><input id="swCd" type="number" value="20"></div>
+      <div><label>MAX OPEN TRADES</label><input id="swMo" type="number" value="5"></div>
+      <div><label>COOLDOWN SEC</label><input id="swCd" type="number" step="0.5" value="2"></div>
       <div><label>MAX SESSION LOSS</label><input id="swMxL" type="number" value="10"></div>
+      <div><label>PROFIT TARGET (0 = OFF)</label><input id="swTp" type="number" step=".5" value="5"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
       <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option><option value="digits">DIGITS OVER/UNDER (1-10 TICKS)</option></select></div>
@@ -428,7 +429,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div data-m="digits"><label>CONTRACT TICKS (1-10)</label><input id="swTk" type="number" min="1" max="10" value="1"></div>
       <div data-m="digits"><label>MIN Z-SCORE (0 = EVERY TICK)</label><input id="swZ" type="number" step=".1" value="0"></div>
       <div data-m="digits"><label>STATS WINDOW (TICKS)</label><input id="swWin" type="number" value="500"></div>
-      <div data-m="digits"><label>MAX TRADES / MINUTE</label><input id="swTpm" type="number" value="3"></div>
+      <div data-m="digits"><label>MAX TRADES / MINUTE</label><input id="swTpm" type="number" value="20"></div>
       <div data-m="digits"><label>TARGET WIN CHANCE % (TIE-BREAK)</label><input id="swTw" type="number" value="60"></div>
       <div data-m="digits"><label>MAX HOUSE EDGE % (SKIP IF WORSE)</label><input id="swHe" type="number" step=".5" value="6"></div>
       <div data-m="engine"><label>SWARM CONFIRM (ENGINE MODE)</label><select id="swCf" style="width:100%"><option value="notopp">NOT OPPOSED</option><option value="agree">MUST AGREE</option><option value="off">OFF</option></select></div>
@@ -2095,7 +2096,7 @@ function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
 function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:'',ed:o&&o.ed!=null?o.ed:'',xd:o&&o.xd!=null?o.xd:'',ex:o&&o.dg&&o.p0!=null?o.amt*(o.p0*(1+o.pr)-1):'',vr:o&&o.dg&&o.p0!=null?Math.pow(o.amt*(1+o.pr),2)*o.p0*(1-o.p0):''});if(TR.length>5000)TR.shift();if(o&&o.st&&o.p0!=null){STR.n++;if(p>0)STR.w++;STR.e+=o.p0;STR.v+=o.p0*(1-o.p0);if(STR.n>=30&&(STR.w-STR.e)/Math.sqrt(STR.v)<1)halt('STRICT SKEW NOT HOLDING OUT OF SAMPLE')}try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
-if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
+if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(nv('swTp')>0&&pnl>=nv('swTp'))halt('PROFIT TARGET REACHED, STOPPED TO KEEP THE GAIN');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[30,'m'],[1,'h'],[2,'h'],[4,'h'],[8,'h'],[1,'d']],LS=e=>e[0]*({s:1,m:60,h:3600,d:86400})[e[1]];
 function ladder(){const w=nv('swDur'),k0=LAD.findIndex(e=>LS(e)>=w),k=k0<0?LAD.length-1:k0;return LAD.slice(k).concat(LAD.slice(0,k).reverse())}
 const GOOD={};
@@ -2231,6 +2232,15 @@ if(!rows.length)h+='<tr><td colspan="5">collecting ticks...</td></tr>';
 h+='</table>';
 const G={};TR.forEach(r=>{if(r.ex===''||r.ex==null)return;const m=/^(OVER|UNDER) (\d)$/.exec(r.d||'');if(!m)return;const x=G[r.d]||(G[r.d]={n:0,w:0,p:m[1]==='OVER'?(9-m[2])/10:m[2]/10});x.n++;if(r.p>0)x.w++});
 const ks=Object.keys(G);if(ks.length){h+='<br><b>YOUR TRADES BY PICK</b><table><tr><th>PICK</th><th>N</th><th>WINS</th><th>EXPECTED</th><th>Z</th></tr>';ks.forEach(k=>{const x=G[k],z=(x.w-x.n*x.p)/Math.sqrt(x.n*x.p*(1-x.p));h+='<tr><td>'+k+'</td><td>'+x.n+'</td><td>'+x.w+'</td><td>'+(x.n*x.p).toFixed(1)+'</td><td>'+z.toFixed(1)+'</td></tr>'});h+='</table>'}
+{let N=0,S=0,E=0,V=0,W=0;TR.forEach(r=>{if(r.ex===''||r.ex==null||r.vr===''||r.vr==null)return;N++;S+=r.p;E+=+r.ex;V+=+r.vr;if(r.p>0)W++});
+h+='<br><b>SCOREBOARD (HONEST VERDICT)</b><table><tr><th>TRADES</th><th>WINS</th><th>ACTUAL P&amp;L</th><th>EXPECTED</th><th>Z</th></tr>';
+if(!N)h+='<tr><td colspan="5">no digit trades yet</td></tr></table>';
+else{const z=V>0?(S-E)/Math.sqrt(V):0,per=E/N;let vd;
+if(N<100)vd='TOO FEW TRADES ('+N+'). Need 100+ before any result means anything.';
+else if(z>=3&&S>0)vd='PROFIT ABOVE WHAT LUCK EXPLAINS (z '+z.toFixed(1)+'). Unusual for random digits: re-test on a fresh batch before trusting it.';
+else if(z<=-3)vd='LOSING MORE THAN THE HOUSE EDGE ALONE EXPLAINS (z '+z.toFixed(1)+'). Stop and check the setup.';
+else vd=(S>=0?'UP, BUT':'DOWN, AND')+' THIS IS INSIDE NORMAL LUCK (z '+z.toFixed(1)+'). The house edge costs about '+Math.abs(per).toFixed(2)+' per trade on average, so the long-run result is a loss.';
+h+='<tr><td>'+N+'</td><td>'+W+'</td><td>'+S.toFixed(2)+'</td><td>'+E.toFixed(2)+'</td><td>'+z.toFixed(1)+'</td></tr></table><div style="margin-top:4px;color:'+(z>=3&&S>0?'var(--pos)':z<=-3?'var(--neg)':'var(--amb)')+'">'+vd+'</div>'}}
 return h}
 const QT={},PQ={},LQ={};let QERR=0,qAt=0,EVLAST=0,qPend=0;
 function saveQ(){try{localStorage.setItem('swm_q',JSON.stringify(LQ))}catch(e){}}
