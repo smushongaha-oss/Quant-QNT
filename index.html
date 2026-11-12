@@ -424,7 +424,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
       <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option><option value="digits">DIGITS OVER/UNDER (1-10 TICKS)</option></select></div>
-      <div data-m="digits"><label>DIGIT MODE</label><select id="swDm" style="width:100%"><option value="alt">ALTERNATE OVER 0 / UNDER 9</option><option value="over">OVER (FIXED BARRIER)</option><option value="strict">STRICT EVIDENCE (WAIT FOR PROVEN SKEW)</option><option value="ev">LOWEST HOUSE EDGE (REAL PAYOUTS)</option><option value="auto">AUTO (BEST STATS)</option><option value="under">UNDER (FIXED BARRIER)</option></select></div>
+      <div data-m="digits"><label>DIGIT MODE</label><select id="swDm" style="width:100%"><option value="rot">ROTATE OVER 8 / UNDER 1 / OVER 0 / UNDER 9</option><option value="alt">ALTERNATE OVER 0 / UNDER 9</option><option value="over">OVER (FIXED BARRIER)</option><option value="strict">STRICT EVIDENCE (WAIT FOR PROVEN SKEW)</option><option value="ev">LOWEST HOUSE EDGE (REAL PAYOUTS)</option><option value="auto">AUTO (BEST STATS)</option><option value="under">UNDER (FIXED BARRIER)</option></select></div>
       <div data-m="digits"><label>DIGIT INDEX</label><select id="swDs" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
       <div data-m="digits"><label>BARRIER (OVER 0-8, UNDER 1-9)</label><input id="swBar" type="number" min="0" max="9" value="0"></div>
       <div data-m="digits"><label>CONTRACT TICKS (1-10)</label><input id="swTk" type="number" min="1" max="10" value="1"></div>
@@ -2211,7 +2211,7 @@ const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
 
-let ALTN=0;
+let ALTN=0;const ROT=[['OVER',8],['UNDER',1],['OVER',0],['UNDER',9]];
 const tks=()=>Math.max(1,Math.min(10,Math.round(nv('swTk'))||1));
 const DG={},TKN={},DGOK={},DGREQ={},DZ={},TPM=[],STR={n:0,w:0,e:0,v:0},PH={},HP={};
 function applyHist(sy,pr){const win=Math.max(50,Math.floor(nv('swWin'))||200),ds=(pr||[]).map(x=>digitOf(sy,x)),old=DG[sy]||[];DG[sy]=ds.concat(old).slice(-win);log('History: '+nameFor(sy)+' now has '+DG[sy].length+' of '+win+' digits','I')}
@@ -2254,7 +2254,8 @@ all.forEach((c,i)=>setTimeout(()=>{if(!ws||ws.readyState!==1)return;const id=++r
 function pickDigit(a){const n=a.length,mode=g('swDm').value,fb=Math.round(nv('swBar')),cand=[],cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);
 const over=b=>{let c=0;for(let i=b+1;i<10;i++)c+=cnt[i];return c},under=b=>{let c=0;for(let i=0;i<b;i++)c+=cnt[i];return c};
 const add=(side,b)=>{const p=pTh(side,b);if(p<=0||p>=1)return;const ph=(side==='OVER'?over(b):under(b))/n,pr=prOf(side,b);cand.push({side,b,p,ph,pr,ev:p*(1+pr)-1,z:(ph-p)/Math.sqrt(p*(1-p)/n)})};
-if(mode==='alt'){if(ALTN%2===0)add('OVER',0);else add('UNDER',9)}
+if(mode==='rot'){const q=ROT[ALTN%4];add(q[0],q[1])}
+else if(mode==='alt'){if(ALTN%2===0)add('OVER',0);else add('UNDER',9)}
 else if(mode==='auto'||mode==='ev'||mode==='strict'){for(let b=0;b<=8;b++)add('OVER',b);for(let b=1;b<=9;b++)add('UNDER',b)}
 else if(mode==='over')add('OVER',Math.max(0,Math.min(8,fb)));else add('UNDER',Math.max(1,Math.min(9,fb)));
 if(mode==='ev'){cand.sort((x,y)=>y.ev-x.ev);if(!cand.length)return null;const tw=(nv('swTw')||60)/100,top=cand[0].ev,pool=cand.filter(c=>c.ev>=top-.005);pool.sort((x,y)=>Math.abs(x.p-tw)-Math.abs(y.p-tw));return pool[0]}cand.sort((x,y)=>y.z-x.z);const bb=cand[0];if(!bb)return null;if(mode==='strict'){const sh=a.slice(-200);if(sh.length>=100){const c2=new Array(10).fill(0);sh.forEach(x=>c2[x]++);let cc=0;if(bb.side==='OVER'){for(let i=bb.b+1;i<10;i++)cc+=c2[i]}else{for(let i=0;i<bb.b;i++)cc+=c2[i]}bb.zs=(cc/sh.length-bb.p)/Math.sqrt(bb.p*(1-bb.p)/sh.length)}else bb.zs=0}return bb}
@@ -2268,14 +2269,14 @@ function digitTrade(sy,pk){const nw=Date.now();
 if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||nw-lastT<nv('swCd')*1000)return;
 while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTpm')||6))return;
 if(live&&!authed)return;
-if(pk.ev<-(nv('swHe')||6)/100)return;
+if(pk.ev<-(nv('swHe')||6)/100){const dm=g('swDm').value;if(dm==='alt'||dm==='rot'){if(nw-lastSx>30000){lastSx=nw;log('Skipped '+pk.side+' '+pk.b+': house edge '+(-pk.ev*100).toFixed(1)+'% is above your MAX HOUSE EDGE '+(nv('swHe')||6)+'%','X')}ALTN++}return}
 if(live&&(qAt===0||(qPend>0&&Date.now()-qAt<5000)))return;
 if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
 if(live&&DGOK[sy]===undefined){if(!DGREQ[sy]&&ws&&authed){const id=++rid;DGREQ[sy]=nw;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}))}else if(DGREQ[sy]&&nw-DGREQ[sy]>6000)DGOK[sy]=true;return}
 if(live&&DGOK[sy]===false)return;
 const amt=stake();if(amt>bal){if(nw-lastSx>30000){lastSx=nw;log('Stake exceeds balance','X')}return}
 const o={sy,d:pk.side+' '+pk.b,amt,s:pk.z,v:{},dg:1,side:pk.side,bar:pk.b,pr:pk.pr,p0:pk.p,tk:tks(),cd:tks()+'t',n0:TKN[sy],st:g('swDm').value==='strict',ed:(DG[sy]||[]).slice(-1)[0]};
-lastT=nw;TPM.push(nw);opens.push(o);if(g('swDm').value==='alt')ALTN++;pkt('CORE','KMJ','#b18cff');
+lastT=nw;TPM.push(nw);opens.push(o);if(g('swDm').value==='alt'||g('swDm').value==='rot')ALTN++;pkt('CORE','KMJ','#b18cff');
 if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:pk.side==='OVER'?'DIGITOVER':'DIGITUNDER',barrier:String(pk.b),currency:cur,duration:o.tk,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
