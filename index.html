@@ -414,7 +414,13 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAT TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="trade scope"></div>
       <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
-      <div data-m="swarm"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
+      <div data-m="mult"><label>MULTIPLIER INDEX</label><select id="swMi" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
+      <div data-m="mult"><label>MULTIPLIER (x)</label><input id="swMu" type="number" value="100"></div>
+      <div data-m="mult"><label>TAKE PROFIT (% OF STAKE)</label><input id="swTpP" type="number" step="1" value="30"></div>
+      <div data-m="mult"><label>STOP LOSS (% OF STAKE, MAX 100)</label><input id="swSlP" type="number" step="1" value="30"></div>
+      <div data-m="mult"><label>MAX HOLD (SECONDS)</label><input id="swMh" type="number" value="120"></div>
+      <div data-m="mult"><label>PAPER COMMISSION (% OF STAKE x MULTIPLIER)</label><input id="swMc" type="number" step=".01" value="0.05"></div>
+      <div data-m="swarm mult"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
       <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".1" value="0.5"></div>
       <div><label>MAX OPEN TRADES</label><input id="swMo" type="number" value="5"></div>
@@ -423,7 +429,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PROFIT TARGET (0 = OFF)</label><input id="swTp" type="number" step=".5" value="5"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
-      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option><option value="digits">DIGITS OVER/UNDER (1-10 TICKS)</option></select></div>
+      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option><option value="digits">DIGITS OVER/UNDER (1-10 TICKS)</option><option value="mult">MULTIPLIER UP/DOWN (SWARM SIGNAL)</option></select></div>
       <div data-m="digits"><label>DIGIT MODE</label><select id="swDm" style="width:100%"><option value="rot">ROTATE OVER 8 / UNDER 1 / OVER 0 / UNDER 9</option><option value="alt">ALTERNATE OVER 0 / UNDER 9</option><option value="over">OVER (FIXED BARRIER)</option><option value="strict">STRICT EVIDENCE (WAIT FOR PROVEN SKEW)</option><option value="ev">LOWEST HOUSE EDGE (REAL PAYOUTS)</option><option value="auto">AUTO (BEST STATS)</option><option value="under">UNDER (FIXED BARRIER)</option></select></div>
       <div data-m="digits"><label>DIGIT INDEX</label><select id="swDs" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
       <div data-m="digits"><label>BARRIER (OVER 0-8, UNDER 1-9)</label><input id="swBar" type="number" min="0" max="9" value="0"></div>
@@ -438,8 +444,8 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAYOUT % (PAPER + KELLY)</label><input id="swPay" type="number" value="78"></div>
       <div><label>MARKETS</label><select id="swMk" style="width:100%"><option value="all">ALL (REAL + DERIVED)</option><option value="real">REAL ONLY</option></select></div>
       <div data-m="swarm"><label>SYMBOL FEED</label><select id="swFeed" style="width:100%"><option value="all">ALL OPEN SYMBOLS</option><option value="eng">ENGINE SCANNER ONLY</option></select></div>
-      <div data-m="swarm digits"><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
-      <div data-m="swarm"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
+      <div data-m="swarm digits mult"><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
+      <div data-m="swarm mult"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
     </div>
     <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button></div>
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
@@ -2105,12 +2111,22 @@ function grpKey(sy){return MK[sy]||grpFor(sy)}
 function ladderFor(sy){const b=ladder(),g=GOOD[grpKey(sy)];return g?[g].concat(b.filter(e=>!(e[0]===g[0]&&e[1]===g[1]))):b}
 function sendBuy(o){const e=curDur(o.sy);if(!e||!ws||ws.readyState!==1)return;const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:o.amt,req_id:id,parameters:{amount:o.amt,basis:'stake',contract_type:o.d,currency:cur,duration:e[0],duration_unit:e[1],underlying_symbol:o.sy}}))}
 function durFor(sy){if(DURS[sy])return DURS[sy];if(!cfReq[sy]&&ws&&authed){const id=++rid;cfReq[sy]=id;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}));log('Checking Rise/Fall availability for '+nameFor(sy),'I')}return null}
+function mTrade(sy,d,amt,s,v){
+if(live&&MR[sy]===undefined){if(!MRQ[sy]&&ws&&authed){const id=++rid;MRQ[sy]=Date.now();cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}))}else if(MRQ[sy]&&Date.now()-MRQ[sy]>6000)MR[sy]=null;return}
+if(live&&MR[sy]===false)return;
+const mu0=Math.max(1,Math.round(nv('swMu'))||100),tpP=Math.max(1,nv('swTpP')||30),slP=Math.min(100,Math.max(1,nv('swSlP')||30)),hold=Math.max(5,nv('swMh')||120);
+const mu=live&&MR[sy]&&MR[sy].length?MR[sy].reduce((a,b)=>Math.abs(b-mu0)<Math.abs(a-mu0)?b:a):mu0;
+const tp=+(amt*tpP/100).toFixed(2),sl=+(amt*slP/100).toFixed(2),o={sy,d,amt,s,v:Object.assign({},v),mu,tp,sl,hx:Date.now()+hold*1000,cd:'x'+mu};
+if(live){opens.push(o);const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:+(amt*1.05+0.1).toFixed(2),req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:cur,multiplier:mu,underlying_symbol:sy,limit_order:{take_profit:tp,stop_loss:sl}}}));log('SEND '+d+' x'+mu+' '+nameFor(sy)+' $'+amt+' TP '+tp+' SL '+sl+' score '+s.toFixed(2),'I')}
+else{o.entry=B[sy].at(-1);o.exp=Infinity;o.cm=nv('swMc')||0;opens.push(o);log('PAPER '+d+' x'+mu+' '+nameFor(sy)+' $'+amt+' TP '+tp+' SL '+sl+' score '+s.toFixed(2),'I')}}
+setInterval(()=>{if(!live||!ws||ws.readyState!==1)return;opens.forEach(o=>{if(o.mu&&o.cid&&!o.sold&&Date.now()>=o.hx){o.sold=1;ws.send(JSON.stringify({sell:o.cid,price:0}));log('Max hold reached, closing #'+o.cid,'I')}})},1000);
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
 function trade(sy,s,v){if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
-const cm=+g('swConf').value,cv=v.CONFLUENCE,d=s>0?'CALL':'PUT';
+const mult=g('swTrig').value==='mult',cm=+g('swConf').value,cv=v.CONFLUENCE,d=mult?(s>0?'MULTUP':'MULTDOWN'):(s>0?'CALL':'PUT');
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!mult){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
+if(mult){mTrade(sy,d,amt,s,v);return}
 if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 let feedOn=false,pw=null;
@@ -2119,11 +2135,12 @@ const LT={};let selLock=0;
 function isBest(sy){const me=Math.abs(SCR[sy]||0),nw=Date.now();for(const k in SCR){if(k===sy||nw-(LT[k]||0)>15000)continue;if(DURS[k]&&DURS[k].skip)continue;if(Math.abs(SCR[k])>me&&allowed(k))return false}return true}
 function core(sy,p){LT[sy]=Date.now();if(g('swTrig').value==='digits'){digitTick(sy,p);return}if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
+if(!live)opens=opens.filter(o=>{if(!o.mu||o.sy!==sy)return true;const pf=(o.d==='MULTUP'?1:-1)*(p/o.entry-1)*o.amt*o.mu-o.amt*o.mu*o.cm/100;let end=null;if(pf>=o.tp)end=pf;else if(pf<=-o.sl||Date.now()>=o.hx)end=Math.max(pf,-o.amt);if(end==null)return true;bal+=end;record(end,o.sy,o.d,o);return false});
 opens=opens.filter(o=>{if(live||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&g('swTrig').value==='swarm'&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+if(!halted&&(g('swTrig').value==='swarm'||g('swTrig').value==='mult')&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2141,6 +2158,7 @@ ws.onclose=()=>{authed=false;if(my===gen&&run&&!halted){log('Trading link lost, 
 ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.error){if(m.req_id&&PQ[m.req_id]){const k=PQ[m.req_id];delete PQ[m.req_id];qPend--;QT[k]={bad:1,t:Date.now()};if(!QERR){QERR=1;log('Payout quote error: '+m.error.message+' (using theoretical payouts)','X')}return}log((m.msg_type||'err')+': '+m.error.message,'L');if(m.req_id){const bo=opens.find(o=>o.pend===m.req_id);opens=opens.filter(o=>o.pend!==m.req_id);const cs=cfMap[m.req_id];if(cs){DURS[cs]={list:ladderFor(cs),i:0};log('Could not read availability for '+nameFor(cs)+', trying durations in turn','X')}
 else if(bo&&m.msg_type==='buy'&&/duration/i.test(m.error.message||'')&&DURS[bo.sy]&&DURS[bo.sy].list&&!DURS[bo.sy].locked){const d=DURS[bo.sy];d.i++;lastT=0;if(d.i>=d.list.length){DURS[bo.sy]={skip:true};log('No valid duration found for '+nameFor(bo.sy)+', skipping it','X')}else{log('Trying '+d.list[d.i][0]+d.list[d.i][1]+' next for '+nameFor(bo.sy),'I');opens.push(bo);setTimeout(()=>{if(opens.includes(bo))sendBuy(bo)},350)}}}return}
 if(m.msg_type==='proposal'&&m.proposal){const k=PQ[m.req_id];if(k){const ask=+m.proposal.ask_price,pay=+m.proposal.payout;if(ask>0&&pay>0){QT[k]={pr:pay/ask-1,t:Date.now()};LQ[k]=pay/ask-1;saveQ()}delete PQ[m.req_id];qPend--}return}
+if(m.msg_type==='contracts_for'&&m.contracts_for&&g('swTrig').value==='mult'){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,c=(m.contracts_for.available||[]).find(x=>x.contract_type==='MULTUP');MR[sy]=!c?false:(Array.isArray(c.multiplier_range)?c.multiplier_range.map(Number):null);log(nameFor(sy)+(MR[sy]===false?': no multiplier contracts, skipping it':MR[sy]?': multipliers available '+MR[sy].join('/'):': multiplier list not provided, using yours'),MR[sy]===false?'X':'I');return}
 if(m.msg_type==='contracts_for'&&m.contracts_for&&g('swTrig').value==='digits'){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,t=(m.contracts_for.available||[]).map(c=>c.contract_type);DGOK[sy]=t.includes('DIGITOVER')||t.includes('DIGITUNDER');log(nameFor(sy)+(DGOK[sy]?': digits Over/Under available':': no digits contracts, skipping it'),DGOK[sy]?'I':'X');return}
 if(m.msg_type==='contracts_for'&&m.contracts_for){const sy=cfMap[m.req_id]||m.contracts_for.underlying_symbol,all=m.contracts_for.available||[],sum={};
 all.forEach(c=>{const t=c.contract_type||'?';(sum[t]=sum[t]||new Set()).add(c.expiry_type||'?')});
@@ -2148,7 +2166,7 @@ log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]
 const rf=all.filter(c=>c.contract_type==='CALL');
 DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladderFor(sy),i:0};return}
 if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X');opens.forEach(o=>{if(o.cid){ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Re-checking open contract #'+o.cid,'I')}})}}
-else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;o.cd=o.dg?(o.tk||1)+'t':(curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'');o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(o.dg&&o.pr!=null){LQ[o.side+'|'+o.bar]=o.pr;saveQ()}if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;o.cd=o.dg?(o.tk||1)+'t':(o.mu?'x'+o.mu:curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'');o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(o.dg&&o.pr!=null){LQ[o.side+'|'+o.bar]=o.pr;saveQ()}if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);try{const xv=c.exit_tick_display_value!=null?c.exit_tick_display_value:c.exit_tick;if(xv!=null)o.xd=+String(xv).slice(-1)}catch(e){}record(+c.profit,o.sy,o.d,o)}}}}
 catch(e){fail('Cannot reach Deriv from this page ('+(e&&e.name||'error')+'). If this is a CORS block, the browser is refusing the REST call; tell me and I will add a relay.')}}
 
@@ -2160,7 +2178,7 @@ pw.onclose=()=>{if(my===gen&&run&&feedOn){log('Price feed lost, reconnecting in 
 pw.onmessage=e=>{const m=JSON.parse(e.data);
 if(m.error){if(!warned){warned=true;log('Feed: '+m.error.message,'L')}return}
 if(m.msg_type==='active_symbols'){const all=m.active_symbols||[],by={};
-all.forEach(a=>{const sy=a.underlying_symbol||a.symbol;if(!sy)return;const mk=a.market||'other',open=!(a.exchange_is_open===0||a.exchange_is_open===false||a.is_trading_suspended===1||a.is_trading_suspended===true);MK[sy]=mk;OPEN[sy]=open;DN[sy]=a.underlying_symbol_name||a.display_name||a.name||sy;if(open&&allowed(sy)&&(g('swTrig').value!=='digits'||(mk==='synthetic_index'&&(g('swDs').value==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)))))(by[mk]=by[mk]||[]).push(sy)});
+all.forEach(a=>{const sy=a.underlying_symbol||a.symbol;if(!sy)return;const mk=a.market||'other',open=!(a.exchange_is_open===0||a.exchange_is_open===false||a.is_trading_suspended===1||a.is_trading_suspended===true);MK[sy]=mk;OPEN[sy]=open;DN[sy]=a.underlying_symbol_name||a.display_name||a.name||sy;if(open&&allowed(sy)&&(!['digits','mult'].includes(g('swTrig').value)||(mk==='synthetic_index'&&symOk(sy))))(by[mk]=by[mk]||[]).push(sy)});
 const cap=Math.max(1,Math.min(100,nv('swCap')||30)),keys=Object.keys(by).sort(),pick=[];
 for(let i=0;pick.length<cap&&keys.some(k=>by[k][i]);i++)keys.forEach(k=>{if(by[k][i]&&pick.length<cap)pick.push(by[k][i])});
 feedOn=true;log('Feed: subscribing to '+pick.length+' open symbols across '+keys.length+' markets ('+keys.join(', ')+')','W');
@@ -2211,6 +2229,8 @@ const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
 
+const symOk=sy=>{const t=g('swTrig').value,c=t==='mult'?g('swMi').value:g('swDs').value;return c==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)};
+const MR={},MRQ={};
 let ALTN=0;const ROT=[['OVER',8],['UNDER',1],['OVER',0],['UNDER',9]];
 const tks=()=>Math.max(1,Math.min(10,Math.round(nv('swTk'))||1));
 const DG={},TKN={},DGOK={},DGREQ={},DZ={},TPM=[],STR={n:0,w:0,e:0,v:0},PH={},HP={};
