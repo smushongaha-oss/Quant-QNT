@@ -2206,6 +2206,7 @@ if(cf!=='off'){if(!v)continue;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(ba
 const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
+
 const DG={},TKN={},DGOK={},DGREQ={},DZ={},TPM=[],STR={n:0,w:0,e:0,v:0};
 function resetDigits(){[DG,TKN,DGOK,DGREQ,DZ].forEach(o=>{for(const k in o)delete o[k]});TPM.length=0;STR.n=STR.w=STR.e=STR.v=0}
 function digitOf(sy,p){let d=DEC[sy];if(d==null)d=2;if(d>0&&d<1)d=Math.round(-Math.log10(d));return +((+p).toFixed(d).slice(-1))}
