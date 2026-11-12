@@ -2085,7 +2085,7 @@ const cl=x=>Math.max(-1,Math.min(1,x));
 const ema=(a,p)=>{const k=2/(p+1);let e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e};
 const sdv=a=>{const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/a.length)};
 function rsi(a,p){let G=0,L=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];d>0?G+=d:L-=d}return L==0?100:100-100/(1+G/L)}
-const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all'&&g('swTrig').value!=='digits')return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
+const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all'&&!['digits','mult'].includes(g('swTrig').value))return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
 function votes(sy){const a=B[sy];if(!a||a.length<40)return null;const s=a.slice(-20),st=sdv(s)||1e-9,v={};
 v.SPOTTER=cl((ema(a.slice(-40),5)-ema(a.slice(-40),20))/(st*.5));
 let u=0;for(let i=a.length-20;i<a.length;i++)u+=Math.sign(a[i]-a[i-1]);v.TAKER=u/20;
@@ -2299,7 +2299,18 @@ const o={sy,d:pk.side+' '+pk.b,amt,s:pk.z,v:{},dg:1,side:pk.side,bar:pk.b,pr:pk.
 lastT=nw;TPM.push(nw);opens.push(o);if(g('swDm').value==='alt'||g('swDm').value==='rot')ALTN++;pkt('CORE','KMJ','#b18cff');
 if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:pk.side==='OVER'?'DIGITOVER':'DIGITUNDER',barrier:String(pk.b),currency:cur,duration:o.tk,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
-function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
+function multStatus(){if(halted)return 'MULTIPLIER: HALTED ('+halted+')';
+const sy=Object.keys(B).find(k=>symOk(k)&&allowed(k));
+if(!sy)return 'MULTIPLIER: waiting for ticks from '+(g('swMi').value==='1HZ10V'?'Volatility 10 (1s)':'the volatility indices')+' ...';
+const n=B[sy].length;if(n<40)return 'MULTIPLIER: '+nameFor(sy)+' warming up, '+n+'/40 ticks needed before the first signal';
+const sc=SCR[sy]||0,thr=nv('swThr'),op=mineOpens().filter(o=>o.mu);let why;
+if(op.length)why='position open ('+op[0].d+' x'+op[0].mu+'), waiting for take profit '+op[0].tp+', stop loss '+op[0].sl+' or max hold';
+else if(Math.abs(sc)<thr)why='waiting for a stronger signal';
+else if(Date.now()-lastT<nv('swCd')*1000)why='cooldown';
+else if(live&&!authed)why='connecting to Deriv';
+else why='ready to trade';
+return 'MULTIPLIER: '+nameFor(sy)+' score '+sc.toFixed(2)+' (trades at +/-'+thr+') | '+why+' | '+n+' ticks'}
+function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='mult')return multStatus();if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
 const wn=Math.max(50,Math.floor(nv('swWin'))||200),wu=(g('swDm').value==='strict'&&n<wn)?'WARMING UP '+n+'/'+wn+' ticks (about '+Math.ceil((wn-n)/60)+' min) | ':'';
 return wu+'DIGITS '+nameFor(sy)+' n='+n+' | '+cnt.map((c,i)=>i+':'+Math.round(c/n*100)+'%').join(' ')+(pk?' | pick '+pk.side+' '+pk.b+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1):'')+' | EDGE TEST '+tn+' trades: actual '+S.toFixed(2)+' vs expected '+E.toFixed(2)+' (z '+zt.toFixed(1)+')'+' | pace '+tpm+'/min = about $'+cost.toFixed(0)+'/h expected cost | '+mineOpens().length+'/'+maxOpen()+' slots'}
 if(g('swTrig').value!=='engine')return 'Swarm consensus mode: trades when the tick agents agree above the threshold.';
