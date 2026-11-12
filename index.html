@@ -2161,8 +2161,9 @@ all.forEach(a=>{const sy=a.underlying_symbol||a.symbol;if(!sy)return;const mk=a.
 const cap=Math.max(1,Math.min(100,nv('swCap')||30)),keys=Object.keys(by).sort(),pick=[];
 for(let i=0;pick.length<cap&&keys.some(k=>by[k][i]);i++)keys.forEach(k=>{if(by[k][i]&&pick.length<cap)pick.push(by[k][i])});
 feedOn=true;log('Feed: subscribing to '+pick.length+' open symbols across '+keys.length+' markets ('+keys.join(', ')+')','W');
-pick.forEach((sy,i)=>{B[sy]=B[sy]||[];setTimeout(()=>pw&&pw.readyState===1&&pw.send(JSON.stringify({ticks:sy,subscribe:1})),i*120)})}
-else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&t.pip_size!=null)DEC[sy]=t.pip_size;if(sy&&run)core(sy,+t.quote)}}}
+pick.forEach((sy,i)=>{B[sy]=B[sy]||[];setTimeout(()=>{if(!pw||pw.readyState!==1)return;pw.send(JSON.stringify({ticks:sy,subscribe:1}));if(g('swTrig').value==='digits'){const id=++rid;PH[id]=sy;pw.send(JSON.stringify({ticks_history:sy,count:Math.min(1000,Math.max(50,Math.floor(nv('swWin'))||500)),end:'latest',style:'ticks',req_id:id}))}},i*120)})}
+else if(m.msg_type==='history'&&m.history&&PH[m.req_id]){const sy=PH[m.req_id];delete PH[m.req_id];const pr=m.history.prices||[];if(m.pip_size!=null)DEC[sy]=m.pip_size;if(DEC[sy]==null)HP[sy]=pr;else applyHist(sy,pr)}
+else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&t.pip_size!=null){DEC[sy]=t.pip_size;if(HP[sy]){const hp=HP[sy];delete HP[sy];applyHist(sy,hp)}}if(sy&&run)core(sy,+t.quote)}}}
 function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=opens.filter(o=>o.cid);if(opens.length)log('Keeping '+opens.length+' unsettled live contract(s); they settle once connected','X');bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
 const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};const tg=g('swTrig').value;if(tg==='digits'){resetDigits();if(nv('swCap')>8||nv('swCap')<1)g('swCap').value=8;log('Digits mode: last-digit Over/Under, 1 tick, 1-second Volatility indices only','W');openFeed()}else if(tg==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(g('swFeed').value==='all')openFeed()}
@@ -2207,8 +2208,9 @@ const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
 
-const DG={},TKN={},DGOK={},DGREQ={},DZ={},TPM=[],STR={n:0,w:0,e:0,v:0};
-function resetDigits(){[DG,TKN,DGOK,DGREQ,DZ].forEach(o=>{for(const k in o)delete o[k]});TPM.length=0;STR.n=STR.w=STR.e=STR.v=0}
+const DG={},TKN={},DGOK={},DGREQ={},DZ={},TPM=[],STR={n:0,w:0,e:0,v:0},PH={},HP={};
+function applyHist(sy,pr){const win=Math.max(50,Math.floor(nv('swWin'))||200),ds=(pr||[]).map(x=>digitOf(sy,x)),old=DG[sy]||[];DG[sy]=ds.concat(old).slice(-win);log('History: '+nameFor(sy)+' now has '+DG[sy].length+' of '+win+' digits','I')}
+function resetDigits(){[TKN,DGOK,DGREQ,DZ].forEach(o=>{for(const k in o)delete o[k]});TPM.length=0;STR.n=STR.w=STR.e=STR.v=0}
 function digitOf(sy,p){let d=DEC[sy];if(d==null)d=2;if(d>0&&d<1)d=Math.round(-Math.log10(d));return +((+p).toFixed(d).slice(-1))}
 
 function lgam(z){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];let y=z,t=z+5.5;t-=(z+.5)*Math.log(t);let sm=1.000000000190015;for(let j=0;j<6;j++)sm+=c[j]/++y;return -t+Math.log(2.5066282746310005*sm/z)}
@@ -2262,7 +2264,8 @@ lastT=nw;TPM.push(nw);opens.push(o);pkt('CORE','KMJ','#b18cff');
 if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:pk.side==='OVER'?'DIGITOVER':'DIGITUNDER',barrier:String(pk.b),currency:cur,duration:1,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
-return 'DIGITS '+nameFor(sy)+' n='+n+' | '+cnt.map((c,i)=>i+':'+Math.round(c/n*100)+'%').join(' ')+(pk?' | pick '+pk.side+' '+pk.b+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1):'')+' | EDGE TEST '+tn+' trades: actual '+S.toFixed(2)+' vs expected '+E.toFixed(2)+' (z '+zt.toFixed(1)+')'+' | pace '+tpm+'/min = about $'+cost.toFixed(0)+'/h expected cost | '+mineOpens().length+'/'+maxOpen()+' slots'}
+const wn=Math.max(50,Math.floor(nv('swWin'))||200),wu=(g('swDm').value==='strict'&&n<wn)?'WARMING UP '+n+'/'+wn+' ticks (about '+Math.ceil((wn-n)/60)+' min) | ':'';
+return wu+'DIGITS '+nameFor(sy)+' n='+n+' | '+cnt.map((c,i)=>i+':'+Math.round(c/n*100)+'%').join(' ')+(pk?' | pick '+pk.side+' '+pk.b+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1):'')+' | EDGE TEST '+tn+' trades: actual '+S.toFixed(2)+' vs expected '+E.toFixed(2)+' (z '+zt.toFixed(1)+')'+' | pace '+tpm+'/min = about $'+cost.toFixed(0)+'/h expected cost | '+mineOpens().length+'/'+maxOpen()+' slots'}
 if(g('swTrig').value!=='engine')return 'Swarm consensus mode: trades when the tick agents agree above the threshold.';
 const L=(E()&&E().scan&&E().scan())||[];let al='';try{al=E().cfg().thr}catch(e){}const slots=mineOpens().length+'/'+maxOpen()+' slots';
 const sigs=L.filter(x=>x.st&&x.st.mode==='sig'&&x.st.sig),it=sigs.find(x=>!TRD[x.sy+':'+x.st.sig.t])||sigs[0];
