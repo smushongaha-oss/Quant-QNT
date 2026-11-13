@@ -415,13 +415,17 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAT TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="trade scope"></div>
       <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
-      <div data-m="mult"><label>MULTIPLIER INDEX</label><select id="swMi" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
+      <div data-m="mult hl tn accu turbo van"><label>INDEX (VOLATILITY)</label><select id="swMi" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
+      <div data-m="hl tn turbo van"><label>BARRIER OFFSET (% OF PRICE, + = HARDER)</label><input id="swOff" type="number" step=".01" value="0.03"></div>
+      <div data-m="tn"><label>TOUCH TYPE</label><select id="swTn" style="width:100%"><option value="touch">TOUCH (WITH SIGNAL)</option><option value="notouch">NO TOUCH (AGAINST SIGNAL)</option></select></div>
+      <div data-m="accu"><label>GROWTH RATE</label><select id="swGr" style="width:100%"><option value="1">1% PER TICK</option><option value="2">2% PER TICK</option><option value="3">3% PER TICK</option><option value="4">4% PER TICK</option><option value="5">5% PER TICK</option></select></div>
+      <div data-m="turbo van"><label>PAPER FEE (% OF STAKE)</label><input id="swPf" type="number" step=".5" value="3"></div>
       <div data-m="mult"><label>MULTIPLIER (x)</label><input id="swMu" type="number" value="100"></div>
-      <div data-m="mult"><label>TAKE PROFIT (% OF STAKE)</label><input id="swTpP" type="number" step="1" value="30"></div>
+      <div data-m="mult accu turbo"><label>TAKE PROFIT (% OF STAKE)</label><input id="swTpP" type="number" step="1" value="30"></div>
       <div data-m="mult"><label>STOP LOSS (% OF STAKE, MAX 100)</label><input id="swSlP" type="number" step="1" value="30"></div>
-      <div data-m="mult"><label>MAX HOLD (SECONDS)</label><input id="swMh" type="number" value="120"></div>
+      <div data-m="mult accu turbo"><label>MAX HOLD (SECONDS)</label><input id="swMh" type="number" value="120"></div>
       <div data-m="mult"><label>PAPER COMMISSION (% OF STAKE x MULTIPLIER)</label><input id="swMc" type="number" step=".01" value="0.05"></div>
-      <div data-m="swarm mult"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
+      <div data-m="swarm mult hl tn turbo van"><label>THRESHOLD 0-1</label><input id="swThr" type="number" step=".05" value=".5"></div>
       <div><label>MIN STAKE</label><input id="swMin" type="number" step=".5" value="1"></div>
       <div><label>MAX STAKE % BAL</label><input id="swMaxP" type="number" step=".1" value="0.5"></div>
       <div><label>MAX OPEN TRADES</label><input id="swMo" type="number" value="5"></div>
@@ -430,10 +434,10 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PROFIT TARGET (0 = OFF)</label><input id="swTp" type="number" step=".5" value="5"></div>
       <div><label>MAX LOSING STREAK</label><input id="swMxC" type="number" value="4"></div>
       <div><label>PAPER BALANCE</label><input id="swPb" type="number" value="1000"></div>
-      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">SWARM CONSENSUS</option><option value="digits">DIGITS OVER/UNDER (1-10 TICKS)</option><option value="mult">MULTIPLIER UP/DOWN (SWARM SIGNAL)</option></select></div>
-      <div data-m="digits"><label>DIGIT MODE</label><select id="swDm" style="width:100%"><option value="rot">ROTATE OVER 8 / UNDER 1 / OVER 0 / UNDER 9</option><option value="alt">ALTERNATE OVER 0 / UNDER 9</option><option value="over">OVER (FIXED BARRIER)</option><option value="strict">STRICT EVIDENCE (WAIT FOR PROVEN SKEW)</option><option value="ev">LOWEST HOUSE EDGE (REAL PAYOUTS)</option><option value="auto">AUTO (BEST STATS)</option><option value="under">UNDER (FIXED BARRIER)</option></select></div>
+      <div><label>TRIGGER</label><select id="swTrig" style="width:100%"><option value="engine">ENGINE BEST READY</option><option value="swarm">RISE/FALL (SWARM CONSENSUS)</option><option value="digits">DIGITS: OVER/UNDER, EVEN/ODD, MATCHES/DIFFERS</option><option value="hl">HIGHER/LOWER (SWARM SIGNAL)</option><option value="tn">TOUCH/NO TOUCH (SWARM SIGNAL)</option><option value="accu">ACCUMULATORS</option><option value="mult">MULTIPLIERS UP/DOWN (SWARM SIGNAL)</option><option value="turbo">TURBOS LONG/SHORT (SWARM SIGNAL)</option><option value="van">VANILLAS CALL/PUT (SWARM SIGNAL)</option></select></div>
+      <div data-m="digits"><label>DIGIT MODE</label><select id="swDm" style="width:100%"><option value="rot">ROTATE OVER 8 / UNDER 1 / OVER 0 / UNDER 9</option><option value="alt">ALTERNATE OVER 0 / UNDER 9</option><option value="over">OVER (FIXED BARRIER)</option><option value="strict">STRICT EVIDENCE (WAIT FOR PROVEN SKEW)</option><option value="ev">LOWEST HOUSE EDGE (REAL PAYOUTS)</option><option value="auto">AUTO (BEST STATS)</option><option value="under">UNDER (FIXED BARRIER)</option><option value="even">EVEN (EVERY TRADE)</option><option value="odd">ODD (EVERY TRADE)</option><option value="eo">ALTERNATE EVEN / ODD</option><option value="match">MATCHES (FIXED DIGIT)</option><option value="differ">DIFFERS (FIXED DIGIT)</option></select></div>
       <div data-m="digits"><label>DIGIT INDEX</label><select id="swDs" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
-      <div data-m="digits"><label>BARRIER (OVER 0-8, UNDER 1-9)</label><input id="swBar" type="number" min="0" max="9" value="0"></div>
+      <div data-m="digits"><label>BARRIER DIGIT (OVER 0-8, UNDER 1-9, MATCH/DIFFER 0-9)</label><input id="swBar" type="number" min="0" max="9" value="0"></div>
       <div data-m="digits"><label>CONTRACT TICKS (1-10)</label><input id="swTk" type="number" min="1" max="10" value="1"></div>
       <div data-m="digits"><label>MIN Z-SCORE (0 = EVERY TICK)</label><input id="swZ" type="number" step=".1" value="0"></div>
       <div data-m="digits"><label>STATS WINDOW (TICKS)</label><input id="swWin" type="number" value="500"></div>
@@ -445,8 +449,8 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAYOUT % (PAPER + KELLY)</label><input id="swPay" type="number" value="78"></div>
       <div><label>MARKETS</label><select id="swMk" style="width:100%"><option value="all">ALL (REAL + DERIVED)</option><option value="real">REAL ONLY</option></select></div>
       <div data-m="swarm"><label>SYMBOL FEED</label><select id="swFeed" style="width:100%"><option value="all">ALL OPEN SYMBOLS</option><option value="eng">ENGINE SCANNER ONLY</option></select></div>
-      <div data-m="swarm digits mult"><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
-      <div data-m="swarm mult"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
+      <div data-m="swarm digits mult hl tn accu turbo van"><label>MAX SYMBOLS (FEED)</label><input id="swCap" type="number" value="30"></div>
+      <div data-m="swarm mult hl tn turbo van"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
     </div>
     <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button><button id="swMood" type="button">QUANT MOOD: ON</button></div>
     <div class="qwrap" id="qWrap"><canvas id="cvQuant" aria-label="Quant core visual that reacts to the swarm state"></canvas></div>
@@ -2087,7 +2091,7 @@ const cl=x=>Math.max(-1,Math.min(1,x));
 const ema=(a,p)=>{const k=2/(p+1);let e=a[0];for(let i=1;i<a.length;i++)e=a[i]*k+e*(1-k);return e};
 const sdv=a=>{const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)**2,0)/a.length)};
 function rsi(a,p){let G=0,L=0;for(let i=a.length-p;i<a.length;i++){const d=a[i]-a[i-1];d>0?G+=d:L-=d}return L==0?100:100-100/(1+G/L)}
-const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all'&&!['digits','mult'].includes(g('swTrig').value))return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
+const allowed=sy=>{const mk=MK[sy],der=mk!==undefined?mk==='synthetic_index':(SYNB.test(sy)||grpFor(sy)==='SYNTH');if(der&&g('swMk').value!=='all'&&!restricted(g('swTrig').value))return false;if(mk!==undefined)return OPEN[sy]!==false;return !isClosed(sy)};
 function votes(sy){const a=B[sy];if(!a||a.length<40)return null;const s=a.slice(-20),st=sdv(s)||1e-9,v={};
 v.SPOTTER=cl((ema(a.slice(-40),5)-ema(a.slice(-40),20))/(st*.5));
 let u=0;for(let i=a.length-20;i<a.length;i++)u+=Math.sign(a[i]-a[i-1]);v.TAKER=u/20;
@@ -2121,14 +2125,66 @@ const mu=live&&MR[sy]&&MR[sy].length?MR[sy].reduce((a,b)=>Math.abs(b-mu0)<Math.a
 const tp=+(amt*tpP/100).toFixed(2),sl=+(amt*slP/100).toFixed(2),o={sy,d,amt,s,v:Object.assign({},v),mu,tp,sl,hx:Date.now()+hold*1000,cd:'x'+mu};
 if(live){opens.push(o);QC.emit(d+' x'+mu,amt);const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:+(amt*1.05+0.1).toFixed(2),req_id:id,parameters:{amount:amt,basis:'stake',contract_type:d,currency:cur,multiplier:mu,underlying_symbol:sy,limit_order:{take_profit:tp,stop_loss:sl}}}));log('SEND '+d+' x'+mu+' '+nameFor(sy)+' $'+amt+' TP '+tp+' SL '+sl+' score '+s.toFixed(2),'I')}
 else{o.entry=B[sy].at(-1);o.exp=Infinity;o.cm=nv('swMc')||0;opens.push(o);QC.emit(d+' x'+mu,amt);log('PAPER '+d+' x'+mu+' '+nameFor(sy)+' $'+amt+' TP '+tp+' SL '+sl+' score '+s.toFixed(2),'I')}}
-setInterval(()=>{if(!live||!ws||ws.readyState!==1)return;opens.forEach(o=>{if(o.mu&&o.cid&&!o.sold&&Date.now()>=o.hx){o.sold=1;ws.send(JSON.stringify({sell:o.cid,price:0}));log('Max hold reached, closing #'+o.cid,'I')}})},1000);
+setInterval(()=>{if(!live||!ws||ws.readyState!==1)return;opens.forEach(o=>{if((o.mu||o.k==='turbo'||o.k==='accu')&&o.cid&&!o.sold&&Date.now()>=o.hx){o.sold=1;ws.send(JSON.stringify({sell:o.cid,price:0}));log('Max hold reached, closing #'+o.cid,'I')}})},1000);
+
+const XK=['mult','hl','tn','accu','turbo','van'],SIGK=['swarm','mult','hl','tn','turbo','van'];
+const restricted=t=>t==='digits'||XK.includes(t);
+const decOf=sy=>{let d=DEC[sy];if(d==null)d=2;if(d>0&&d<1)d=Math.round(-Math.log10(d));return d};
+const nrm=x=>{const t=1/(1+.2316419*Math.abs(x)),d=.3989423*Math.exp(-x*x/2),q=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-q:q};
+const zInv=tail=>{let lo=0,hi=8;for(let i=0;i<50;i++){const m=(lo+hi)/2;if(1-nrm(m)>tail)lo=m;else hi=m}return(lo+hi)/2};
+const rate=sy=>/^1HZ/.test(sy)?1:.5;
+function sigT(sy){const a=B[sy]||[],n=a.length;if(n<30)return 0;let q=0,c=0;for(let i=Math.max(1,n-100);i<n;i++){const d=a[i]-a[i-1];q+=d*d;c++}return Math.sqrt(q/c)}
+const DCT={OVER:'DIGITOVER',UNDER:'DIGITUNDER',EVEN:'DIGITEVEN',ODD:'DIGITODD',MATCH:'DIGITMATCH',DIFFER:'DIGITDIFF'};
+const dBar=(sd,b)=>(sd==='EVEN'||sd==='ODD')?{}:{barrier:String(b)};
+const dWin=(sd,b,d)=>sd==='OVER'?d>b:sd==='UNDER'?d<b:sd==='EVEN'?d%2===0:sd==='ODD'?d%2===1:sd==='MATCH'?d===b:d!==b;
+const dLab=(sd,b)=>(sd==='EVEN'||sd==='ODD')?sd:sd+' '+b;
+const phOf=(sd,b,cnt,n)=>{if(sd==='EVEN')return(cnt[0]+cnt[2]+cnt[4]+cnt[6]+cnt[8])/n;if(sd==='ODD')return(cnt[1]+cnt[3]+cnt[5]+cnt[7]+cnt[9])/n;if(sd==='MATCH')return cnt[b]/n;if(sd==='DIFFER')return 1-cnt[b]/n;let c=0;if(sd==='OVER'){for(let i=b+1;i<10;i++)c+=cnt[i]}else{for(let i=0;i<b;i++)c+=cnt[i]}return c/n};
+function liveOrder(o,par){if(!ws||ws.readyState!==1||!authed)return false;opens.push(o);QC.emit(o.d,o.amt);const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:+(o.amt*1.05+.1).toFixed(2),req_id:id,parameters:Object.assign({amount:o.amt,basis:'stake',currency:cur,underlying_symbol:o.sy},par)}));log('SEND '+o.d+' '+nameFor(o.sy)+' $'+o.amt+(o.cd?' '+o.cd:''),'I');return true}
+function paperOrder(o){opens.push(o);QC.emit(o.d,o.amt);log('PAPER '+o.d+' '+nameFor(o.sy)+' $'+o.amt+(o.pw?' win chance '+(o.pw*100).toFixed(0)+'%':'')+(o.cd?' '+o.cd:''),'I')}
+function xTrade(kind,sy,s,amt,v){
+if(kind==='mult'){mTrade(sy,s>0?'MULTUP':'MULTDOWN',amt,s,v);return}
+const a=B[sy];if(!a||a.length<40)return;if(live&&(!ws||!authed||ws.readyState!==1))return;
+const up=s>0,p0=a.at(-1),dc=decOf(sy),mn=Math.pow(10,-dc),sg=sigT(sy);if(sg<=0)return;
+const offS=+(p0*(nv('swOff')||.03)/100).toFixed(dc),off=offS===0?mn:offS,secs=Math.max(15,Math.round(nv('swDur')||60)),T=sg*Math.sqrt(secs*rate(sy)),rel=b=>(b>=p0?'+':'-')+Math.abs(b-p0).toFixed(dc);
+const cl=p=>Math.max(.03,Math.min(.97,p)),pay=p=>Math.max(.02,Math.min(25,.95/p-1)),base={sy,amt,s,v:Object.assign({},v),entry:p0,up};
+let o;
+if(kind==='hl'){const bar=up?p0+off:p0-off,pw=cl(1-nrm(off/T));o=Object.assign(base,{k:'hl',d:up?'HIGHER':'LOWER',bar,pw,pr:pay(pw),exp:Date.now()+secs*1000,cd:secs+'s'});
+ if(live)liveOrder(o,{contract_type:up?'CALL':'PUT',duration:secs,duration_unit:'s',barrier:rel(bar)});else paperOrder(o);return}
+if(kind==='tn'){const ao=Math.abs(off),tm=g('swTn').value==='touch',bu=tm?up:!up,bar=bu?p0+ao:p0-ao,pt=Math.min(.97,2*(1-nrm((ao+.5826*sg)/T))),pw=cl(tm?pt:1-pt);
+ o=Object.assign(base,{k:'tn',d:(tm?'TOUCH ':'NO TOUCH ')+(bu?'UP':'DOWN'),touch:tm,bUp:bu,bar,pw,pr:pay(pw),exp:Date.now()+secs*1000,cd:secs+'s'});
+ if(live)liveOrder(o,{contract_type:tm?'ONETOUCH':'NOTOUCH',duration:secs,duration_unit:'s',barrier:rel(bar)});else paperOrder(o);return}
+if(kind==='van'){const strike=up?p0+off:p0-off,dd=-off/T,C=Math.max(T*(dd*nrm(dd)+Math.exp(-dd*dd/2)*.3989423),T*1e-3),fee=(nv('swPf')||3)/100;
+ o=Object.assign(base,{k:'van',d:up?'VANILLA CALL':'VANILLA PUT',bar:strike,ppp:amt/(C*(1+fee)),exp:Date.now()+secs*1000,cd:secs+'s'});
+ if(live)liveOrder(o,{contract_type:up?'VANILLALONGCALL':'VANILLALONGPUT',duration:secs,duration_unit:'s',barrier:rel(strike)});else paperOrder(o);return}
+if(kind==='turbo'){const dist=Math.max(Math.abs(off),mn*2),bar=up?p0-dist:p0+dist,fee=(nv('swPf')||3)/100,tp=+(amt*(nv('swTpP')||30)/100).toFixed(2),hold=Math.max(5,nv('swMh')||120);
+ o=Object.assign(base,{k:'turbo',d:up?'TURBO LONG':'TURBO SHORT',bar,dist,fee,tp,exp:Infinity,hx:Date.now()+hold*1000,cd:'x'+Math.round(p0/dist)});
+ if(live)liveOrder(o,{contract_type:up?'TURBOSLONG':'TURBOSSHORT',barrier:(up?'-':'+')+dist.toFixed(dc),duration:Math.max(60,Math.round(hold)),duration_unit:'s',limit_order:{take_profit:tp}});else paperOrder(o)}}
+function accuTrade(sy,p){const nw=Date.now();if(!allowed(sy)||!symOk(sy))return;const a=B[sy];if(!a||a.length<60)return;
+if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||nw-lastT<nv('swCd')*1000)return;
+while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTpm')||6))return;
+if(live&&(!authed||!ws||ws.readyState!==1))return;
+if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
+const amt=stake();if(amt>bal||!QC.gate())return;
+const gr=(nv('swGr')||1)/100,sg=sigT(sy);if(sg<=0)return;
+const z=zInv((1-.9995/(1+gr))/2),hold=Math.max(5,nv('swMh')||120),tp=+(amt*(nv('swTpP')||30)/100).toFixed(2);
+lastT=nw;TPM.push(nw);
+const o={k:'accu',sy,d:'ACCU '+(gr*100)+'%',amt,s:0,v:{},last:p,val:amt,g:gr,rng:z*sg,tp,tk:0,mt:Math.max(5,Math.round(hold*rate(sy))),exp:Infinity,hx:nw+hold*1000,cd:(gr*100)+'%'};
+if(live)liveOrder(o,{contract_type:'ACCU',growth_rate:gr,limit_order:{take_profit:tp}});else paperOrder(o)}
+function xPaper(sy,p){opens=opens.filter(o=>{if(!o.k||o.sy!==sy||o.cid||o.pend)return true;const nw=Date.now();let pf=null;
+if(o.k==='hl'){if(nw<o.exp)return true;const w=o.up?p>o.bar:p<o.bar;pf=w?o.amt*o.pr:-o.amt}
+else if(o.k==='tn'){const hit=o.bUp?p>=o.bar:p<=o.bar;if(hit)pf=o.touch?o.amt*o.pr:-o.amt;else if(nw>=o.exp)pf=o.touch?-o.amt:o.amt*o.pr;else return true}
+else if(o.k==='van'){if(nw<o.exp)return true;pf=o.ppp*Math.max(0,o.up?p-o.bar:o.bar-p)-o.amt}
+else if(o.k==='turbo'){const ko=o.up?p<=o.bar:p>=o.bar;if(ko)pf=-o.amt;else{const x=o.amt*(o.up?p-o.bar:o.bar-p)/o.dist/(1+o.fee)-o.amt;if(x>=o.tp||nw>=o.hx)pf=x;else return true}}
+else if(o.k==='accu'){if(Math.abs(p-o.last)>o.rng)pf=-o.amt;else{o.last=p;o.val*=1+o.g;o.tk++;const x=o.val-o.amt;if(x>=o.tp||o.tk>=o.mt)pf=x;else return true}}
+else return true;
+bal+=pf;record(pf,o.sy,o.d,o);return false})}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
 function trade(sy,s,v){if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
-const mult=g('swTrig').value==='mult',cm=+g('swConf').value,cv=v.CONFLUENCE,d=mult?(s>0?'MULTUP':'MULTDOWN'):(s>0?'CALL':'PUT');
+const kd=g('swTrig').value,ext=XK.includes(kd)&&kd!=='accu',mult=kd==='mult',cm=+g('swConf').value,cv=v.CONFLUENCE,d=mult?(s>0?'MULTUP':'MULTDOWN'):(s>0?'CALL':'PUT');
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!mult){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(!QC.gate())return;lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!ext){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(!QC.gate())return;lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
-if(mult){mTrade(sy,d,amt,s,v);return}
+if(ext){xTrade(kd,sy,s,amt,v);return}
 if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);QC.emit(d,amt);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{QC.emit(d,amt);opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 let feedOn=false,pw=null;
@@ -2137,12 +2193,14 @@ const LT={};let selLock=0;
 function isBest(sy){const me=Math.abs(SCR[sy]||0),nw=Date.now();for(const k in SCR){if(k===sy||nw-(LT[k]||0)>15000)continue;if(DURS[k]&&DURS[k].skip)continue;if(Math.abs(SCR[k])>me&&allowed(k))return false}return true}
 function core(sy,p){LT[sy]=Date.now();if(g('swTrig').value==='digits'){digitTick(sy,p);return}if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
+if(!live)xPaper(sy,p);
+if(!halted&&g('swTrig').value==='accu')accuTrade(sy,p);
 if(!live)opens=opens.filter(o=>{if(!o.mu||o.sy!==sy)return true;const pf=(o.d==='MULTUP'?1:-1)*(p/o.entry-1)*o.amt*o.mu-o.amt*o.mu*o.cm/100;let end=null;if(pf>=o.tp)end=pf;else if(pf<=-o.sl||Date.now()>=o.hx)end=Math.max(pf,-o.amt);if(end==null)return true;bal+=end;record(end,o.sy,o.d,o);return false});
-opens=opens.filter(o=>{if(live||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
+opens=opens.filter(o=>{if(live||o.k||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)return true;const w=o.d==='CALL'?p>o.entry:p<o.entry;bal+=p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt;record(p===o.entry?0:w?o.amt*((nv('swPay')||78)/100):-o.amt,o.sy,o.d,o);return false});
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&(g('swTrig').value==='swarm'||g('swTrig').value==='mult')&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+if(!halted&&SIGK.includes(g('swTrig').value)&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2180,7 +2238,7 @@ pw.onclose=()=>{if(my===gen&&run&&feedOn){log('Price feed lost, reconnecting in 
 pw.onmessage=e=>{const m=JSON.parse(e.data);
 if(m.error){if(!warned){warned=true;log('Feed: '+m.error.message,'L')}return}
 if(m.msg_type==='active_symbols'){const all=m.active_symbols||[],by={};
-all.forEach(a=>{const sy=a.underlying_symbol||a.symbol;if(!sy)return;const mk=a.market||'other',open=!(a.exchange_is_open===0||a.exchange_is_open===false||a.is_trading_suspended===1||a.is_trading_suspended===true);MK[sy]=mk;OPEN[sy]=open;DN[sy]=a.underlying_symbol_name||a.display_name||a.name||sy;if(open&&allowed(sy)&&(!['digits','mult'].includes(g('swTrig').value)||(mk==='synthetic_index'&&symOk(sy))))(by[mk]=by[mk]||[]).push(sy)});
+all.forEach(a=>{const sy=a.underlying_symbol||a.symbol;if(!sy)return;const mk=a.market||'other',open=!(a.exchange_is_open===0||a.exchange_is_open===false||a.is_trading_suspended===1||a.is_trading_suspended===true);MK[sy]=mk;OPEN[sy]=open;DN[sy]=a.underlying_symbol_name||a.display_name||a.name||sy;if(open&&allowed(sy)&&(!restricted(g('swTrig').value)||(mk==='synthetic_index'&&symOk(sy))))(by[mk]=by[mk]||[]).push(sy)});
 const cap=Math.max(1,Math.min(100,nv('swCap')||30)),keys=Object.keys(by).sort(),pick=[];
 for(let i=0;pick.length<cap&&keys.some(k=>by[k][i]);i++)keys.forEach(k=>{if(by[k][i]&&pick.length<cap)pick.push(by[k][i])});
 feedOn=true;log('Feed: subscribing to '+pick.length+' open symbols across '+keys.length+' markets ('+keys.join(', ')+')','W');
@@ -2189,7 +2247,7 @@ else if(m.msg_type==='history'&&m.history&&PH[m.req_id]){const sy=PH[m.req_id];d
 else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&t.pip_size!=null){DEC[sy]=t.pip_size;if(HP[sy]){const hp=HP[sy];delete HP[sy];applyHist(sy,hp)}}if(sy&&run)core(sy,+t.quote)}}}
 function start(){run=true;halted=null;gen++;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=opens.filter(o=>o.cid);if(opens.length)log('Keeping '+opens.length+' unsettled live contract(s); they settle once connected','X');bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
-const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};const tg=g('swTrig').value;if(tg==='digits'){resetDigits();if(nv('swCap')>8||nv('swCap')<1)g('swCap').value=8;log('Digits mode: last-digit Over/Under, '+tks()+' tick(s), Volatility indices (1s and regular)','W');openFeed()}else if(tg==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(g('swFeed').value==='all')openFeed()}
+const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};const tg=g('swTrig').value;if(tg==='digits'){resetDigits();if(nv('swCap')>8||nv('swCap')<1)g('swCap').value=8;log('Digits mode: last-digit Over/Under, '+tks()+' tick(s), Volatility indices (1s and regular)','W');openFeed()}else if(tg==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm','W');else if(XK.includes(tg)||g('swFeed').value==='all')openFeed()}
 function stopAll(m){run=false;gen++;closeFeed();g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
 /* graph */
 const POS={};let cv,cx2;
@@ -2232,7 +2290,7 @@ if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','
 
 
 const QC={n:0,ord:[],gate(){return run&&!halted},emit(label,amt){this.n++;this.ord.unshift({id:this.n,label:String(label),amt,t:Date.now()});if(this.ord.length>6)this.ord.pop()}};
-const symOk=sy=>{const t=g('swTrig').value,c=t==='mult'?g('swMi').value:g('swDs').value;return c==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)};
+const symOk=sy=>{const t=g('swTrig').value,c=XK.includes(t)?g('swMi').value:g('swDs').value;return c==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)};
 const MR={},MRQ={};
 let ALTN=0;const ROT=[['OVER',8],['UNDER',1],['OVER',0],['UNDER',9]];
 const tks=()=>Math.max(1,Math.min(10,Math.round(nv('swTk'))||1));
@@ -2255,7 +2313,7 @@ let h='<b>DIGIT LAB</b> | random digits give p-values anywhere between 0 and 1. 
 rows.forEach(r=>{const hot=r.p<.0004&&r.bz>=4.2;h+='<tr style="color:'+(hot?'var(--pos)':'inherit')+'"><td>'+nameFor(r.sy)+'</td><td>'+r.n+'</td><td>'+(r.p<.0001?'<0.0001':r.p.toFixed(3))+'</td><td>'+r.bl+'</td><td>'+r.bz.toFixed(1)+'</td></tr>'});
 if(!rows.length)h+='<tr><td colspan="5">collecting ticks...</td></tr>';
 h+='</table>';
-const G={};TR.forEach(r=>{if(r.ex===''||r.ex==null)return;const m=/^(OVER|UNDER) (\d)$/.exec(r.d||'');if(!m)return;const x=G[r.d]||(G[r.d]={n:0,w:0,p:m[1]==='OVER'?(9-m[2])/10:m[2]/10});x.n++;if(r.p>0)x.w++});
+const G={};TR.forEach(r=>{if(r.ex===''||r.ex==null)return;const m=/^(OVER|UNDER|MATCH|DIFFER) (\d)$|^(EVEN|ODD)$/.exec(r.d||'');if(!m)return;const x=G[r.d]||(G[r.d]={n:0,w:0,p:pTh(m[1]||m[3],+m[2])});x.n++;if(r.p>0)x.w++});
 const ks=Object.keys(G);if(ks.length){h+='<br><b>YOUR TRADES BY PICK</b><table><tr><th>PICK</th><th>N</th><th>WINS</th><th>EXPECTED</th><th>Z</th></tr>';ks.forEach(k=>{const x=G[k],z=(x.w-x.n*x.p)/Math.sqrt(x.n*x.p*(1-x.p));h+='<tr><td>'+k+'</td><td>'+x.n+'</td><td>'+x.w+'</td><td>'+(x.n*x.p).toFixed(1)+'</td><td>'+z.toFixed(1)+'</td></tr>'});h+='</table>'}
 {let N=0,S=0,E=0,V=0,W=0;TR.forEach(r=>{if(r.ex===''||r.ex==null||r.vr===''||r.vr==null)return;N++;S+=r.p;E+=+r.ex;V+=+r.vr;if(r.p>0)W++});
 h+='<br><b>SCOREBOARD (HONEST VERDICT)</b><table><tr><th>TRADES</th><th>WINS</th><th>ACTUAL P&amp;L</th><th>EXPECTED</th><th>Z</th></tr>';
@@ -2269,21 +2327,26 @@ h+='<tr><td>'+N+'</td><td>'+W+'</td><td>'+S.toFixed(2)+'</td><td>'+E.toFixed(2)+
 return h}
 const QT={},PQ={},LQ={};let QERR=0,qAt=0,EVLAST=0,qPend=0;
 function saveQ(){try{localStorage.setItem('swm_q',JSON.stringify(LQ))}catch(e){}}
-const pTh=(side,b)=>side==='OVER'?(9-b)/10:b/10;
+const pTh=(side,b)=>side==='OVER'?(9-b)/10:side==='UNDER'?b/10:(side==='EVEN'||side==='ODD')?.5:side==='MATCH'?.1:.9;
 function prOf(side,b){const k=side+'|'+b,q=QT[k];if(q&&q.pr!=null&&Date.now()-q.t<600000)return q.pr;if(LQ[k]!=null)return LQ[k];return .95/pTh(side,b)-1}
 function requestQuotes(sy){if(!live||!ws||!authed||Date.now()-qAt<240000)return;qAt=Date.now();
-const all=[];for(let b=0;b<=8;b++)all.push(['OVER',b]);for(let b=1;b<=9;b++)all.push(['UNDER',b]);qPend=all.length;
-all.forEach((c,i)=>setTimeout(()=>{if(!ws||ws.readyState!==1)return;const id=++rid;PQ[id]=c[0]+'|'+c[1];ws.send(JSON.stringify({proposal:1,amount:nv('swMin')||1,basis:'stake',contract_type:c[0]==='OVER'?'DIGITOVER':'DIGITUNDER',barrier:String(c[1]),currency:cur,duration:tks(),duration_unit:'t',underlying_symbol:sy,req_id:id}))},i*120))}
+const all=[],dm=g('swDm').value;for(let b=0;b<=8;b++)all.push(['OVER',b]);for(let b=1;b<=9;b++)all.push(['UNDER',b]);if(['even','odd','eo'].includes(dm)){all.push(['EVEN',0]);all.push(['ODD',0])}if(dm==='match'||dm==='differ'){for(let b=0;b<=9;b++)all.push([dm==='match'?'MATCH':'DIFFER',b])}qPend=all.length;
+all.forEach((c,i)=>setTimeout(()=>{if(!ws||ws.readyState!==1)return;const id=++rid;PQ[id]=c[0]+'|'+c[1];ws.send(JSON.stringify({proposal:1,amount:nv('swMin')||1,basis:'stake',contract_type:DCT[c[0]],...dBar(c[0],c[1]),currency:cur,duration:tks(),duration_unit:'t',underlying_symbol:sy,req_id:id}))},i*120))}
 function pickDigit(a){const n=a.length,mode=g('swDm').value,fb=Math.round(nv('swBar')),cand=[],cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);
 const over=b=>{let c=0;for(let i=b+1;i<10;i++)c+=cnt[i];return c},under=b=>{let c=0;for(let i=0;i<b;i++)c+=cnt[i];return c};
-const add=(side,b)=>{const p=pTh(side,b);if(p<=0||p>=1)return;const ph=(side==='OVER'?over(b):under(b))/n,pr=prOf(side,b);cand.push({side,b,p,ph,pr,ev:p*(1+pr)-1,z:(ph-p)/Math.sqrt(p*(1-p)/n)})};
-if(mode==='rot'){const q=ROT[ALTN%4];add(q[0],q[1])}
+const add=(side,b)=>{const p=pTh(side,b);if(p<=0||p>=1)return;const ph=phOf(side,b,cnt,n),pr=prOf(side,b);cand.push({side,b,p,ph,pr,ev:p*(1+pr)-1,z:(ph-p)/Math.sqrt(p*(1-p)/n)})};
+if(mode==='even')add('EVEN',0);
+else if(mode==='odd')add('ODD',0);
+else if(mode==='eo')add(ALTN%2===0?'EVEN':'ODD',0);
+else if(mode==='match')add('MATCH',Math.max(0,Math.min(9,fb)));
+else if(mode==='differ')add('DIFFER',Math.max(0,Math.min(9,fb)));
+else if(mode==='rot'){const q=ROT[ALTN%4];add(q[0],q[1])}
 else if(mode==='alt'){if(ALTN%2===0)add('OVER',0);else add('UNDER',9)}
 else if(mode==='auto'||mode==='ev'||mode==='strict'){for(let b=0;b<=8;b++)add('OVER',b);for(let b=1;b<=9;b++)add('UNDER',b)}
 else if(mode==='over')add('OVER',Math.max(0,Math.min(8,fb)));else add('UNDER',Math.max(1,Math.min(9,fb)));
 if(mode==='ev'){cand.sort((x,y)=>y.ev-x.ev);if(!cand.length)return null;const tw=(nv('swTw')||60)/100,top=cand[0].ev,pool=cand.filter(c=>c.ev>=top-.005);pool.sort((x,y)=>Math.abs(x.p-tw)-Math.abs(y.p-tw));return pool[0]}cand.sort((x,y)=>y.z-x.z);const bb=cand[0];if(!bb)return null;if(mode==='strict'){const sh=a.slice(-200);if(sh.length>=100){const c2=new Array(10).fill(0);sh.forEach(x=>c2[x]++);let cc=0;if(bb.side==='OVER'){for(let i=bb.b+1;i<10;i++)cc+=c2[i]}else{for(let i=0;i<bb.b;i++)cc+=c2[i]}bb.zs=(cc/sh.length-bb.p)/Math.sqrt(bb.p*(1-bb.p)/sh.length)}else bb.zs=0}return bb}
 function digitTick(sy,p){if(!run)return;if(g('swDs').value==='1HZ10V'&&sy!=='1HZ10V')return;const d=digitOf(sy,p),win=Math.max(50,Math.floor(nv('swWin'))||200),a=DG[sy]||(DG[sy]=[]);TKN[sy]=(TKN[sy]||0)+1;
-opens=opens.filter(o=>{if(live||!o.dg||o.cid||o.pend||o.sy!==sy||TKN[sy]<o.n0+(o.tk||1))return true;const w=o.side==='OVER'?d>o.bar:d<o.bar,pf=w?o.amt*o.pr:-o.amt;o.xd=d;bal+=pf;record(pf,o.sy,o.d,o);return false});
+opens=opens.filter(o=>{if(live||!o.dg||o.cid||o.pend||o.sy!==sy||TKN[sy]<o.n0+(o.tk||1))return true;const w=dWin(o.side,o.bar,d),pf=w?o.amt*o.pr:-o.amt;o.xd=d;bal+=pf;record(pf,o.sy,o.d,o);return false});
 a.push(d);if(a.length>win)a.shift();
 if(a.length<Math.min(win,100)||halted)return;
 requestQuotes(sy);const pk=pickDigit(a);if(!pk)return;DZ[sy]=pk;EVLAST=pk.ev;SCR[sy]=Math.max(0,pk.z)/4;
@@ -2292,30 +2355,31 @@ function digitTrade(sy,pk){const nw=Date.now();
 if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||nw-lastT<nv('swCd')*1000)return;
 while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTpm')||6))return;
 if(live&&!authed)return;
-if(pk.ev<-(nv('swHe')||6)/100){const dm=g('swDm').value;if(dm==='alt'||dm==='rot'){if(nw-lastSx>30000){lastSx=nw;log('Skipped '+pk.side+' '+pk.b+': house edge '+(-pk.ev*100).toFixed(1)+'% is above your MAX HOUSE EDGE '+(nv('swHe')||6)+'%','X')}ALTN++}return}
+if(pk.ev<-(nv('swHe')||6)/100){const dm=g('swDm').value;if(dm==='alt'||dm==='rot'||dm==='eo'){if(nw-lastSx>30000){lastSx=nw;log('Skipped '+pk.side+' '+pk.b+': house edge '+(-pk.ev*100).toFixed(1)+'% is above your MAX HOUSE EDGE '+(nv('swHe')||6)+'%','X')}ALTN++}return}
 if(live&&(qAt===0||(qPend>0&&Date.now()-qAt<5000)))return;
 if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
 if(live&&DGOK[sy]===undefined){if(!DGREQ[sy]&&ws&&authed){const id=++rid;DGREQ[sy]=nw;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}))}else if(DGREQ[sy]&&nw-DGREQ[sy]>6000)DGOK[sy]=true;return}
 if(live&&DGOK[sy]===false)return;
 const amt=stake();if(amt>bal){if(nw-lastSx>30000){lastSx=nw;log('Stake exceeds balance','X')}return}
-const o={sy,d:pk.side+' '+pk.b,amt,s:pk.z,v:{},dg:1,side:pk.side,bar:pk.b,pr:pk.pr,p0:pk.p,tk:tks(),cd:tks()+'t',n0:TKN[sy],st:g('swDm').value==='strict',ed:(DG[sy]||[]).slice(-1)[0]};
-if(!QC.gate())return;lastT=nw;TPM.push(nw);opens.push(o);QC.emit(o.d,amt);if(g('swDm').value==='alt'||g('swDm').value==='rot')ALTN++;pkt('CORE','KMJ','#b18cff');
-if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:pk.side==='OVER'?'DIGITOVER':'DIGITUNDER',barrier:String(pk.b),currency:cur,duration:o.tk,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
+const o={sy,d:dLab(pk.side,pk.b),amt,s:pk.z,v:{},dg:1,side:pk.side,bar:pk.b,pr:pk.pr,p0:pk.p,tk:tks(),cd:tks()+'t',n0:TKN[sy],st:g('swDm').value==='strict',ed:(DG[sy]||[]).slice(-1)[0]};
+if(!QC.gate())return;lastT=nw;TPM.push(nw);opens.push(o);QC.emit(o.d,amt);if(['alt','rot','eo'].includes(g('swDm').value))ALTN++;pkt('CORE','KMJ','#b18cff');
+if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:DCT[pk.side],...dBar(pk.side,pk.b),currency:cur,duration:o.tk,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
-function multStatus(){if(halted)return 'MULTIPLIER: HALTED ('+halted+')';
+function multStatus(){const kd=g('swTrig').value,lb={mult:'MULTIPLIER',hl:'HIGHER/LOWER',tn:'TOUCH/NO TOUCH',accu:'ACCUMULATORS',turbo:'TURBOS',van:'VANILLAS'}[kd]||kd.toUpperCase();
+if(halted)return lb+': HALTED ('+halted+')';
 const sy=Object.keys(B).find(k=>symOk(k)&&allowed(k));
-if(!sy)return 'MULTIPLIER: waiting for ticks from '+(g('swMi').value==='1HZ10V'?'Volatility 10 (1s)':'the volatility indices')+' ...';
-const n=B[sy].length;if(n<40)return 'MULTIPLIER: '+nameFor(sy)+' warming up, '+n+'/40 ticks needed before the first signal';
-const sc=SCR[sy]||0,thr=nv('swThr'),op=mineOpens().filter(o=>o.mu);let why;
-if(op.length)why='position open ('+op[0].d+' x'+op[0].mu+'), waiting for take profit '+op[0].tp+', stop loss '+op[0].sl+' or max hold';
-else if(Math.abs(sc)<thr)why='waiting for a stronger signal';
+if(!sy)return lb+': waiting for ticks from '+(g('swMi').value==='1HZ10V'?'Volatility 10 (1s)':'the volatility indices')+' ...';
+const n=B[sy].length,need=kd==='accu'?60:40;if(n<need)return lb+': '+nameFor(sy)+' warming up, '+n+'/'+need+' ticks needed before the first order';
+const sc=SCR[sy]||0,thr=nv('swThr'),op=mineOpens().filter(o=>o.mu||o.k);let why;
+if(op.length)why='position open ('+op[0].d+')';
+else if(kd!=='accu'&&Math.abs(sc)<thr)why='waiting for a stronger signal';
 else if(Date.now()-lastT<nv('swCd')*1000)why='cooldown';
 else if(live&&!authed)why='connecting to Deriv';
 else why='ready to trade';
-return 'MULTIPLIER: '+nameFor(sy)+' score '+sc.toFixed(2)+' (trades at +/-'+thr+') | '+why+' | '+n+' ticks'}
-function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(g('swTrig').value==='mult')return multStatus();if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
+return lb+': '+nameFor(sy)+(kd==='accu'?'':' score '+sc.toFixed(2)+' (trades at +/-'+thr+')')+' | '+why+' | '+n+' ticks'}
+function linkStatus(){if(!run)return 'Swarm stopped. Press START SWARM.';if(XK.includes(g('swTrig').value))return multStatus();if(g('swTrig').value==='digits'){const sy=sel&&DG[sel]?sel:Object.keys(DG)[0];if(!sy)return 'DIGITS: waiting for ticks from the indices...';const a=DG[sy],n=a.length,cnt=new Array(10).fill(0);a.forEach(x=>cnt[x]++);const pk=DZ[sy];let tn=0,S=0,E=0,V=0;TR.forEach(r=>{if(r.ex!==''&&r.ex!=null&&r.vr!==''&&r.vr!=null){tn++;S+=r.p;E+=+r.ex;V+=+r.vr}});const zt=V>0?(S-E)/Math.sqrt(V):0,tpm=TPM.filter(t=>Date.now()-t<60000).length,cost=tpm*60*(nv('swMin')||1)*Math.max(0,-EVLAST);
 const wn=Math.max(50,Math.floor(nv('swWin'))||200),wu=(g('swDm').value==='strict'&&n<wn)?'WARMING UP '+n+'/'+wn+' ticks (about '+Math.ceil((wn-n)/60)+' min) | ':'';
-return wu+'DIGITS '+nameFor(sy)+' n='+n+' | '+cnt.map((c,i)=>i+':'+Math.round(c/n*100)+'%').join(' ')+(pk?' | pick '+pk.side+' '+pk.b+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1):'')+' | EDGE TEST '+tn+' trades: actual '+S.toFixed(2)+' vs expected '+E.toFixed(2)+' (z '+zt.toFixed(1)+')'+' | pace '+tpm+'/min = about $'+cost.toFixed(0)+'/h expected cost | '+mineOpens().length+'/'+maxOpen()+' slots'}
+return wu+'DIGITS '+nameFor(sy)+' n='+n+' | '+cnt.map((c,i)=>i+':'+Math.round(c/n*100)+'%').join(' ')+(pk?' | pick '+dLab(pk.side,pk.b)+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1):'')+' | EDGE TEST '+tn+' trades: actual '+S.toFixed(2)+' vs expected '+E.toFixed(2)+' (z '+zt.toFixed(1)+')'+' | pace '+tpm+'/min = about $'+cost.toFixed(0)+'/h expected cost | '+mineOpens().length+'/'+maxOpen()+' slots'}
 if(g('swTrig').value!=='engine')return 'Swarm consensus mode: trades when the tick agents agree above the threshold.';
 const L=(E()&&E().scan&&E().scan())||[];let al='';try{al=E().cfg().thr}catch(e){}const slots=mineOpens().length+'/'+maxOpen()+' slots';
 const sigs=L.filter(x=>x.st&&x.st.mode==='sig'&&x.st.sig),it=sigs.find(x=>!TRD[x.sy+':'+x.st.sig.t])||sigs[0];
