@@ -415,7 +415,7 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>PAT TOKEN (BLANK = PAPER)</label><input id="swTok" type="password" autocomplete="off" placeholder="trade scope"></div>
       <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
-      <div data-m="mult hl tn accu turbo van"><label>INDEX (VOLATILITY)</label><select id="swMi" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
+      <div data-m="mult hl tn accu turbo van"><label>INDEX (VOLATILITY)</label><select id="swMi" style="width:100%"><option value="1HZ90V">VOLATILITY 90 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
       <div><label>SYMBOL FILTER</label><select id="swSf" style="width:100%"><option value="avoid">AVOID LOSING SYMBOLS</option><option value="winners">WINNERS ONLY (TOP HALF)</option><option value="off">OFF (ALL SYMBOLS)</option></select></div>
       <div><label>FILTER: MIN TRADES / SYMBOL</label><input id="swSfMin" type="number" value="20"></div>
       <div><label>FILTER: LAST N TRADES COUNTED</label><input id="swSfW" type="number" value="40"></div>
@@ -2321,7 +2321,7 @@ if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','
 
 
 const QC={n:0,ord:[],gate(sy){return run&&!halted&&(sy==null||symPass(sy))},emit(label,amt){this.n++;this.ord.unshift({id:this.n,label:String(label),amt,t:Date.now()});if(this.ord.length>6)this.ord.pop()}};
-const symOk=sy=>{const t=g('swTrig').value,c=XK.includes(t)?g('swMi').value:g('swDs').value;return c==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)};
+const symOk=sy=>{const t=g('swTrig').value,c=XK.includes(t)?g('swMi').value:g('swDs').value;return c==='all'?/^(1HZ\d+V|R_\d+)$/.test(sy):sy===c};
 const MR={},MRQ={};
 let ALTN=0;const ROT=[['OVER',8],['UNDER',1],['OVER',0],['UNDER',9]];
 const tks=()=>Math.max(1,Math.min(10,Math.round(nv('swTk'))||1));
@@ -2399,7 +2399,7 @@ else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'
 function multStatus(){const kd=g('swTrig').value,lb={mult:'MULTIPLIER',hl:'HIGHER/LOWER',tn:'TOUCH/NO TOUCH',accu:'ACCUMULATORS',turbo:'TURBOS',van:'VANILLAS'}[kd]||kd.toUpperCase();
 if(halted)return lb+': HALTED ('+halted+')';
 const sy=Object.keys(B).find(k=>symOk(k)&&allowed(k));
-if(!sy)return lb+': waiting for ticks from '+(g('swMi').value==='1HZ10V'?'Volatility 10 (1s)':'the volatility indices')+' ...';
+if(!sy)return lb+': waiting for ticks from '+(g('swMi').value==='all'?'the volatility indices':'Volatility '+g('swMi').value.replace(/^1HZ|V$/g,'')+' (1s)')+' ...';
 const n=B[sy].length,need=kd==='accu'?60:40;if(n<need)return lb+': '+nameFor(sy)+' warming up, '+n+'/'+need+' ticks needed before the first order';
 const sc=SCR[sy]||0,thr=nv('swThr'),op=mineOpens().filter(o=>o.mu||o.k);let why;
 if(op.length)why='position open ('+op[0].d+')';
