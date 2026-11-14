@@ -416,6 +416,10 @@ select{max-width:100%;text-overflow:ellipsis}
       <div><label>ACCOUNT</label><select id="swAcc" style="width:100%"><option value="demo">DEMO</option><option value="real">REAL MONEY</option></select></div>
       <div><label>DURATION SEC</label><input id="swDur" type="number" value="60"></div>
       <div data-m="mult hl tn accu turbo van"><label>INDEX (VOLATILITY)</label><select id="swMi" style="width:100%"><option value="1HZ10V">VOLATILITY 10 (1S) ONLY</option><option value="all">ALL VOLATILITY INDICES</option></select></div>
+      <div><label>SYMBOL FILTER</label><select id="swSf" style="width:100%"><option value="avoid">AVOID LOSING SYMBOLS</option><option value="winners">WINNERS ONLY (TOP HALF)</option><option value="off">OFF (ALL SYMBOLS)</option></select></div>
+      <div><label>FILTER: MIN TRADES / SYMBOL</label><input id="swSfMin" type="number" value="20"></div>
+      <div><label>FILTER: LAST N TRADES COUNTED</label><input id="swSfW" type="number" value="40"></div>
+      <div data-m="mult turbo"><label>FLIP EXIT: CLOSE + REVERSE ON OPPOSITE SIGNAL (SCORE &gt;=, 0 = OFF)</label><input id="swFl" type="number" step=".05" value="0.3"></div>
       <div data-m="hl tn turbo van"><label>BARRIER OFFSET (% OF PRICE, + = HARDER)</label><input id="swOff" type="number" step=".01" value="0.03"></div>
       <div data-m="tn"><label>TOUCH TYPE</label><select id="swTn" style="width:100%"><option value="touch">TOUCH (WITH SIGNAL)</option><option value="notouch">NO TOUCH (AGAINST SIGNAL)</option></select></div>
       <div data-m="accu"><label>GROWTH RATE</label><select id="swGr" style="width:100%"><option value="1">1% PER TICK</option><option value="2">2% PER TICK</option><option value="3">3% PER TICK</option><option value="4">4% PER TICK</option><option value="5">5% PER TICK</option></select></div>
@@ -454,6 +458,7 @@ select{max-width:100%;text-overflow:ellipsis}
     </div>
     <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button><button id="swMood" type="button">QUANT MOOD: ON</button></div>
     <div class="qwrap" id="qWrap"><canvas id="cvQuant" aria-label="Quant core visual that reacts to the swarm state"></canvas></div>
+    <div id="swSfInfo" style="margin:6px 0;color:var(--dim);font-size:11px"></div>
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
     <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
     <div class="sw2" style="margin-top:4px"><div id="swTblS"></div><div id="swTblA"></div></div>
@@ -2107,7 +2112,7 @@ if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
-function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:'',ed:o&&o.ed!=null?o.ed:'',xd:o&&o.xd!=null?o.xd:'',ex:o&&o.dg&&o.p0!=null?o.amt*(o.p0*(1+o.pr)-1):'',vr:o&&o.dg&&o.p0!=null?Math.pow(o.amt*(1+o.pr),2)*o.p0*(1-o.p0):''});if(TR.length>5000)TR.shift();if(o&&o.st&&o.p0!=null){STR.n++;if(p>0)STR.w++;STR.e+=o.p0;STR.v+=o.p0*(1-o.p0);if(STR.n>=30&&(STR.w-STR.e)/Math.sqrt(STR.v)<1)halt('STRICT SKEW NOT HOLDING OUT OF SAMPLE')}try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+function record(p,sy,d,o){TR.push({t:Date.now(),sy,d,k:g('swTrig').value,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:'',ed:o&&o.ed!=null?o.ed:'',xd:o&&o.xd!=null?o.xd:'',ex:o&&o.dg&&o.p0!=null?o.amt*(o.p0*(1+o.pr)-1):'',vr:o&&o.dg&&o.p0!=null?Math.pow(o.amt*(1+o.pr),2)*o.p0*(1-o.p0):''});if(TR.length>5000)TR.shift();if(o&&o.st&&o.p0!=null){STR.n++;if(p>0)STR.w++;STR.e+=o.p0;STR.v+=o.p0*(1-o.p0);if(STR.n>=30&&(STR.w-STR.e)/Math.sqrt(STR.v)<1)halt('STRICT SKEW NOT HOLDING OUT OF SAMPLE')}try{localStorage.setItem('swm_tr',JSON.stringify(TR))}catch(e){}pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
 if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(nv('swTp')>0&&pnl>=nv('swTp'))halt('PROFIT TARGET REACHED, STOPPED TO KEEP THE GAIN');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[30,'m'],[1,'h'],[2,'h'],[4,'h'],[8,'h'],[1,'d']],LS=e=>e[0]*({s:1,m:60,h:3600,d:86400})[e[1]];
@@ -2164,7 +2169,7 @@ if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||nw-lastT<nv('s
 while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTpm')||6))return;
 if(live&&(!authed||!ws||ws.readyState!==1))return;
 if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
-const amt=stake();if(amt>bal||!QC.gate())return;
+const amt=stake();if(amt>bal||!QC.gate(sy))return;
 const gr=(nv('swGr')||1)/100,sg=sigT(sy);if(sg<=0)return;
 const z=zInv((1-.9995/(1+gr))/2),hold=Math.max(5,nv('swMh')||120),tp=+(amt*(nv('swTpP')||30)/100).toFixed(2);
 lastT=nw;TPM.push(nw);
@@ -2178,13 +2183,37 @@ else if(o.k==='turbo'){const ko=o.up?p<=o.bar:p>=o.bar;if(ko)pf=-o.amt;else{cons
 else if(o.k==='accu'){if(Math.abs(p-o.last)>o.rng)pf=-o.amt;else{o.last=p;o.val*=1+o.g;o.tk++;const x=o.val-o.amt;if(x>=o.tp||o.tk>=o.mt)pf=x;else return true}}
 else return true;
 bal+=pf;record(pf,o.sy,o.d,o);return false})}
+
+const SF={blocked:{},seen:{}},REV={};
+const kindOf=r=>r.k||(/^ACCU/.test(r.d)?'accu':/^(OVER|UNDER|EVEN|ODD|MATCH|DIFFER)/.test(r.d)?'digits':/^MULT/.test(r.d)?'mult':/^TURBO/.test(r.d)?'turbo':/^VANILLA/.test(r.d)?'van':/^(HIGHER|LOWER)$/.test(r.d)?'hl':/TOUCH/.test(r.d)?'tn':'swarm');
+function sfStats(){const W=Math.max(10,nv('swSfW')||40),kd=g('swTrig').value,md=live?'LIVE':'PAPER',by={};for(let i=TR.length-1;i>=0;i--){const r=TR[i];if(r.mode!==md||kindOf(r)!==kd)continue;const b=by[r.sy]||(by[r.sy]={n:0,w:0,p:0});if(b.n<W){b.n++;if(r.p>0)b.w++;b.p+=r.p}}return by}
+function sfRank(by,mn){const mode=g('swSf').value,ranked=Object.entries(by).filter(e=>e[1].n>=mn).sort((a,b)=>b[1].p-a[1].p),keep=new Set(mode==='winners'?ranked.slice(0,Math.max(1,Math.ceil(ranked.length/2))).map(e=>e[0]):ranked.map(e=>e[0]));
+const st={};for(const k in by){const b=by[k];st[k]=b.n<mn?'TEST':(b.p<0||!keep.has(k))?'AVOID':'KEEP'}return st}
+function symPass(sy){if(g('swSf').value==='off')return true;const by=sfStats(),mn=Math.max(5,nv('swSfMin')||20),st=sfRank(by,mn)[sy];
+if(!st||st!=='AVOID'){delete SF.blocked[sy];return true}
+const nw=Date.now();if(nw-(SF.seen[sy]||0)>300000){SF.seen[sy]=nw;return true}
+if(!SF.blocked[sy]){SF.blocked[sy]=1;log('AVOIDING '+nameFor(sy)+': last '+by[sy].n+' trades '+by[sy].p.toFixed(2)+' (one test trade every 5 min)','X')}return false}
+function sfHtml(){const by=sfStats(),mn=Math.max(5,nv('swSfMin')||20),ks=Object.keys(by);if(!ks.length)return 'SYMBOL FILTER: no saved trades yet for this trade type.';
+const st=sfRank(by,mn),f=t=>ks.filter(k=>st[k]===t).sort((a,b)=>by[b].p-by[a].p).map(k=>nameFor(k).replace(/ Index$/i,'')+' '+(by[k].p>=0?'+':'')+by[k].p.toFixed(2)).join(', ')||'none';
+let N=0,Wn=0;const t=ks.filter(k=>by[k].n>=mn);t.forEach(k=>{N+=by[k].n;Wn+=by[k].w});let note='';
+if(t.length>=3&&N>0){const pb=Wn/N;if(pb>0&&pb<1){let c2=0;t.forEach(k=>{const b=by[k];c2+=b.n*Math.pow(b.w/b.n-pb,2)/(pb*(1-pb))});const df=t.length-1,z=(Math.pow(c2/df,1/3)-(1-2/(9*df)))/Math.sqrt(2/(9*df)),pv=1-nrm(z);
+note='<br>'+(pv>.05?'HONEST CHECK: the gap between symbols is within normal luck (p '+pv.toFixed(2)+'), so a symbol that won before is not expected to keep winning.':'HONEST CHECK: symbols differ by more than luck explains (p '+pv.toFixed(3)+'). Keep watching to see if it holds on new trades.')}}
+return '<b>SYMBOL FILTER (last '+Math.max(10,nv('swSfW')||40)+' trades each)</b><br>KEEP: '+f('KEEP')+'<br>AVOID: '+f('AVOID')+'<br>TESTING (under '+mn+' trades): '+f('TEST')+note}
+setInterval(()=>{const e=g('swSfInfo');if(e)try{e.innerHTML=sfHtml()}catch(x){}},2000);
+function paperVal(o,p){if(o.mu)return Math.max((o.d==='MULTUP'?1:-1)*(p/o.entry-1)*o.amt*o.mu-o.amt*o.mu*o.cm/100,-o.amt);
+const ko=o.up?p<=o.bar:p>=o.bar;return ko?-o.amt:o.amt*(o.up?p-o.bar:o.bar-p)/o.dist/(1+o.fee)-o.amt}
+function flipCheck(sy,p,s){const th=nv('swFl');if(!(th>0)||Math.abs(s)<th)return false;let did=false;
+opens.slice().forEach(o=>{if(o.sy!==sy||!(o.mu||o.k==='turbo'))return;const up=o.mu?o.d==='MULTUP':o.up;if(up===(s>0))return;
+ if(live){if(o.cid&&!o.sold&&ws&&ws.readyState===1){o.sold=1;ws.send(JSON.stringify({sell:o.cid,price:0}));log('FLIP: signal turned '+(s>0?'BUY':'SELL')+', closing '+o.d+' now','I');did=true}}
+ else if(!o.cid&&!o.pend){const pf=paperVal(o,p);opens=opens.filter(x=>x!==o);bal+=pf;record(pf,o.sy,o.d,o);log('FLIP: signal turned '+(s>0?'BUY':'SELL')+', closed '+o.d+' now','I');did=true}});
+if(did){REV[sy]={dir:Math.sign(s),t:Date.now()};lastT=0}return did}
 function curDur(sy){const d=DURS[sy];return d&&d.list?d.list[d.i]:null}
 function trade(sy,s,v){if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||Date.now()-lastT<nv('swCd')*1000)return;
 const kd=g('swTrig').value,ext=XK.includes(kd)&&kd!=='accu',mult=kd==='mult',cm=+g('swConf').value,cv=v.CONFLUENCE,d=mult?(s>0?'MULTUP':'MULTDOWN'):(s>0?'CALL':'PUT');
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!ext){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(!QC.gate())return;lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!ext){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(ext&&!symOk(sy))return;if(!QC.gate(sy))return;lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
-if(ext){xTrade(kd,sy,s,amt,v);return}
+delete REV[sy];if(ext){xTrade(kd,sy,s,amt,v);return}
 if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);QC.emit(d,amt);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
 else{QC.emit(d,amt);opens.push({sy,d,amt,entry:B[sy].at(-1),exp:Date.now()+nv('swDur')*1000,s,v:Object.assign({},v)});log('PAPER '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}}
 let feedOn=false,pw=null;
@@ -2200,7 +2229,9 @@ opens=opens.filter(o=>{if(live||o.k||o.pend||o.cid||o.sy!==sy||Date.now()<o.exp)
 const v=votes(sy);V[sy]=v;if(!v)return;const s=score(v);SCR[sy]=s;
 
 const nw=Date.now();if(sy===(sel||cfgSym())){for(const k in WT){const q=v[k];if(Math.abs(q)>.15&&nw-(lastP[k]||0)>700){lastP[k]=nw;pkt(k,'CORE',q>0?'#2fe38a':'#ff4d5e')}}}
-if(!halted&&SIGK.includes(g('swTrig').value)&&Math.abs(s)>=nv('swThr')&&isBest(sy))trade(sy,s,v)}
+{const kd0=g('swTrig').value;if(!halted&&(kd0==='mult'||kd0==='turbo'))flipCheck(sy,p,s);
+const rv=REV[sy],revOk=rv&&Date.now()-rv.t<15000&&Math.sign(s)===rv.dir&&Math.abs(s)>=nv('swFl');
+if(!halted&&SIGK.includes(kd0)&&(Math.abs(s)>=nv('swThr')||revOk)&&isBest(sy))trade(sy,s,v)}}
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
@@ -2289,7 +2320,7 @@ const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
 
-const QC={n:0,ord:[],gate(){return run&&!halted},emit(label,amt){this.n++;this.ord.unshift({id:this.n,label:String(label),amt,t:Date.now()});if(this.ord.length>6)this.ord.pop()}};
+const QC={n:0,ord:[],gate(sy){return run&&!halted&&(sy==null||symPass(sy))},emit(label,amt){this.n++;this.ord.unshift({id:this.n,label:String(label),amt,t:Date.now()});if(this.ord.length>6)this.ord.pop()}};
 const symOk=sy=>{const t=g('swTrig').value,c=XK.includes(t)?g('swMi').value:g('swDs').value;return c==='1HZ10V'?sy==='1HZ10V':/^(1HZ\d+V|R_\d+)$/.test(sy)};
 const MR={},MRQ={};
 let ALTN=0;const ROT=[['OVER',8],['UNDER',1],['OVER',0],['UNDER',9]];
@@ -2362,7 +2393,7 @@ if(live&&DGOK[sy]===undefined){if(!DGREQ[sy]&&ws&&authed){const id=++rid;DGREQ[s
 if(live&&DGOK[sy]===false)return;
 const amt=stake();if(amt>bal){if(nw-lastSx>30000){lastSx=nw;log('Stake exceeds balance','X')}return}
 const o={sy,d:dLab(pk.side,pk.b),amt,s:pk.z,v:{},dg:1,side:pk.side,bar:pk.b,pr:pk.pr,p0:pk.p,tk:tks(),cd:tks()+'t',n0:TKN[sy],st:g('swDm').value==='strict',ed:(DG[sy]||[]).slice(-1)[0]};
-if(!QC.gate())return;lastT=nw;TPM.push(nw);opens.push(o);QC.emit(o.d,amt);if(['alt','rot','eo'].includes(g('swDm').value))ALTN++;pkt('CORE','KMJ','#b18cff');
+if(!QC.gate(sy))return;lastT=nw;TPM.push(nw);opens.push(o);QC.emit(o.d,amt);if(['alt','rot','eo'].includes(g('swDm').value))ALTN++;pkt('CORE','KMJ','#b18cff');
 if(live){const id=++rid;o.pend=id;ws.send(JSON.stringify({buy:1,price:amt,req_id:id,parameters:{amount:amt,basis:'stake',contract_type:DCT[pk.side],...dBar(pk.side,pk.b),currency:cur,duration:o.tk,duration_unit:'t',underlying_symbol:sy}}));log('SEND '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 else log('PAPER '+o.d+' '+nameFor(sy)+' $'+amt+' edge '+(pk.ev*100).toFixed(1)+'% z '+pk.z.toFixed(1),'I')}
 function multStatus(){const kd=g('swTrig').value,lb={mult:'MULTIPLIER',hl:'HIGHER/LOWER',tn:'TOUCH/NO TOUCH',accu:'ACCUMULATORS',turbo:'TURBOS',van:'VANILLAS'}[kd]||kd.toUpperCase();
