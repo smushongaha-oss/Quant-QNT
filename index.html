@@ -215,6 +215,7 @@ select{max-width:100%;text-overflow:ellipsis}
 #sSwarm .bt{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}#sSwarm .go{border-color:var(--pos);color:var(--pos)}#sSwarm .kl{border-color:var(--neg);color:var(--neg)}
 #sSwarm .sw2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px}@media(max-width:899px){#sSwarm .sw2{grid-template-columns:1fr}}
 #sSwarm table{width:100%;border-collapse:collapse;font-size:10.5px}#sSwarm th{color:var(--dim2);font-weight:400;text-align:left;font-size:9px;letter-spacing:.1em}#sSwarm td,#sSwarm th{padding:2px 4px;border-bottom:1px solid var(--bd)}.qwrap{position:relative;margin:8px 0;border:1px solid var(--bd);border-radius:6px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#07203f 0%,#03060b 72%);box-shadow:0 0 28px rgba(43,140,255,.12) inset}#cvQuant{display:block;width:100%;height:340px}body.qm{background-image:radial-gradient(ellipse at 50% -8%,rgba(30,110,220,.17),transparent 58%);background-attachment:fixed}@media(max-width:700px){#cvQuant{height:290px}}
+#calcBox .sg{grid-template-columns:1fr 1fr 1fr}#calcBox [data-c]{min-width:0}#calcOut{margin:8px 0}#calcOut table{width:100%;border-collapse:collapse;margin:4px 0 8px}#calcOut td,#calcOut th{padding:3px 6px;border-bottom:1px solid var(--bd);text-align:left;font-weight:400}#calcOut th{color:var(--dim);font-size:10px;letter-spacing:.12em}#calcOut td.r{text-align:right}#calcOut .good{color:var(--pos)}#calcOut .bad{color:var(--neg)}#calcOut .note{color:var(--dim);font-size:10.5px;line-height:1.5;margin:4px 0}#calcOut h4{margin:8px 0 2px;font-size:10.5px;letter-spacing:.14em;color:#cfe3f7;font-weight:400}@media(max-width:700px){#calcBox .sg{grid-template-columns:1fr 1fr}}
 #cvSwarm{height:300px}#swLog{height:300px;overflow:auto;font-size:10.5px;line-height:1.5}#swLog .W{color:var(--pos)}#swLog .L{color:var(--neg)}#swLog .X{color:var(--amb)}#swLog .I{color:var(--cy)}
 #swSt{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0}#swSt b{font-family:var(--o);font-weight:500;font-size:14px;color:#fff;display:block}
 </style>
@@ -468,7 +469,29 @@ select{max-width:100%;text-overflow:ellipsis}
       <div data-m="swarm mult hl tn turbo van"><label>ENGINE CONFIRM</label><select id="swConf" style="width:100%"><option value="1">NOT OPPOSED</option><option value="2">MUST AGREE</option><option value="0">OFF</option></select></div>
     </div>
     <div class="bt"><button id="swGo" class="go" type="button">START SWARM</button><button id="swKill" class="kl" type="button">KILL SWITCH</button><button id="swReal" type="button">LOAD REAL MARKETS</button><button id="swCsv" type="button">EXPORT CSV</button><button id="swClr" type="button">CLEAR HISTORY</button><button id="swMood" type="button">QUANT MOOD: ON</button></div>
-    <div class="qwrap" id="qWrap"><canvas id="cvQuant" aria-label="Quant core visual that reacts to the swarm state"></canvas></div>
+    <details class="p" id="calcBox"><summary>ORDER CALCULATOR (WIN CHANCE, PAYOUT, BREAK-EVEN, RISK)</summary>
+    <div class="sg">
+      <div data-c="all"><label>CONTRACT TYPE</label><select id="cType" style="width:100%"><option value="ou">OVER / UNDER</option><option value="eo">EVEN / ODD</option><option value="md">MATCHES / DIFFERS</option><option value="rf">RISE / FALL (OR HIGHER / LOWER)</option><option value="accu">ACCUMULATOR</option><option value="mult">MULTIPLIER</option><option value="cu">CUSTOM (WIN CHANCE + PAYOUT)</option></select></div>
+      <div data-c="ou eo md"><label>SIDE</label><select id="cSide" style="width:100%"><option value="a">OVER / EVEN / MATCHES</option><option value="b">UNDER / ODD / DIFFERS</option></select></div>
+      <div data-c="ou md"><label>DIGIT / BARRIER (0-9)</label><input id="cDig" type="number" min="0" max="9" value="4"></div>
+      <div data-c="all"><label>STAKE ($)</label><input id="cStk" type="number" step=".1" min=".1" value="1"></div>
+      <div data-c="rf cu"><label>WIN CHANCE (%)</label><input id="cWin" type="number" step="1" min="1" max="99" value="50"></div>
+      <div data-c="ou eo md rf cu"><label>PAYOUT SHOWN BY DERIV (% PROFIT, BLANK = ESTIMATE)</label><input id="cPay" type="number" step="1" min="0" value=""></div>
+      <div data-c="accu"><label>GROWTH RATE (% PER TICK)</label><input id="cGr" type="number" step="1" min="1" max="5" value="3"></div>
+      <div data-c="accu"><label>BANK AFTER (TICKS)</label><input id="cTk" type="number" min="1" max="200" value="12"></div>
+      <div data-c="mult"><label>MULTIPLIER (x)</label><input id="cMu" type="number" min="1" value="100"></div>
+      <div data-c="mult"><label>TAKE PROFIT (% OF STAKE)</label><input id="cTp" type="number" min="1" value="30"></div>
+      <div data-c="mult"><label>STOP LOSS (% OF STAKE)</label><input id="cSl" type="number" min="1" max="100" value="30"></div>
+      <div data-c="mult"><label>COMMISSION (% OF STAKE x MULTIPLIER)</label><input id="cCm" type="number" step=".01" min="0" value="0.05"></div>
+      <div data-c="all"><label>NUMBER OF TRADES</label><input id="cN" type="number" min="1" max="5000" value="100"></div>
+      <div data-c="all"><label>BANKROLL ($)</label><input id="cBk" type="number" min="1" value="50"></div>
+      <div data-c="all"><label>LOSING STREAK TO SURVIVE</label><input id="cL" type="number" min="1" max="50" value="6"></div>
+      <div data-c="all"><label>MAX BANKROLL LOSS IN THAT STREAK (%)</label><input id="cRp" type="number" min="1" max="100" value="20"></div>
+    </div>
+    <div class="bt"><button id="calcLoad" type="button">LOAD FROM BOT SETTINGS</button><button id="calcUse" type="button">USE IN THE BOT</button><button id="calcLim" type="button">SET LOSS LIMITS FROM STREAK</button></div>
+    <div id="calcOut"></div>
+  </details>
+  <div class="qwrap" id="qWrap"><canvas id="cvQuant" aria-label="Quant core visual that reacts to the swarm state"></canvas></div>
     <div id="swSfInfo" style="margin:6px 0;color:var(--dim);font-size:11px"></div>
     <div class="sw2"><div><canvas id="cvSwarm"></canvas></div><div id="swLog"></div></div>
     <div class="ph" style="margin-top:8px">ALL SAVED TRADES <span class="r">PER INSTRUMENT / PER AGENT WHEN IT AGREED WITH THE TRADE</span></div>
@@ -2492,7 +2515,7 @@ try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv'
 g('swTrig').onchange=modeUi;modeUi();
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
 cv.onclick=()=>{const k=Object.keys(B).filter(allowed);if(k.length){sel=k[(k.indexOf(sel)+1)%k.length];selLock=Date.now()+30000;log('Graph focus: '+nameFor(sel),'I')}};
-setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=o.dg?(o.tk||1)*2+5:(curDur(o.sy)?LS(curDur(o.sy)):300);if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(saveOpen,2000);setInterval(engineScan,1000);setInterval(ui,500);requestAnimationFrame(draw);try{initQuant()}catch(e){console.error('quant mood',e)}}
+setInterval(()=>{if(live&&ws&&ws.readyState===1)opens.slice().forEach(o=>{if(!o.cid)return;const age=Date.now()-o.t0,ds=o.dg?(o.tk||1)*2+5:(curDur(o.sy)?LS(curDur(o.sy)):300);if(age>(ds+600)*1000){opens=opens.filter(x=>x!==o);log('Contract #'+o.cid+' result never arrived, check Deriv history. Releasing the slot.','X')}else if(age>(ds+60)*1000)ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid}))});[ws,pw].forEach(w=>{if(w&&w.readyState===1)try{w.send(JSON.stringify({ping:1}))}catch(e){}})},25000);setInterval(saveOpen,2000);setInterval(engineScan,1000);setInterval(ui,500);requestAnimationFrame(draw);try{initQuant()}catch(e){console.error('quant mood',e)}try{initCalc()}catch(e){console.error('calculator',e)}}
 function makeQuant(){
 const TAU=Math.PI*2,R=(a,b)=>a+Math.random()*(b-a);
 let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
@@ -2570,6 +2593,70 @@ c.textAlign='right';const lg=S.lag||0;c.fillStyle=lg>150?'rgba(255,90,90,.9)':lg
 if(S.orders&&S.orders.length){c.textAlign='left';c.fillStyle='rgba(120,210,255,.85)';c.fillText('QUANT CORE ORDERS',12,12);S.orders.slice(0,5).forEach((o,i)=>{const a=Math.max(.3,1-o.age/90)*(i===0?1:.85);c.fillStyle=(i===0&&o.age<2)?`rgba(255,230,160,${a.toFixed(2)})`:`rgba(150,200,240,${a.toFixed(2)})`;c.fillText(o.text,12,28+i*13)})}
 }
 return{draw,pulse:(t,c)=>pulses.push({t0:t,c})}}
+function initCalc(){const $=i=>document.getElementById(i),box=$('calcBox');if(!box)return;
+const v=i=>{const e=$(i);return e?+e.value:NaN},f2=x=>(+x).toFixed(2),pc=(x,d=1)=>(x*100).toFixed(d)+'%',sg=x=>(x>=0?'+':'')+f2(x);
+const lf=[0];for(let i=1;i<=5001;i++)lf[i]=lf[i-1]+Math.log(i);
+function pAtLeast(N,p,k){if(k<=0)return 1;if(k>N)return 0;if(p<=0)return 0;if(p>=1)return 1;let t=0;for(let i=k;i<=N;i++)t+=Math.exp(lf[N]-lf[i]-lf[N-i]+i*Math.log(p)+(N-i)*Math.log(1-p));return Math.min(1,t)}
+function show(){const t=$('cType').value;box.querySelectorAll('[data-c]').forEach(e=>{const c=e.getAttribute('data-c').split(' ');e.style.display=(c.includes('all')||c.includes(t))?'':'none'})}
+function binary(o,p,pay,stake,N,bk,L,rp,label,extra){
+const be=1/(1+pay),edge=p*(1+pay)-1,ev=stake*edge,sd=stake*(1+pay)*Math.sqrt(p*(1-p)),mean=N*ev,sdN=sd*Math.sqrt(N),k=Math.ceil(N/(1+pay)-1e-9),pPos=pAtLeast(N,p,k),
+st=(N-L+1)>0?(N-L+1)*Math.pow(1-p,L)*p+Math.pow(1-p,L):Math.pow(1-p,L),pStreak=1-Math.exp(-Math.max(0,st)),sugg=bk*rp/100/L,streakCost=stake*L;
+let h='<h4>'+label+'</h4><table><tr><th>PER TRADE</th><th></th></tr>'+
+'<tr><td>Win chance</td><td class="r">'+pc(p)+'</td></tr>'+
+'<tr><td>Profit if you win</td><td class="r good">'+sg(stake*pay)+' ('+(pay*100).toFixed(1)+'% of stake)</td></tr>'+
+'<tr><td>Loss if you lose</td><td class="r bad">-'+f2(stake)+'</td></tr>'+
+'<tr><td>Win chance needed to break even</td><td class="r">'+pc(be)+'</td></tr>'+
+'<tr><td>House edge (expected result per $ staked)</td><td class="r '+(edge<0?'bad':'good')+'">'+(edge*100).toFixed(2)+'%</td></tr>'+
+'<tr><td>Expected result per trade</td><td class="r '+(ev<0?'bad':'good')+'">'+sg(ev)+'</td></tr></table>'+
+'<h4>OVER '+N+' TRADES</h4><table><tr><td>Expected total</td><td class="r '+(mean<0?'bad':'good')+'">'+sg(mean)+'</td></tr>'+
+'<tr><td>Normal range (about 95% of sessions)</td><td class="r">'+sg(mean-1.96*sdN)+' to '+sg(mean+1.96*sdN)+'</td></tr>'+
+'<tr><td>Chance of finishing at break-even or better</td><td class="r">'+pc(pPos)+'</td></tr>'+
+'<tr><td>Chance of a '+L+'-loss streak at some point (about)</td><td class="r">'+pc(pStreak)+'</td></tr>'+
+'<tr><td>Cost of a '+L+'-loss streak</td><td class="r bad">-'+f2(streakCost)+' ('+(bk>0?(streakCost/bk*100).toFixed(0)+'% of bankroll':'')+')</td></tr></table>'+
+'<h4>SIZING</h4><table><tr><td>Stake so a '+L+'-loss streak costs at most '+rp+'% of your bankroll</td><td class="r">'+f2(sugg)+'</td></tr></table>';
+if(extra)h+=extra;return h}
+function calc(){show();const t=$('cType').value,stake=Math.max(.01,v('cStk')||1),N=Math.max(1,Math.min(5000,Math.round(v('cN')||100))),bk=v('cBk')||0,L=Math.max(1,Math.round(v('cL')||6)),rp=Math.max(1,v('cRp')||20),po=v('cPay'),out=$('calcOut');let h='';const O={};
+const est='<div class="note">Payout: '+(po>0?'the figure you entered.':'an estimate with a 5% margin built in (fair payout x 0.95). Deriv shows the exact payout before you buy, so type it in for exact numbers.')+'</div>';
+if(t==='ou'||t==='eo'||t==='md'){const d=Math.max(0,Math.min(9,Math.round(v('cDig')||0))),a=$('cSide').value==='a';let p,name;
+ if(t==='ou'){if(a){const b=Math.min(8,d);p=(9-b)/10;name='OVER '+b}else{const b=Math.max(1,d);p=b/10;name='UNDER '+b}}
+ else if(t==='eo'){p=.5;name=a?'EVEN':'ODD'}else{p=a?.1:.9;name=(a?'MATCHES ':'DIFFERS ')+d}
+ const pay=po>0?po/100:.95/p-1;h=binary(O,p,pay,stake,N,bk,L,rp,name+' ON A $'+f2(stake)+' STAKE')+est}
+else if(t==='rf'||t==='cu'){const p=Math.max(.01,Math.min(.99,(v('cWin')||50)/100)),pay=po>0?po/100:.95/p-1;h=binary(O,p,pay,stake,N,bk,L,rp,(t==='rf'?'RISE/FALL OR HIGHER/LOWER':'CUSTOM TRADE')+' ON A $'+f2(stake)+' STAKE')+est+(t==='rf'?'<div class="note">Rise/Fall wins about half the time on a random market. Enter the payout Deriv shows. Higher/Lower with a far barrier has a lower win chance, so change WIN CHANCE.</div>':'')}
+else if(t==='accu'){const g=Math.max(.01,Math.min(.05,(v('cGr')||3)/100)),k=Math.max(1,Math.round(v('cTk')||12)),q=.9995/(1+g),win=Math.pow(q,k),prof=Math.pow(1+g,k)-1;
+ let tb='<h4>STAKE VALUE BY TICK (PAPER MODEL)</h4><table><tr><th>TICKS HELD</th><th>VALUE</th><th>SURVIVE</th><th>EXPECTED</th></tr>';
+ [1,2,3,5,8,12,16,20,30].forEach(i=>{const val=stake*Math.pow(1+g,i),sv=Math.pow(q,i),e=Math.pow(.9995,i)-1;tb+='<tr><td>'+i+'</td><td>'+f2(val)+'</td><td>'+pc(sv)+'</td><td class="'+(e<0?'bad':'')+'">'+(e*100).toFixed(2)+'%</td></tr>'});tb+='</table>';
+ const ex='<div class="note">Average ticks before a knockout: about '+(1/(1-q)).toFixed(0)+'. The model charges about 0.05% of stake for every tick held, so shorter holds cost less. Deriv\'s own barrier and margin may differ.</div>'+tb;
+ h=binary(O,win,prof,stake,N,bk,L,rp,'ACCUMULATOR '+(g*100)+'% / TICK, BANK AFTER '+k+' TICKS ON A $'+f2(stake)+' STAKE',ex)}
+else{const M=Math.max(1,v('cMu')||100),tp=Math.max(1,v('cTp')||30),sl=Math.max(1,Math.min(100,v('cSl')||30)),cm=Math.max(0,v('cCm')||0),expo=stake*M,comm=expo*cm/100,ccp=cm*M,be=(sl+ccp)/(tp+sl);
+ h='<h4>MULTIPLIER x'+M+' ON A $'+f2(stake)+' STAKE</h4><table><tr><td>Position size (stake x multiplier)</td><td class="r">'+f2(expo)+'</td></tr>'+
+ '<tr><td>Commission per trade (estimate)</td><td class="r bad">-'+f2(comm)+' ('+ccp.toFixed(1)+'% of stake)</td></tr>'+
+ '<tr><td>Profit at take profit</td><td class="r good">+'+f2(stake*tp/100)+'</td></tr>'+
+ '<tr><td>Loss at stop loss</td><td class="r bad">-'+f2(stake*sl/100)+'</td></tr>'+
+ '<tr><td>Price move that hits take profit / stop loss</td><td class="r">'+(tp/M).toFixed(3)+'% / '+(sl/M).toFixed(3)+'%</td></tr>'+
+ '<tr><td>Price move that wipes out the whole stake</td><td class="r bad">'+(100/M).toFixed(3)+'%</td></tr>'+
+ '<tr><td>Reward to risk</td><td class="r">'+(tp/sl).toFixed(2)+' : 1</td></tr>'+
+ '<tr><td>Win rate needed to break even (after commission)</td><td class="r">'+pc(be)+'</td></tr></table>'+
+ '<h4>RESULT BY PRICE MOVE (UP TRADE)</h4><table><tr><th>MOVE</th><th>RESULT</th></tr>';
+ [-1,-.5,-.25,-.1,.1,.25,.5,1].forEach(m=>{const raw=expo*m/100-comm,r=Math.max(-stake,Math.min(stake*tp/100,Math.max(-stake*sl/100,raw)));h+='<tr><td>'+(m>0?'+':'')+m+'%</td><td class="'+(r<0?'bad':'good')+'">'+sg(r)+(Math.abs(raw-r)>1e-9?' (limit order hit)':'')+'</td></tr>'});h+='</table>'+
+ '<div class="note">Whether a multiplier wins depends on where the price goes, so there is no fixed win chance. At a 50% win rate the expected result per trade is '+sg(.5*(stake*tp/100-comm)-.5*(stake*sl/100+comm))+'. Fast moves can jump past the stop loss.</div>'}
+out.innerHTML=h;box._res={t,stake,L}}
+box.addEventListener('input',calc);box.addEventListener('change',calc);
+const setv=(id,val)=>{const e=$(id);if(!e)return;e.value=val;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))};
+$('calcUse').onclick=()=>{const t=$('cType').value,stake=v('cStk')||1,a=$('cSide').value==='a',d=Math.round(v('cDig')||0);setv('swMin',stake);
+ if(t==='ou'){setv('swTrig','digits');setv('swDm',a?'over':'under');setv('swBar',a?Math.min(8,d):Math.max(1,d))}
+ else if(t==='eo'){setv('swTrig','digits');setv('swDm',a?'even':'odd')}
+ else if(t==='md'){setv('swTrig','digits');setv('swDm',a?'match':'differ');setv('swBar',d)}
+ else if(t==='rf')setv('swTrig','swarm');
+ else if(t==='accu'){setv('swTrig','accu');setv('swGr',String(Math.round(v('cGr')||3)));setv('swAn',v('cTk')||12)}
+ else if(t==='mult'){setv('swTrig','mult');setv('swMu',v('cMu')||100);setv('swTpP',v('cTp')||30);setv('swSlP',v('cSl')||30);setv('swMc',v('cCm')||0)}
+ log('Calculator settings applied to the bot: '+$('cType').selectedOptions[0].textContent+', stake '+stake,'W')};
+$('calcLim').onclick=()=>{const L=Math.max(1,Math.round(v('cL')||6)),stake=v('cStk')||1;setv('swMxC',L);setv('swMxL',+(stake*L).toFixed(2));log('Loss limits set: stop after '+L+' losses in a row or a session loss of '+f2(stake*L),'W')};
+$('calcLoad').onclick=()=>{const tg=g('swTrig').value,dm=g('swDm').value;setv('cStk',v('swMin')||1);
+ if(tg==='digits'){if(dm==='over'||dm==='under'){setv('cType','ou');setv('cSide',dm==='over'?'a':'b');setv('cDig',v('swBar'))}else if(dm==='even'||dm==='odd'){setv('cType','eo');setv('cSide',dm==='even'?'a':'b')}else if(dm==='match'||dm==='differ'){setv('cType','md');setv('cSide',dm==='match'?'a':'b');setv('cDig',v('swBar'))}}
+ else if(tg==='accu'){setv('cType','accu');setv('cGr',g('swGr').value);setv('cTk',g('swAn').value)}
+ else if(tg==='mult'){setv('cType','mult');setv('cMu',g('swMu').value);setv('cTp',g('swTpP').value);setv('cSl',g('swSlP').value);setv('cCm',g('swMc').value)}
+ else if(tg==='swarm')setv('cType','rf');calc()};
+show();calc()}
 function initQuant(){const cvq=g('cvQuant'),wrap=g('qWrap'),btn=g('swMood');if(!cvq||!wrap)return;const cx=cvq.getContext&&cvq.getContext('2d');if(!cx)return;
 let md='on';try{const m=localStorage.getItem('swm_mood');md=m==='0'||m==='off'?'off':m==='lite'?'lite':'on'}catch(e){}
 let on=md!=='off',auto=false;
