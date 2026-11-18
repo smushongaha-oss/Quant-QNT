@@ -2335,7 +2335,7 @@ return{score:base,why}}
 function scalpStatus(){if(halted)return 'SCALPER HALTED ('+halted+')';const all=Object.keys(B).filter(k=>MK[k]!==undefined&&scalpOk(k,MK[k])),ks=all.filter(k=>B[k].length>=60),cnt={};all.forEach(k=>{const m=MK[k]==='cryptocurrency'?'crypto':MK[k]==='forex'?'forex':'indices';cnt[m]=(cnt[m]||0)+1});
 const top=ks.map(k=>[k,SCR[k]||0]).sort((x,y)=>Math.abs(y[1])-Math.abs(x[1])).slice(0,3).map(([k,v])=>nameFor(k)+' '+(v>=0?'+':'')+v.toFixed(2)).join(', ');
 return 'SCALPER: watching '+all.length+' symbols ('+(Object.entries(cnt).map(([m,k])=>k+' '+m).join(', ')||'none open')+') | '+g('swSr').selectedOptions[0].textContent.toLowerCase()+' | trades at +/-'+nv('swThr')+' | strongest: '+(top||'warming up')+' | open '+mineOpens().length}
-function core(sy,p){LT[sy]=Date.now();TCN[sy]=(TCN[sy]||0)+1;if(g('swTrig').value==='digits'){digitTick(sy,p);return}if(DIGT.includes(ET())&&isVol(sy)&&run)digitTick(sy,p,true);if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
+function core(sy,p){LT[sy]=Date.now();TCN[sy]=(TCN[sy]||0)+1;if(g('swTrig').value==='digits'){digitTick(sy,p);return}if((DIGT.includes(ET())||apAll())&&isVol(sy)&&run)digitTick(sy,p,true);if(!(sy in B)){if(!allowed(sy))return;B[sy]=[]}if(!allowed(sy))return;const a=B[sy];a.push(p);if(a.length>300)a.shift();
 if(!run)return;
 if(!live)xPaper(sy,p);
 if(live)accuBandSell(sy,p);
@@ -2351,7 +2351,7 @@ if(!halted&&SIGK.includes(kd0)&&(Math.abs(s)>=nv('swThr')||revOk)&&isBest(sy))tr
 /* live socket (trading only): Deriv NEW API = REST account list -> REST OTP -> authenticated WebSocket */
 let startBal=0,authed=false,cur='USD',tries=0,lastSx=0,DURS={},cfReq={},cfMap={};
 async function openWs(){const my=gen;authed=false;const TK=g('swTok').value.replace(/\s+/g,''),AP=g('swApp').value.replace(/\s+/g,''),H={'Authorization':'Bearer '+TK,'Deriv-App-ID':AP},B0='https://api.derivws.com/trading/v1/options/accounts';
-const fail=(m)=>{log(m,'L');if(my===gen){if(++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else setTimeout(()=>my===gen&&run&&openWs(),4000)}};
+const fail=(m)=>{log(m,'L');if(my===gen){if(!APon()&&++tries>=3){log('Giving up after 3 attempts. Press START to retry.','X');stopAll('CONNECT FAILED')}else{const dl=APon()?Math.min(60000,4000*Math.pow(1.6,Math.min(tries++,8))):4000;if(APon()&&tries===6)apTg('Trading link failing repeatedly: '+m);setTimeout(()=>my===gen&&run&&openWs(),dl)}}};
 try{const want=g('swAcc').value;let r=await fetch(B0,{headers:H});if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,220)}catch(e){}return fail('Account list failed (HTTP '+r.status+'). Deriv said: '+(bt||'no body')+' | token '+TK.length+' chars, app id '+AP.length+' chars'+(/^\d+$/.test(AP)?'':' (APP ID IS NOT ALL DIGITS)')+(TK.length<12?' (TOKEN LOOKS TOO SHORT)':''))}
 let j=await r.json();let arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
 const idOf=a=>a.account_id||a.id||a.loginid||a.login_id,isDemo=a=>/demo|virtual/i.test(String(a.account_type||a.type||'')+String(a.is_virtual===1||a.is_virtual===true?'demo':''))||/^VR/i.test(String(idOf(a)||''));
@@ -2433,7 +2433,7 @@ if(mineOpens().length>=maxOpen()||Date.now()-lastT<nv('swCd')*1000)return;
 for(const it of cands){const sy=it.sy,side=it.st.side,key=sy+':'+it.st.sig.t;if(mineOpens().some(o=>o.sy===sy))continue;
 const v=votes(sy);let ss=0;if(v)for(const k in WT)if(k!=='CONFLUENCE')ss+=WT[k]*v[k];
 if(cf!=='off'){if(!v)continue;const a=ss*side,bad=cf==='notopp'?a<-.1:a<.1;if(bad){if(Date.now()-(lastSk[key]||0)>30000){lastSk[key]=Date.now();log('Waiting: swarm '+(cf==='agree'?'does not yet agree with':'opposes')+' the engine '+(side>0?'BUY':'SELL')+' on '+nameFor(sy),'X')}continue}}
-const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
+apRot();const before=lastT;trade(sy,side*(it.st.val/100),v||{CONFLUENCE:side});
 if(lastT!==before){TRD[key]=1;sel=sy;selLock=Date.now()+15000;pkt('CONFLUENCE','CORE','#4aa8ff');log('ENGINE SIGNAL '+nameFor(sy)+' '+(side>0?'BUY':'SELL')+' score '+it.st.val,'W');break}}}
 
 
@@ -2820,7 +2820,56 @@ const hl=!!halted,thr=nv('swThr')||.5;
 const status=!run?'STANDBY':hl?'HALTED':t<flashUntil?'ORDER #'+QC.n+' SENT':op?'IN TRADE':ab>=thr?'ANALYZING':'LISTENING';
 const t0=performance.now();Q.draw(cx,W,H,t,{lite:md==='lite'||auto||reduce,lag:PERF.lag,energy:en,open:op,tone:hl?TH:TN,status,sig,pnl:pn,trades:TR.length,font,n:QC.n,orders:QC.ord.map(o=>({text:'#'+o.id+' '+o.label+' $'+o.amt,age:(Date.now()-o.t)/1000}))});ft=ft*.9+(performance.now()-t0)*.1;if(!auto&&md==='on'&&ft>14){auto=true;apply();log('SLOW DEVICE: quant visuals switched to lite mode to keep orders fast. Press QUANT MOOD to change.','X')}}
 requestAnimationFrame(loop)}
-return{tick,init,stop:stopAll,qc:QC}})();
+/* ================= AUTOPILOT 24/7 (supervisor around the swarm) ================= */
+const AP={on:false,hard:null,soft:0,resumeAt:0,restartAt:0,dayBase:0,totBase:0,day:'',hbAt:0,ri:-1,armedAt:0,rcAt:0,saveAt:0,softR:''};
+const APT=['rf','hl','tn','mult','turbo','van','accu','over','even','match','differ'];
+const apLS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const apDay=()=>new Date().toISOString().slice(0,10);
+const apv=id=>{const e=g(id);return e?(+e.value||0):0},apc=id=>{const e=g(id);return !!e&&(e.type==='checkbox'?e.checked:e.value==='1')};
+const APon=()=>AP.on,apAll=()=>AP.on&&apc('apRot');
+function apTg(txt){try{const c=(window.FATX&&FATX.cfg&&FATX.cfg())||{},tok=c.tok||(document.getElementById('tgtok')||{}).value,chat=c.chat||(document.getElementById('tgchat')||{}).value;if(tok&&chat)fetch('https://api.telegram.org/bot'+encodeURIComponent(tok)+'/sendMessage?chat_id='+encodeURIComponent(chat)+'&text='+encodeURIComponent('[AUTOPILOT '+(live?g('swAcc').value.toUpperCase():'PAPER')+'] '+txt)).catch(()=>{})}catch(e){}}
+function apRot(){if(!AP.on||!apc('apRot')||g('swTrig').value!=='engine')return;AP.ri=(AP.ri+1)%APT.length;g('swEt').value=APT[AP.ri]}
+const apIds=()=>[...document.querySelectorAll('[id^="sw"]')].filter(e=>e.tagName==='INPUT'||e.tagName==='SELECT').map(e=>e.id);
+const APX=['apDL','apDD','apPause','apHb','apRot','apNext'];
+function apSaveCfg(){const o={};apIds().concat(APX).forEach(id=>{const e=g(id);if(e)o[id]=e.type==='checkbox'?e.checked:e.value});apLS.set('ap_cfg',o)}
+function apLoadCfg(){const o=apLS.get('ap_cfg');if(!o)return;for(const id in o){const e=g(id);if(!e)continue;if(e.type==='checkbox')e.checked=!!o[id];else e.value=o[id]}try{modeUi()}catch(e){}}
+function apSaveState(){apLS.set('ap_state',{day:AP.day,dayPnl:AP.dayBase+pnl,totPnl:AP.totBase+pnl,hard:AP.hard,soft:AP.soft})}
+function apLoadState(){const s=apLS.get('ap_state');AP.day=apDay();AP.dayBase=0;AP.totBase=0;AP.hard=null;AP.soft=0;if(!s)return;AP.totBase=s.totPnl||0;AP.hard=s.hard||null;if(s.day===AP.day){AP.dayBase=s.dayPnl||0;AP.soft=s.soft||0}else if(AP.hard&&AP.hard.kind==='day'&&apc('apNext'))AP.hard=null}
+async function apWake(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')await navigator.wakeLock.request('screen')}catch(e){}}
+function apStart(){apSaveCfg();AP.dayBase+=pnl;AP.totBase+=pnl;const rc=window.confirm;window.confirm=()=>true;try{start()}finally{window.confirm=rc}log('AUTOPILOT started the swarm','W')}
+function apHard(r,kind){if(AP.hard&&AP.hard.r===r)return;AP.hard={r,kind};AP.resumeAt=0;if(run&&!halted)halt('AUTOPILOT HARD STOP: '+r);log('AUTOPILOT HARD STOP: '+r+'. Needs you to ARM again.','X');apTg('HARD STOP: '+r+'. Day P/L '+(AP.dayBase+pnl).toFixed(2)+'. Waiting for you.');apSaveState()}
+function apResume(){AP.dayBase+=pnl;AP.totBase+=pnl;pnl=0;cons=0;PL0=0;PKP=0;PLK=false;halted=null;AP.resumeAt=0;g('swState').textContent='SCANNING';log('AUTOPILOT resumed after: '+AP.softR,'W');apTg('Resumed after '+AP.softR+'. Day P/L '+AP.dayBase.toFixed(2));if(live&&(!ws||ws.readyState>1)){tries=0;openWs()}apSaveState()}
+const apStale=()=>{let m=0;for(const k in LT)if(LT[k]>m)m=LT[k];return m?Date.now()-m:Date.now()-(AP.armedAt||Date.now())};
+function apTick(){if(!AP.on)return;try{const now=Date.now();
+if(apDay()!==AP.day){AP.day=apDay();AP.dayBase=-pnl;AP.soft=0;if(AP.hard&&AP.hard.kind==='day'&&apc('apNext')){AP.hard=null;log('AUTOPILOT new day, daily cap cleared','W');apTg('New day, daily cap cleared, resuming.');if(halted)halted=null;AP.resumeAt=0}}
+if(AP.hard){if(run&&!halted)halt('AUTOPILOT HARD STOP: '+AP.hard.r);apKeepLink(now);apUi();return}
+const dl=apv('apDL'),dd=apv('apDD'),dayP=AP.dayBase+pnl,totP=AP.totBase+pnl;
+if(dl>0&&-dayP>=dl){apHard('DAILY LOSS CAP reached ('+dayP.toFixed(2)+')','day');apUi();return}
+if(dd>0&&-totP>=dd){apHard('TOTAL LOSS CAP reached ('+totP.toFixed(2)+')','tot');apUi();return}
+if(!run){if(!AP.restartAt)AP.restartAt=now+15000;if(now>=AP.restartAt){AP.restartAt=0;apStart()}apUi();return}
+if(halted){const h=String(halted);if(/KILL|STRICT SKEW/i.test(h)){apHard(h,'other');apUi();return}
+if(!AP.resumeAt){const loss=/LOSS|STREAK|ALLOWANCE/i.test(h);if(loss)AP.soft++;const m=Math.min(240,Math.max(1,apv('apPause')||15)*(loss?Math.pow(2,Math.max(0,AP.soft-1)):1));AP.resumeAt=now+m*60000;AP.softR=h;log('AUTOPILOT pausing '+m+' min after: '+h,'X');apTg('Paused '+m+' min: '+h+'. Day P/L '+dayP.toFixed(2))}
+else if(now>=AP.resumeAt&&!mineOpens().length)apResume();apKeepLink(now)}
+else AP.resumeAt=0;
+if(now-AP.armedAt>180000&&apStale()>150000){let rl=apLS.get('ap_rl')||[];rl=rl.filter(t=>now-t<3600000);if(rl.length<6){rl.push(now);apLS.set('ap_rl',rl);apSaveState();apTg('Feed stale '+Math.round(apStale()/1000)+'s, reloading page.');location.reload();return}else if(!AP.stormAt||now-AP.stormAt>3600000){AP.stormAt=now;apTg('Feed still stale after 6 reloads this hour. Check the host.')}}
+const hb=apv('apHb');if(hb>0&&now-AP.hbAt>hb*60000){AP.hbAt=now;apTg('alive | '+(halted?'PAUSED':'RUNNING')+' | bal '+(+bal).toFixed(2)+' | day P/L '+dayP.toFixed(2)+' | trades '+TR.length+' | open '+mineOpens().length)}
+if(now-AP.saveAt>5000){AP.saveAt=now;apSaveState()}
+apUi()}catch(e){console.error('autopilot',e)}}
+function apKeepLink(now){if(live&&mineOpens().length&&(!ws||ws.readyState>1)&&now-AP.rcAt>10000){AP.rcAt=now;tries=0;openWs()}}
+function apUi(){const e=g('apStat');if(!e)return;const dayP=AP.dayBase+pnl;let t=!AP.on?'OFF':AP.hard?'HARD STOPPED: '+AP.hard.r:halted?'PAUSED ('+halted+'), resumes in '+Math.max(0,Math.round((AP.resumeAt-Date.now())/60000))+' min':run?'RUNNING':'STARTING';e.textContent=t+' | day P/L '+(dayP>=0?'+':'')+dayP.toFixed(2)+' / cap -'+apv('apDL').toFixed(2)+' | pauses today '+AP.soft;e.style.color=AP.hard?'var(--neg)':AP.on?'var(--pos)':'inherit';const b=g('apBtn');if(b)b.textContent=AP.on?'DISARM AUTOPILOT':'ARM AUTOPILOT (ONE CLICK)'}
+function apArm(){const dl=apv('apDL');if(!(dl>0)){alert('Set the DAILY LOSS CAP (greater than 0) first.');return}
+if(g('swAcc').value==='real'&&g('swTok').value.trim()&&!confirm('AUTOPILOT ON REAL MONEY.\nIt will trade by itself 24/7, restart itself after reloads, and only stop for the loss caps you set (daily cap '+dl+'). Continue?'))return;
+AP.on=true;AP.hard=null;AP.resumeAt=0;AP.armedAt=Date.now();AP.hbAt=Date.now();apSaveCfg();apLS.set('ap_on',1);apLoadState();AP.hard=null;apWake();if(halted){AP.softR=String(halted);apResume()}if(!run)apStart();apTg('Armed. Daily cap '+dl+', total cap '+(apv('apDD')||'off')+', fire-all-types '+(apc('apRot')?'ON':'OFF'));apSaveState();apUi()}
+function apDisarm(){if(!AP.on)return;AP.on=false;apLS.del('ap_on');log('AUTOPILOT disarmed','X');apTg('Disarmed.');apUi()}
+function apInit(){const bt=g('swGo')&&g('swGo').parentNode;if(!bt||g('apBox'))return;
+bt.insertAdjacentHTML('afterend','<div id="apBox" style="margin:10px 0;padding:10px;border:1px solid var(--line,#2a3a55);border-radius:8px"><div style="font-weight:700;letter-spacing:.08em;margin-bottom:8px">AUTOPILOT 24/7</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"><div><label>DAILY LOSS CAP $ (HARD STOP, REQUIRED)</label><input id="apDL" type="number" step=".5" min="0" value=""></div><div><label>TOTAL LOSS CAP $ (0 = OFF)</label><input id="apDD" type="number" step=".5" min="0" value="0"></div><div><label>SOFT PAUSE MINUTES</label><input id="apPause" type="number" min="1" value="15"></div><div><label>HEARTBEAT MIN (0 = OFF)</label><input id="apHb" type="number" min="0" value="60"></div><div><label>FIRE ALL CONTRACT TYPES</label><select id="apRot" style="width:100%"><option value="1">ON: ROTATE ALL 11</option><option value="0">OFF: USE ENGINE CONTRACT TYPE</option></select></div><div><label>RESUME NEXT DAY AFTER DAILY CAP</label><select id="apNext" style="width:100%"><option value="0">NO: WAIT FOR ME</option><option value="1">YES (UTC DAY)</option></select></div></div><div class="bt" style="margin-top:8px"><button id="apBtn" type="button" class="go">ARM AUTOPILOT (ONE CLICK)</button></div><div id="apStat" style="margin-top:6px;font-size:12px">OFF</div><div style="margin-top:6px;font-size:11px;opacity:.7">Soft stops (losing streak, session loss, profit target or lock) pause then resume on their own. Hard stops (daily cap, total cap, strict skew) stay stopped until you ARM again. The token is stored in this browser so it can restart itself.</div></div>');
+g('apBtn').onclick=()=>AP.on?apDisarm():apArm();
+g('swGo').addEventListener('click',()=>{if(AP.on&&run)apDisarm()},true);g('swKill').addEventListener('click',()=>apDisarm(),true);
+document.addEventListener('visibilitychange',()=>{if(AP.on)apWake()});
+setInterval(apTick,1000);
+if(apLS.get('ap_on')){apLoadCfg();AP.on=true;AP.armedAt=Date.now();AP.hbAt=Date.now();apLoadState();apWake();log('AUTOPILOT: restoring last run'+(AP.hard?' (hard stopped: '+AP.hard.r+')':''),'W');if(!AP.hard)setTimeout(()=>{if(AP.on&&!run)apStart()},3000);apUi()}}
+
+return{tick,init:()=>{init();try{apInit()}catch(e){console.error('autopilot',e)}},stop:stopAll,qc:QC,ap:AP}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
 <script src="upgrade.js"></script>
