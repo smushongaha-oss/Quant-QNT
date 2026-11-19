@@ -1301,7 +1301,8 @@ function renderPlan(act){
    +'<span class="tp">TP2 <b>'+f(act.tp[1])+'</b> 2R</span>'
    +'<span class="tp">TP3 <b>'+f(act.tp[2])+'</b> 3R</span>'
    +'<span>RISK <b>'+f(rk)+'</b> ('+(rk/act.entry*100).toFixed(2)+'%)'+(COST>0?', COST '+(COST/rk).toFixed(2)+'R':'')+'</span>';
-  el.className='plan on';setH('planBar',h);
+  el.className='plan on';setH('planBar',h+'<span class="trb" id="trOpen" role="button" tabindex="0">TRADE LIVE</span>');
+  try{if(window.FATX_plan)window.FATX_plan({act,sym:cfg.sym,dp:S.dp,px:S.C.length?S.C[S.C.length-1].c:null,name:nameOf(cfg.sym),tf:tfName(),age:Math.max(0,S.C.length-1-act.i)});}catch(e){console.error(e)}
 }
 function drawChart(){
   const f=fit($('cvChart'));if(!f)return;
@@ -2120,71 +2121,8 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-/* ================= BACKTEST LAB (walk-forward, same engine code as live) ================= */
-const BTC={};const BTL={busy:false,rid:0,rows:null,trades:[],ws:null};
-function btRng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-/* A strategy is fn(X,i,minScore) -> signal|null, same shape evalBar returns: {i,t,d,score,entry,sl,risk,tp:[1R,2R,3R],pat,kind,res:'open',lim:false,reached:0,closedT:0,key,src}. Add new ones here. */
-const BTS={
-  smc:{name:'ORDER BLOCK + FLIP (CURRENT ENGINE)',fn:(X,i,m)=>evalBar(X,i,m)},
-  rand:{name:'RANDOM ENTRY (NULL BENCHMARK)',fn:(X,i)=>{const c=X.C[i],a=X.A[i];if(!(a>0)||i<30)return null;if(X.gap&&(X.gap[i]||X.gap[i-1]))return null;const r=btRng(i*2654435761+7)();if(r>0.03)return null;const d=r<0.015?1:-1,entry=c.c,risk=1.5*a;return{i,t:c.t,d,score:50,parts:[],pat:'RANDOM',kind:'RANDOM',entry,sl:entry-d*risk,risk,tp:[1,2,3].map(k=>entry+d*k*risk),res:'open',lim:false,reached:0,closedT:0,key:c.t+'_'+d,src:'bt'}}}
-};
-function btAnalyze(fn,X,minScore){const out=[],n=X.C.length,last={'1':-99,'-1':-99};for(let i=40;i<=n-2;i++){const s=fn(X,i,minScore);if(!s)continue;if(i-last[s.d]<8)continue;last[s.d]=i;resolveSig(s,X.C,n-2);out.push(s)}return out}
-function btStat(list,k,costOf){const r=list.filter(s=>RES_OK(s.res)),R=r.map(s=>{const c=costOf?costOf(s):0;return(s.reached>=k?k:(s.be?0:-1))-(c>0&&s.risk>0?c/s.risk:0)}),n=R.length;
-  if(!n)return{n:0,m:0,z:0,wr:0,pf:0,dd:0,tot:0,open:list.length-n};
-  const m=R.reduce((a,b)=>a+b,0)/n,sd=Math.sqrt(R.reduce((a,b)=>a+(b-m)*(b-m),0)/Math.max(1,n-1))||1e-9;let gp=0,gl=0,eq=0,pk=0,dd=0,w=0;
-  R.forEach(x=>{if(x>0){gp+=x;w++}else gl-=x;eq+=x;pk=Math.max(pk,eq);dd=Math.max(dd,pk-eq)});
-  return{n,m,z:m/(sd/Math.sqrt(n)),wr:w/n,pf:gl>0?gp/gl:(gp>0?99:0),dd,tot:eq,open:list.length-n}}
-function btOpen(){return new Promise((res,rej)=>{let w;try{w=new WebSocket(EPS[S.ep%EPS.length].u)}catch(e){return rej(e)}const t=setTimeout(()=>{try{w.close()}catch(e){}rej(new Error('socket timeout'))},12000);w.onopen=()=>{clearTimeout(t);res(w)};w.onerror=()=>{clearTimeout(t);rej(new Error('socket blocked'))}})}
-async function btWs(){if(BTL.ws&&BTL.ws.readyState===1)return BTL.ws;BTL.ws=await btOpen();return BTL.ws}
-function btReq(ws,sy,g,end){return new Promise(res=>{const id=7000000+(++BTL.rid);const t=setTimeout(()=>{ws.removeEventListener('message',h);res(null)},15000);
-  const h=ev=>{let d;try{d=JSON.parse(ev.data)}catch(e){return}if(d.req_id!==id)return;clearTimeout(t);ws.removeEventListener('message',h);res(d.error?null:(d.candles||[]).map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close})))};
-  ws.addEventListener('message',h);try{ws.send(JSON.stringify({ticks_history:sy,adjust_start_time:1,count:5000,end:end||'latest',granularity:g,style:'candles',req_id:id}))}catch(e){clearTimeout(t);res(null)}})}
-async function btGet(sy,g,pages){const key=sy+'|'+g,c=BTC[key]||(BTC[key]={a:[],p:0,done:false});
-  while(c.p<pages&&!c.done){const ws=await btWs(),r=await btReq(ws,sy,g,c.a.length?c.a[0].t-1:'latest');if(!r||!r.length){c.done=true;break}c.a=r.concat(c.a);c.p++;if(r.length<4900)c.done=true;await new Promise(z=>setTimeout(z,150))}
-  return c.a}
-const btF=(x,d)=>x==null||x!==x?'-':x.toFixed(d==null?2:d),btP=x=>(100*x).toFixed(0)+'%';
-async function btRun(){if(BTL.busy)return;BTL.busy=true;const out=$('btOut'),st=$('btSt');
-  try{const sk=$('btStrat').value,strat=BTS[sk],scope=$('btScope').value,pages=+$('btPages').value||1,tf=cfg.tf,htf=htfOf(tf),minS=+$('btMin').value||0,syms=scope==='all'?SYMS.map(x=>x[0]):[cfg.sym];
-    const rows=[],A=[],B=[];let splitT=null;out.innerHTML='';BTL.trades=[];
-    for(let q=0;q<syms.length;q++){const sy=syms[q];st.textContent='RUNNING '+(q+1)+'/'+syms.length+' '+sy;
-      let C=[],H=[];try{C=await btGet(sy,tf,pages);H=await btGet(sy,htf,1)}catch(e){rows.push({sy,err:String(e.message||e)});if(/socket/.test(String(e.message)))break;continue}
-      if(C.length<300||H.length<40){rows.push({sy,err:'NO DATA ('+C.length+' candles)'});continue}
-      await new Promise(z=>setTimeout(z,0));
-      const X=buildX(C,H,tf,htf,null),cost=+(cfg.spr[sy])||0,costOf=()=>cost,split=C[Math.floor(C.length*0.6)].t;
-      const sg=btAnalyze(strat.fn,X,minS);sg.forEach(s=>{s.sy=sy;s.oos=s.t>=split;s.cost=cost});
-      const bm=sk==='rand'?[]:btAnalyze(BTS.rand.fn,X,0);bm.forEach(s=>{s.sy=sy;s.oos=s.t>=split;s.cost=cost});
-      A.push(...sg);B.push(...bm);rows.push({sy,n:C.length,sg,cost,days:(C[C.length-1].t-C[0].t)/86400});}
-    const cof=s=>s.cost,srt=(a,b)=>a.t-b.t;A.sort(srt);B.sort(srt);BTL.trades=A;
-    const IS=A.filter(s=>!s.oos),OS=A.filter(s=>s.oos),BO=B.filter(s=>s.oos);
-    let bk=1,be=-9;for(const k of[1,2,3]){const s=btStat(IS,k,cof);if(s.n>=10&&s.m>be){be=s.m;bk=k}}
-    const stI=btStat(IS,bk,cof),stO=btStat(OS,bk,cof),stB=btStat(BO,bk,cof);
-    let h='<div style="margin:6px 0"><b>'+strat.name+'</b> | '+tf/60+'m candles | split 60% in-sample / 40% out-of-sample | target chosen on in-sample only: <b>TP'+bk+' ('+bk+'R)</b></div>';
-    let v,col;if(stO.n<30){v='NOT ENOUGH OUT-OF-SAMPLE TRADES ('+stO.n+'). Deepen history or widen scope.';col='#f5a524'}
-    else if(stO.m>0&&stO.z>=1.64&&(sk==='rand'||stO.m>stB.m+0.05)){v='EDGE HOLDS OUT OF SAMPLE after cost. Next: forward-test on DEMO. Still beware testing many symbols (some pass by luck).';col='#2fe38a'}
-    else if(stO.m>0){v='POSITIVE BUT NOT SIGNIFICANT (z '+btF(stO.z)+', needs 1.64) or not clearly above random. Do not trade it yet.';col='#f5a524'}
-    else{v='NO EDGE: expectancy out of sample is '+btF(stO.m)+'R per trade after cost.';col='#ff4d5e'}
-    h+='<div style="margin:6px 0;padding:6px;border:1px solid '+col+';color:'+col+'"><b>VERDICT:</b> '+v+'</div>';
-    h+='<table><tr><th>SET</th><th>TRADES</th><th>WIN%</th><th>EXPECT R</th><th>Z</th><th>PROFIT FACTOR</th><th>MAX DD (R)</th><th>TOTAL R</th></tr>';
-    const trw=(nm,s)=>'<tr><td>'+nm+'</td><td>'+s.n+'</td><td>'+(s.n?btP(s.wr):'-')+'</td><td>'+btF(s.m,3)+'</td><td>'+btF(s.z)+'</td><td>'+btF(s.pf)+'</td><td>'+btF(s.dd,1)+'</td><td>'+btF(s.tot,1)+'</td></tr>';
-    h+=trw('IN-SAMPLE',stI)+trw('OUT-OF-SAMPLE',stO)+(sk==='rand'?'':trw('RANDOM ENTRY, SAME EXITS (OOS)',stB))+'</table>';
-    h+='<div style="margin:8px 0 2px"><b>By target (all trades, net of cost)</b></div><table><tr><th>TARGET</th><th>TRADES</th><th>WIN%</th><th>EXPECT R</th><th>Z</th></tr>';
-    for(const k of[1,2,3]){const s=btStat(A,k,cof);h+='<tr><td>TP'+k+' ('+k+'R)</td><td>'+s.n+'</td><td>'+(s.n?btP(s.wr):'-')+'</td><td>'+btF(s.m,3)+'</td><td>'+btF(s.z)+'</td></tr>'}h+='</table>';
-    h+='<div style="margin:8px 0 2px"><b>By symbol (TP'+bk+')</b></div><table><tr><th>SYMBOL</th><th>CANDLES</th><th>DAYS</th><th>IS N</th><th>IS R</th><th>OOS N</th><th>OOS R</th><th>OOS WIN%</th></tr>';
-    for(const r of rows){if(r.err){h+='<tr><td>'+r.sy+'</td><td colspan="7">'+r.err+'</td></tr>';continue}const a=btStat(r.sg.filter(s=>!s.oos),bk,cof),b=btStat(r.sg.filter(s=>s.oos),bk,cof);h+='<tr><td>'+r.sy+'</td><td>'+r.n+'</td><td>'+btF(r.days,1)+'</td><td>'+a.n+'</td><td>'+(a.n?btF(a.m,2):'-')+'</td><td>'+b.n+'</td><td>'+(b.n?btF(b.m,2):'-')+'</td><td>'+(b.n?btP(b.wr):'-')+'</td></tr>'}h+='</table>';
-    h+='<div class="lab" style="text-transform:none;margin-top:6px;line-height:1.5">R = multiples of the stop distance. Expectancy is after the spread you set per symbol (cost 0 if none set, which flatters results). Trades that neither hit stop nor TP3 within 150 bars are excluded.</div>';
-    out.innerHTML=h;st.textContent='DONE: '+A.length+' signals, '+syms.length+' symbol(s)'}
-  catch(e){st.textContent='FAILED: '+String(e&&e.message||e).slice(0,80)}
-  BTL.busy=false}
-function btCsv(){if(!BTL.trades.length)return;const L=['time,symbol,dir,score,pattern,kind,entry,sl,result,reached,sample'];BTL.trades.forEach(s=>L.push([new Date(s.t*1000).toISOString(),s.sy,s.d===1?'BUY':'SELL',s.score,s.pat,s.kind,s.entry,s.sl,s.res,s.reached,s.oos?'OOS':'IS'].join(',')));
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\n')],{type:'text/csv'}));a.download='backtest_trades.csv';a.click()}
-function btInit(){const sw=$('sSwarm');if(!sw||$('sBT'))return;
-  sw.insertAdjacentHTML('beforebegin','<section class="p" id="sBT"><div class="ph">BACKTEST LAB <span class="r" id="btSt">IDLE</span></div><div class="stabs"><select id="btStrat" aria-label="Strategy"></select><select id="btScope"><option value="cur">CURRENT SYMBOL</option><option value="all">ALL SYMBOLS IN LIST</option></select><select id="btPages"><option value="1">5,000 CANDLES</option><option value="2" selected>10,000 CANDLES</option><option value="4">20,000 CANDLES</option><option value="6">30,000 CANDLES</option></select><input id="btMin" type="number" min="0" max="100" style="width:70px" title="Minimum score" aria-label="Minimum score"><button id="btRun" type="button">RUN BACKTEST</button><button id="btCsv" type="button">EXPORT TRADES</button></div><div id="btOut" style="overflow:auto;max-height:520px"></div><div class="lab" style="text-transform:none;letter-spacing:.02em;line-height:1.5">Replays history through the same engine code as live, on the timeframe selected above. Split 60/40 in-sample/out-of-sample; only the out-of-sample result counts. Compared against random entries with the same exits.</div></section>');
-  const s=$('btStrat');Object.keys(BTS).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=BTS[k].name;s.appendChild(o)});
-  $('btMin').value=cfg.thr;$('btRun').onclick=btRun;$('btCsv').onclick=btCsv}
-
-window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset,bt:{BTC,BTS,run:btRun,stat:btStat,L:BTL}};
+window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
-try{btInit()}catch(e){console.error('backtest lab',e)}
 })();
 </script>
 
@@ -2935,6 +2873,181 @@ if(apLS.get('ap_on')){apLoadCfg();AP.on=true;AP.armedAt=Date.now();AP.hbAt=Date.
 return{tick,init:()=>{init();try{apInit()}catch(e){console.error('autopilot',e)}},stop:stopAll,qc:QC,ap:AP}})();
 </script>
 <script>try{SWM.init()}catch(e){console.error(e)}</script>
+<script>
+/* ===== LIVE TRADE CONFIRM: asks before opening a signal on your REAL Deriv account ===== */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const asked=new Set(LS.get('fat_asked',[])),placed=new Set(LS.get('fat_placed',[]));
+const mark=(set,name,k)=>{set.add(k);LS.set(name,[...set].slice(-300))};
+let cur=null,lastKey='',busy=false,ws=null;
+const P=Object.assign({stake:10,mult:100,tp:1},LS.get('fat_live_prefs',{}));
+
+const css=document.createElement('style');
+css.textContent='#trModal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(2,5,10,.78);padding:0}#trModal.on{display:flex}'
++'#trBox{width:100%;max-width:480px;max-height:96vh;overflow:auto;background:#07101b;border:1px solid var(--blu,#2b8cff);padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));font-family:var(--m,monospace)}'
++'@media(min-width:600px){#trModal{align-items:center}#trBox{max-height:90vh}}'
++'#trBox h3{font-size:12px;letter-spacing:.14em;font-weight:400;color:#cfe3f7;margin-bottom:8px}'
++'#trBox .tr-side{display:inline-block;padding:4px 10px;font-weight:700;color:#03060b;font-size:13px;letter-spacing:.08em;margin-right:8px}'
++'#trBox .tr-side.b{background:var(--pos,#2fe38a)}#trBox .tr-side.s{background:var(--neg,#ff4d5e)}'
++'#trBox .tr-g{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:10px 0;font-size:12px}'
++'#trBox .tr-g div{border:1px solid var(--bd,#16273a);padding:4px 8px;background:#06101a;color:var(--dim,#7d90a6)}#trBox .tr-g b{display:block;font-weight:400;color:#fff;font-size:14px}'
++'#trBox .tr-g .sl b{color:#ff8d98}#trBox .tr-g .tp b{color:#7defb4}'
++'#trBox label{display:block;font-size:10px;letter-spacing:.12em;color:var(--dim,#7d90a6);margin:8px 0 3px}'
++'#trBox input,#trBox select{width:100%;font-size:14px;padding:7px 8px;text-transform:none;letter-spacing:0}'
++'#trBox .tr-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}'
++'#trCalc{margin:10px 0;font-size:12px;line-height:1.6;border:1px solid var(--bd,#16273a);padding:7px 9px;background:#050c15}'
++'#trCalc .bad{color:#ff8d98}#trCalc .ok{color:#7defb4}#trCalc .warn{color:#f5a524}'
++'#trMsg{min-height:16px;font-size:11.5px;margin:6px 0;line-height:1.5}'
++'#trBtns{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-top:8px}#trBtns button{padding:12px 6px;font-size:13px;letter-spacing:.08em}'
++'#trYes{background:#3a0c14;border-color:var(--neg,#ff4d5e);color:#fff}#trYes:disabled{opacity:.4}'
++'.trb{cursor:pointer;border-color:var(--amb,#f5a524)!important;color:var(--amb,#f5a524)!important;background:#1a1204!important}';
+document.head.appendChild(css);
+
+const m=document.createElement('div');
+m.id='trModal';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');
+m.innerHTML='<div id="trBox"></div>';
+document.body.appendChild(m);
+
+const fx=(v,dp)=>(+v).toFixed(dp);
+const keyOf=p=>p.sym+'|'+p.tf+'|'+p.act.t+'|'+p.act.d;
+
+function calc(){
+  const p=cur,a=p.act,d=a.d,px=p.px||a.entry;
+  const stake=Math.max(0,+$('trStake').value||0),mult=Math.max(1,Math.round(+$('trMult').value||1)),ti=+$('trTp').value;
+  const tp=a.tp[ti],slD=(px-a.sl)*d,tpD=(tp-px)*d;
+  const r={ok:true,stake,mult,ti,px,tp,html:''};
+  const lines=[];
+  if(!(stake>0)){r.ok=false;lines.push('<span class="bad">Enter a stake above 0.</span>')}
+  if(slD<=0){r.ok=false;lines.push('<span class="bad">Price is already past the stop loss. This signal is no longer valid.</span>')}
+  if(tpD<=0){r.ok=false;lines.push('<span class="bad">Price is already past TP'+(ti+1)+'. Pick a further target.</span>')}
+  if(slD>0){
+    r.sl$=+(stake*mult*slD/px).toFixed(2);
+    r.maxMult=Math.floor(0.9*px/slD);
+    if(r.sl$>=stake*0.95){r.ok=false;lines.push('<span class="bad">Stop is too wide for x'+mult+': the stop loss would be $'+r.sl$.toFixed(2)+' on a $'+stake.toFixed(2)+' stake. Use x'+Math.max(1,r.maxMult)+' or lower.</span>')}
+  }
+  if(tpD>0)r.tp$=+(stake*mult*tpD/px).toFixed(2);
+  if(r.sl$!=null&&r.ok||r.sl$!=null)lines.unshift('Max loss at stop: <b class="bad">-$'+r.sl$.toFixed(2)+'</b> &nbsp; Profit at TP'+(ti+1)+': <b class="ok">'+(r.tp$!=null?'+$'+r.tp$.toFixed(2):'-')+'</b><br>Position size: $'+(stake*mult).toFixed(2)+' (stake $'+stake.toFixed(2)+' x '+mult+')');
+  const age=p.age;if(age>=3)lines.push('<span class="warn">This signal is '+age+' candles old. Price has moved since entry, so your fill will differ.</span>');
+  const slip=Math.abs(px-a.entry)/a.entry*100;if(slip>=0.1)lines.push('<span class="warn">Current price is '+slip.toFixed(2)+'% from the signal entry. Stop and target amounts are set from the current price.</span>');
+  r.html=lines.join('<br>');
+  return r;
+}
+
+function render(){
+  const p=cur,a=p.act,d=a.d,dp=p.dp,f=v=>fx(v,dp);
+  {const px=p.px||a.entry,slD=(px-a.sl)*d;if(slD>0){const mx=Math.floor(0.9*px/slD);if(P.mult>mx)P.mult=mx>=10?Math.floor(mx/10)*10:Math.max(1,mx)}}
+  const needCreds=!(($('swApp')||{}).value||'').trim()||!(($('swTok')||{}).value||'').trim();
+  $('trBox').innerHTML=
+   '<h3>OPEN THIS POSITION ON YOUR LIVE ACCOUNT?</h3>'
+  +'<div><span class="tr-side '+(d===1?'b':'s')+'">'+(a.lim?'LIMIT ':'')+(d===1?'BUY':'SELL')+' '+a.score+'</span><span style="color:#cfe3f7;font-size:13px">'+esc(p.name)+' / '+esc(p.tf)+'</span></div>'
+  +'<div class="tr-g"><div>ENTRY<b>'+f(a.entry)+'</b></div><div>PRICE NOW<b>'+(p.px!=null?f(p.px):'-')+'</b></div>'
+  +'<div class="sl">STOP LOSS<b>'+f(a.sl)+'</b></div><div class="tp">TP1 (1R)<b>'+f(a.tp[0])+'</b></div>'
+  +'<div class="tp">TP2 (2R)<b>'+f(a.tp[1])+'</b></div><div class="tp">TP3 (3R)<b>'+f(a.tp[2])+'</b></div></div>'
+  +'<div class="tr-row"><div><label for="trStake">STAKE (USD)</label><input id="trStake" type="number" inputmode="decimal" min="1" step="any" value="'+P.stake+'"></div>'
+  +'<div><label for="trMult">MULTIPLIER</label><input id="trMult" type="number" inputmode="numeric" min="1" step="1" value="'+P.mult+'"></div>'
+  +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
+  +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="numeric" autocomplete="off"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off">':'')
+  +'<div id="trCalc"></div><div id="trMsg"></div>'
+  +'<div id="trBtns"><button id="trYes" type="button">YES, OPEN LIVE</button><button id="trNo" type="button">NO, SKIP</button></div>'
+  +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier on your REAL money account at the current market price, with the stop loss and take profit above attached. Real money is at risk.</div>';
+  $('trTp').value=String(P.tp);
+  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trYes').disabled=busy||!r.ok};
+  ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
+  $('trNo').onclick=()=>close(true);$('trYes').onclick=submit;upd();
+}
+
+function open(auto){
+  if(!cur||!cur.act)return;
+  const k=keyOf(cur);
+  if(placed.has(k)&&!confirm('You already opened this signal live. Open another position on it?'))return;
+  render();m.classList.add('on');
+  if(auto){try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+}
+function close(skip){
+  m.classList.remove('on');
+  if(cur&&cur.act)mark(asked,'fat_asked',keyOf(cur));
+  if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
+  busy=false;
+}
+m.addEventListener('click',e=>{if(e.target===m&&!busy)close(true)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contains('on')&&!busy)close(true)});
+
+const msg=(t,c)=>{const e=$('trMsg');if(e){e.textContent=t;e.style.color=c||'#cfe3f7'}};
+
+async function connect(app,tok){
+  const H={'Authorization':'Bearer '+tok,'Deriv-App-ID':app},B0='https://api.derivws.com/trading/v1/options/accounts';
+  let r=await fetch(B0,{headers:H});
+  if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Account list failed (HTTP '+r.status+'). '+bt)}
+  let j=await r.json();
+  const arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
+  const idOf=a=>a.account_id||a.id||a.loginid||a.login_id;
+  const isDemo=a=>/demo|virtual/i.test(String(a.account_type||a.type||'')+String(a.is_virtual===1||a.is_virtual===true?'demo':''))||/^VR/i.test(String(idOf(a)||''));
+  const acc=arr.find(a=>!isDemo(a));
+  if(!acc)throw new Error('No live (real money) account found on this token.');
+  r=await fetch(B0+'/'+encodeURIComponent(idOf(acc))+'/otp',{method:'POST',headers:H});
+  if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Login failed (HTTP '+r.status+'). '+bt)}
+  j=await r.json();const url=j.data&&j.data.url;if(!url)throw new Error('Deriv did not return a trading link.');
+  return new Promise((res,rej)=>{
+    const w=new WebSocket(url);ws=w;let done=false;
+    const to=setTimeout(()=>{if(!done){done=true;rej(new Error('Timed out connecting to Deriv.'))}},15000);
+    w.onopen=()=>w.send(JSON.stringify({balance:1}));
+    w.onerror=()=>{if(!done){done=true;clearTimeout(to);rej(new Error('Connection to Deriv failed.'))}};
+    w.onmessage=e=>{let x;try{x=JSON.parse(e.data)}catch(_){return}
+      if(x.error&&!done){done=true;clearTimeout(to);rej(new Error(x.error.message||'Deriv error'));return}
+      if(x.msg_type==='balance'&&x.balance&&!done){done=true;clearTimeout(to);res({ws:w,cur:x.balance.currency||'USD',bal:+x.balance.balance,id:idOf(acc)})}};
+  });
+}
+
+function sendBuy(w,par){
+  return new Promise((res,rej)=>{
+    const id=Date.now()%1e9,to=setTimeout(()=>rej(new Error('No answer from Deriv. Check your open positions before retrying.')),20000);
+    const prev=w.onmessage;
+    w.onmessage=e=>{let x;try{x=JSON.parse(e.data)}catch(_){return}
+      if(x.req_id!==id)return;clearTimeout(to);
+      if(x.error)rej(new Error(x.error.message||'Order rejected'));else if(x.buy)res(x.buy);};
+    w.send(JSON.stringify({buy:1,price:+(par.amount*1.05+0.1).toFixed(2),req_id:id,parameters:par}));
+  });
+}
+
+async function submit(){
+  if(busy||!cur)return;
+  const r=calc();if(!r.ok)return;
+  let app=(($('swApp')||{}).value||'').replace(/\s+/g,''),tok=(($('swTok')||{}).value||'').replace(/\s+/g,'');
+  if($('trApp'))app=$('trApp').value.replace(/\s+/g,'');if($('trTok'))tok=$('trTok').value.replace(/\s+/g,'');
+  if(!app||!tok){msg('Enter your Deriv App ID and token.','#ff8d98');return}
+  P.stake=r.stake;P.mult=r.mult;P.tp=r.ti;LS.set('fat_live_prefs',P);
+  if($('swApp')&&!$('swApp').value)$('swApp').value=app;if($('swTok')&&!$('swTok').value)$('swTok').value=tok;
+  busy=true;$('trYes').disabled=true;$('trNo').disabled=true;msg('Connecting to your live account...');
+  const k=keyOf(cur),a=cur.act;
+  try{
+    const c=await connect(app,tok);
+    msg('Connected ('+c.id+', balance '+c.bal.toFixed(2)+' '+c.cur+'). Sending order...');
+    const r2=calc();if(!r2.ok)throw new Error('Price moved past your stop or target while connecting. Order cancelled.');
+    const b=await sendBuy(c.ws,{amount:r2.stake,basis:'stake',contract_type:a.d===1?'MULTUP':'MULTDOWN',currency:c.cur,multiplier:r2.mult,underlying_symbol:cur.sym,limit_order:{take_profit:r2.tp$,stop_loss:r2.sl$}});
+    mark(placed,'fat_placed',k);mark(asked,'fat_asked',k);
+    msg('OPENED LIVE. Contract #'+b.contract_id+' at '+(b.buy_price!=null?'$'+(+b.buy_price).toFixed(2):'stake')+'. Stop -$'+r2.sl$.toFixed(2)+', target +$'+r2.tp$.toFixed(2)+'.','#7defb4');
+    try{ws.onclose=null;ws.close()}catch(e){}ws=null;
+    $('trNo').disabled=false;$('trNo').textContent='CLOSE';$('trYes').style.display='none';busy=false;
+  }catch(err){
+    msg('NOT OPENED: '+(err&&err.message||err),'#ff8d98');
+    if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
+    busy=false;$('trYes').disabled=false;$('trNo').disabled=false;
+  }
+}
+
+/* called by the chart every frame while a signal is open */
+window.FATX_plan=function(p){
+  cur=p;const k=keyOf(p);
+  if(k===lastKey)return;lastKey=k;
+  if(!asked.has(k)&&!placed.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+};
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trOpen'))open(false)});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trOpen'){e.preventDefault();open(false)}});
+})();
+</script>
 <script src="upgrade.js"></script>
 </body>
 </html>
