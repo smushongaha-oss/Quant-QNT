@@ -2949,7 +2949,7 @@ function render(){
   +'<div class="tr-row"><div><label for="trStake">STAKE (USD)</label><input id="trStake" type="number" inputmode="decimal" min="1" step="any" value="'+P.stake+'"></div>'
   +'<div><label for="trMult">MULTIPLIER</label><input id="trMult" type="number" inputmode="numeric" min="1" step="1" value="'+P.mult+'"></div>'
   +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
-  +(needCreds?'<label for="trApp">DERIV APP ID (DIGITS ONLY)</label><input id="trApp" type="text" inputmode="numeric" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
+  +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
   +'<div id="trCalc"></div><div id="trMsg"></div>'
   +'<div id="trBtns"><button id="trYes" type="button">YES, OPEN LIVE</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier on your REAL money account at the current market price, with the stop loss and take profit above attached. Real money is at risk.</div>';
@@ -2980,7 +2980,7 @@ const msg=(t,c)=>{const e=$('trMsg');if(e){e.textContent=t;e.style.color=c||'#cf
 async function connect(app,tok){
   const H={'Authorization':'Bearer '+tok,'Deriv-App-ID':app},B0='https://api.derivws.com/trading/v1/options/accounts';
   let r=await fetch(B0,{headers:H});
-  if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Account list failed (HTTP '+r.status+'). '+bt+(r.status===401?' | Deriv does not accept this token. Check that it is a new-API personal access token created at developers.deriv.com with trade scope (not an old api token), that it has no spaces, and that the App ID is the one registered there. Token length: '+tok.length+', App ID: '+(app||'empty'):''))}
+  if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Account list failed (HTTP '+r.status+'). '+bt+(r.status===401?' | Deriv does not accept this token. Check that it is a new-API personal access token created at developers.deriv.com with trade scope (not an old api token), that it has no spaces, and that the App ID is the one registered there (letters and numbers are fine). Token length: '+tok.length+', App ID: '+(app||'empty'):''))}
   let j=await r.json();
   const arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
   const idOf=a=>a.account_id||a.id||a.loginid||a.login_id;
@@ -3017,7 +3017,6 @@ async function submit(){
   const r=calc();if(!r.ok)return;
   let app=(($('swApp')||{}).value||'').replace(/\s+/g,''),tok=(($('swTok')||{}).value||'').replace(/\s+/g,'');
   if($('trApp'))app=$('trApp').value.replace(/\s+/g,'')||app;if($('trTok'))tok=$('trTok').value.replace(/\s+/g,'')||tok;
-  if(app&&!/^\d+$/.test(app)){msg('The App ID should be digits only. You may have pasted the token there.','#ff8d98');return}
   if(!app||!tok){msg('Enter your Deriv App ID and token.','#ff8d98');return}
   P.stake=r.stake;P.mult=r.mult;P.tp=r.ti;LS.set('fat_live_prefs',P);
   if($('swApp')&&!$('swApp').value)$('swApp').value=app;if($('swTok')&&!$('swTok').value)$('swTok').value=tok;
