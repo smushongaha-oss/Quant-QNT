@@ -2120,8 +2120,71 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+/* ================= BACKTEST LAB (walk-forward, same engine code as live) ================= */
+const BTC={};const BTL={busy:false,rid:0,rows:null,trades:[],ws:null};
+function btRng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* A strategy is fn(X,i,minScore) -> signal|null, same shape evalBar returns: {i,t,d,score,entry,sl,risk,tp:[1R,2R,3R],pat,kind,res:'open',lim:false,reached:0,closedT:0,key,src}. Add new ones here. */
+const BTS={
+  smc:{name:'ORDER BLOCK + FLIP (CURRENT ENGINE)',fn:(X,i,m)=>evalBar(X,i,m)},
+  rand:{name:'RANDOM ENTRY (NULL BENCHMARK)',fn:(X,i)=>{const c=X.C[i],a=X.A[i];if(!(a>0)||i<30)return null;if(X.gap&&(X.gap[i]||X.gap[i-1]))return null;const r=btRng(i*2654435761+7)();if(r>0.03)return null;const d=r<0.015?1:-1,entry=c.c,risk=1.5*a;return{i,t:c.t,d,score:50,parts:[],pat:'RANDOM',kind:'RANDOM',entry,sl:entry-d*risk,risk,tp:[1,2,3].map(k=>entry+d*k*risk),res:'open',lim:false,reached:0,closedT:0,key:c.t+'_'+d,src:'bt'}}}
+};
+function btAnalyze(fn,X,minScore){const out=[],n=X.C.length,last={'1':-99,'-1':-99};for(let i=40;i<=n-2;i++){const s=fn(X,i,minScore);if(!s)continue;if(i-last[s.d]<8)continue;last[s.d]=i;resolveSig(s,X.C,n-2);out.push(s)}return out}
+function btStat(list,k,costOf){const r=list.filter(s=>RES_OK(s.res)),R=r.map(s=>{const c=costOf?costOf(s):0;return(s.reached>=k?k:(s.be?0:-1))-(c>0&&s.risk>0?c/s.risk:0)}),n=R.length;
+  if(!n)return{n:0,m:0,z:0,wr:0,pf:0,dd:0,tot:0,open:list.length-n};
+  const m=R.reduce((a,b)=>a+b,0)/n,sd=Math.sqrt(R.reduce((a,b)=>a+(b-m)*(b-m),0)/Math.max(1,n-1))||1e-9;let gp=0,gl=0,eq=0,pk=0,dd=0,w=0;
+  R.forEach(x=>{if(x>0){gp+=x;w++}else gl-=x;eq+=x;pk=Math.max(pk,eq);dd=Math.max(dd,pk-eq)});
+  return{n,m,z:m/(sd/Math.sqrt(n)),wr:w/n,pf:gl>0?gp/gl:(gp>0?99:0),dd,tot:eq,open:list.length-n}}
+function btOpen(){return new Promise((res,rej)=>{let w;try{w=new WebSocket(EPS[S.ep%EPS.length].u)}catch(e){return rej(e)}const t=setTimeout(()=>{try{w.close()}catch(e){}rej(new Error('socket timeout'))},12000);w.onopen=()=>{clearTimeout(t);res(w)};w.onerror=()=>{clearTimeout(t);rej(new Error('socket blocked'))}})}
+async function btWs(){if(BTL.ws&&BTL.ws.readyState===1)return BTL.ws;BTL.ws=await btOpen();return BTL.ws}
+function btReq(ws,sy,g,end){return new Promise(res=>{const id=7000000+(++BTL.rid);const t=setTimeout(()=>{ws.removeEventListener('message',h);res(null)},15000);
+  const h=ev=>{let d;try{d=JSON.parse(ev.data)}catch(e){return}if(d.req_id!==id)return;clearTimeout(t);ws.removeEventListener('message',h);res(d.error?null:(d.candles||[]).map(x=>({t:+x.epoch,o:+x.open,h:+x.high,l:+x.low,c:+x.close})))};
+  ws.addEventListener('message',h);try{ws.send(JSON.stringify({ticks_history:sy,adjust_start_time:1,count:5000,end:end||'latest',granularity:g,style:'candles',req_id:id}))}catch(e){clearTimeout(t);res(null)}})}
+async function btGet(sy,g,pages){const key=sy+'|'+g,c=BTC[key]||(BTC[key]={a:[],p:0,done:false});
+  while(c.p<pages&&!c.done){const ws=await btWs(),r=await btReq(ws,sy,g,c.a.length?c.a[0].t-1:'latest');if(!r||!r.length){c.done=true;break}c.a=r.concat(c.a);c.p++;if(r.length<4900)c.done=true;await new Promise(z=>setTimeout(z,150))}
+  return c.a}
+const btF=(x,d)=>x==null||x!==x?'-':x.toFixed(d==null?2:d),btP=x=>(100*x).toFixed(0)+'%';
+async function btRun(){if(BTL.busy)return;BTL.busy=true;const out=$('btOut'),st=$('btSt');
+  try{const sk=$('btStrat').value,strat=BTS[sk],scope=$('btScope').value,pages=+$('btPages').value||1,tf=cfg.tf,htf=htfOf(tf),minS=+$('btMin').value||0,syms=scope==='all'?SYMS.map(x=>x[0]):[cfg.sym];
+    const rows=[],A=[],B=[];let splitT=null;out.innerHTML='';BTL.trades=[];
+    for(let q=0;q<syms.length;q++){const sy=syms[q];st.textContent='RUNNING '+(q+1)+'/'+syms.length+' '+sy;
+      let C=[],H=[];try{C=await btGet(sy,tf,pages);H=await btGet(sy,htf,1)}catch(e){rows.push({sy,err:String(e.message||e)});if(/socket/.test(String(e.message)))break;continue}
+      if(C.length<300||H.length<40){rows.push({sy,err:'NO DATA ('+C.length+' candles)'});continue}
+      await new Promise(z=>setTimeout(z,0));
+      const X=buildX(C,H,tf,htf,null),cost=+(cfg.spr[sy])||0,costOf=()=>cost,split=C[Math.floor(C.length*0.6)].t;
+      const sg=btAnalyze(strat.fn,X,minS);sg.forEach(s=>{s.sy=sy;s.oos=s.t>=split;s.cost=cost});
+      const bm=sk==='rand'?[]:btAnalyze(BTS.rand.fn,X,0);bm.forEach(s=>{s.sy=sy;s.oos=s.t>=split;s.cost=cost});
+      A.push(...sg);B.push(...bm);rows.push({sy,n:C.length,sg,cost,days:(C[C.length-1].t-C[0].t)/86400});}
+    const cof=s=>s.cost,srt=(a,b)=>a.t-b.t;A.sort(srt);B.sort(srt);BTL.trades=A;
+    const IS=A.filter(s=>!s.oos),OS=A.filter(s=>s.oos),BO=B.filter(s=>s.oos);
+    let bk=1,be=-9;for(const k of[1,2,3]){const s=btStat(IS,k,cof);if(s.n>=10&&s.m>be){be=s.m;bk=k}}
+    const stI=btStat(IS,bk,cof),stO=btStat(OS,bk,cof),stB=btStat(BO,bk,cof);
+    let h='<div style="margin:6px 0"><b>'+strat.name+'</b> | '+tf/60+'m candles | split 60% in-sample / 40% out-of-sample | target chosen on in-sample only: <b>TP'+bk+' ('+bk+'R)</b></div>';
+    let v,col;if(stO.n<30){v='NOT ENOUGH OUT-OF-SAMPLE TRADES ('+stO.n+'). Deepen history or widen scope.';col='#f5a524'}
+    else if(stO.m>0&&stO.z>=1.64&&(sk==='rand'||stO.m>stB.m+0.05)){v='EDGE HOLDS OUT OF SAMPLE after cost. Next: forward-test on DEMO. Still beware testing many symbols (some pass by luck).';col='#2fe38a'}
+    else if(stO.m>0){v='POSITIVE BUT NOT SIGNIFICANT (z '+btF(stO.z)+', needs 1.64) or not clearly above random. Do not trade it yet.';col='#f5a524'}
+    else{v='NO EDGE: expectancy out of sample is '+btF(stO.m)+'R per trade after cost.';col='#ff4d5e'}
+    h+='<div style="margin:6px 0;padding:6px;border:1px solid '+col+';color:'+col+'"><b>VERDICT:</b> '+v+'</div>';
+    h+='<table><tr><th>SET</th><th>TRADES</th><th>WIN%</th><th>EXPECT R</th><th>Z</th><th>PROFIT FACTOR</th><th>MAX DD (R)</th><th>TOTAL R</th></tr>';
+    const trw=(nm,s)=>'<tr><td>'+nm+'</td><td>'+s.n+'</td><td>'+(s.n?btP(s.wr):'-')+'</td><td>'+btF(s.m,3)+'</td><td>'+btF(s.z)+'</td><td>'+btF(s.pf)+'</td><td>'+btF(s.dd,1)+'</td><td>'+btF(s.tot,1)+'</td></tr>';
+    h+=trw('IN-SAMPLE',stI)+trw('OUT-OF-SAMPLE',stO)+(sk==='rand'?'':trw('RANDOM ENTRY, SAME EXITS (OOS)',stB))+'</table>';
+    h+='<div style="margin:8px 0 2px"><b>By target (all trades, net of cost)</b></div><table><tr><th>TARGET</th><th>TRADES</th><th>WIN%</th><th>EXPECT R</th><th>Z</th></tr>';
+    for(const k of[1,2,3]){const s=btStat(A,k,cof);h+='<tr><td>TP'+k+' ('+k+'R)</td><td>'+s.n+'</td><td>'+(s.n?btP(s.wr):'-')+'</td><td>'+btF(s.m,3)+'</td><td>'+btF(s.z)+'</td></tr>'}h+='</table>';
+    h+='<div style="margin:8px 0 2px"><b>By symbol (TP'+bk+')</b></div><table><tr><th>SYMBOL</th><th>CANDLES</th><th>DAYS</th><th>IS N</th><th>IS R</th><th>OOS N</th><th>OOS R</th><th>OOS WIN%</th></tr>';
+    for(const r of rows){if(r.err){h+='<tr><td>'+r.sy+'</td><td colspan="7">'+r.err+'</td></tr>';continue}const a=btStat(r.sg.filter(s=>!s.oos),bk,cof),b=btStat(r.sg.filter(s=>s.oos),bk,cof);h+='<tr><td>'+r.sy+'</td><td>'+r.n+'</td><td>'+btF(r.days,1)+'</td><td>'+a.n+'</td><td>'+(a.n?btF(a.m,2):'-')+'</td><td>'+b.n+'</td><td>'+(b.n?btF(b.m,2):'-')+'</td><td>'+(b.n?btP(b.wr):'-')+'</td></tr>'}h+='</table>';
+    h+='<div class="lab" style="text-transform:none;margin-top:6px;line-height:1.5">R = multiples of the stop distance. Expectancy is after the spread you set per symbol (cost 0 if none set, which flatters results). Trades that neither hit stop nor TP3 within 150 bars are excluded.</div>';
+    out.innerHTML=h;st.textContent='DONE: '+A.length+' signals, '+syms.length+' symbol(s)'}
+  catch(e){st.textContent='FAILED: '+String(e&&e.message||e).slice(0,80)}
+  BTL.busy=false}
+function btCsv(){if(!BTL.trades.length)return;const L=['time,symbol,dir,score,pattern,kind,entry,sl,result,reached,sample'];BTL.trades.forEach(s=>L.push([new Date(s.t*1000).toISOString(),s.sy,s.d===1?'BUY':'SELL',s.score,s.pat,s.kind,s.entry,s.sl,s.res,s.reached,s.oos?'OOS':'IS'].join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\n')],{type:'text/csv'}));a.download='backtest_trades.csv';a.click()}
+function btInit(){const sw=$('sSwarm');if(!sw||$('sBT'))return;
+  sw.insertAdjacentHTML('beforebegin','<section class="p" id="sBT"><div class="ph">BACKTEST LAB <span class="r" id="btSt">IDLE</span></div><div class="stabs"><select id="btStrat" aria-label="Strategy"></select><select id="btScope"><option value="cur">CURRENT SYMBOL</option><option value="all">ALL SYMBOLS IN LIST</option></select><select id="btPages"><option value="1">5,000 CANDLES</option><option value="2" selected>10,000 CANDLES</option><option value="4">20,000 CANDLES</option><option value="6">30,000 CANDLES</option></select><input id="btMin" type="number" min="0" max="100" style="width:70px" title="Minimum score" aria-label="Minimum score"><button id="btRun" type="button">RUN BACKTEST</button><button id="btCsv" type="button">EXPORT TRADES</button></div><div id="btOut" style="overflow:auto;max-height:520px"></div><div class="lab" style="text-transform:none;letter-spacing:.02em;line-height:1.5">Replays history through the same engine code as live, on the timeframe selected above. Split 60/40 in-sample/out-of-sample; only the out-of-sample result counts. Compared against random entries with the same exits.</div></section>');
+  const s=$('btStrat');Object.keys(BTS).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=BTS[k].name;s.appendChild(o)});
+  $('btMin').value=cfg.thr;$('btRun').onclick=btRun;$('btCsv').onclick=btCsv}
+
+window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset,bt:{BTC,BTS,run:btRun,stat:btStat,L:BTL}};
 init();
+try{btInit()}catch(e){console.error('backtest lab',e)}
 })();
 </script>
 
