@@ -2901,8 +2901,8 @@ css.textContent='#trModal{position:fixed;inset:0;z-index:100;display:none;align-
 +'#trCalc{margin:10px 0;font-size:12px;line-height:1.6;border:1px solid var(--bd,#16273a);padding:7px 9px;background:#050c15}'
 +'#trCalc .bad{color:#ff8d98}#trCalc .ok{color:#7defb4}#trCalc .warn{color:#f5a524}'
 +'#trMsg{min-height:16px;font-size:11.5px;margin:6px 0;line-height:1.5}'
-+'#trBtns{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-top:8px}#trBtns button{padding:12px 6px;font-size:13px;letter-spacing:.08em}'
-+'#trYes{background:#3a0c14;border-color:var(--neg,#ff4d5e);color:#fff}#trYes:disabled{opacity:.4}'
++'#trBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}#trNo{grid-column:1/3}#trBtns button{padding:12px 6px;font-size:13px;letter-spacing:.08em}'
++'#trYes{background:#3a0c14;border-color:var(--neg,#ff4d5e);color:#fff}#trDemo{background:#0b2a44;border-color:var(--blu,#2b8cff);color:#fff}#trYes:disabled,#trDemo:disabled{opacity:.4}'
 +'.trb{cursor:pointer;border-color:var(--amb,#f5a524)!important;color:var(--amb,#f5a524)!important;background:#1a1204!important}';
 document.head.appendChild(css);
 
@@ -2941,7 +2941,7 @@ function render(){
   {const px=p.px||a.entry,slD=(px-a.sl)*d;if(slD>0){const mx=Math.floor(0.9*px/slD);if(P.mult>mx)P.mult=mx>=10?Math.floor(mx/10)*10:Math.max(1,mx)}}
   const needCreds=!(($('swApp')||{}).value||'').trim()||!(($('swTok')||{}).value||'').trim();
   $('trBox').innerHTML=
-   '<h3>OPEN THIS POSITION ON YOUR LIVE ACCOUNT?</h3>'
+   '<h3>OPEN THIS POSITION? CHOOSE LIVE OR DEMO</h3>'
   +'<div><span class="tr-side '+(d===1?'b':'s')+'">'+(a.lim?'LIMIT ':'')+(d===1?'BUY':'SELL')+' '+a.score+'</span><span style="color:#cfe3f7;font-size:13px">'+esc(p.name)+' / '+esc(p.tf)+'</span></div>'
   +'<div class="tr-g"><div>ENTRY<b>'+f(a.entry)+'</b></div><div>PRICE NOW<b>'+(p.px!=null?f(p.px):'-')+'</b></div>'
   +'<div class="sl">STOP LOSS<b>'+f(a.sl)+'</b></div><div class="tp">TP1 (1R)<b>'+f(a.tp[0])+'</b></div>'
@@ -2951,18 +2951,18 @@ function render(){
   +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
   +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
   +'<div id="trCalc"></div><div id="trMsg"></div>'
-  +'<div id="trBtns"><button id="trYes" type="button">YES, OPEN LIVE</button><button id="trNo" type="button">NO, SKIP</button></div>'
-  +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier on your REAL money account at the current market price, with the stop loss and take profit above attached. Real money is at risk.</div>';
+  +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
+  +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
   $('trTp').value=String(P.tp);
-  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trYes').disabled=busy||!r.ok};
+  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
-  $('trNo').onclick=()=>close(true);$('trYes').onclick=submit;upd();
+  $('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
 }
 
 function open(auto){
   if(!cur||!cur.act)return;
   const k=keyOf(cur);
-  if(placed.has(k)&&!confirm('You already opened this signal live. Open another position on it?'))return;
+  if((placed.has(k+'|live')||placed.has(k+'|demo'))&&!confirm('You already opened this signal ('+(placed.has(k+'|live')?'live':'demo')+'). Open another position on it?'))return;
   render();m.classList.add('on');
   if(auto){try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
 }
@@ -2977,7 +2977,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contain
 
 const msg=(t,c)=>{const e=$('trMsg');if(e){e.textContent=t;e.style.color=c||'#cfe3f7'}};
 
-async function connect(app,tok){
+async function connect(app,tok,want){
   const H={'Authorization':'Bearer '+tok,'Deriv-App-ID':app},B0='https://api.derivws.com/trading/v1/options/accounts';
   let r=await fetch(B0,{headers:H});
   if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Account list failed (HTTP '+r.status+'). '+bt+(r.status===401?' | Deriv does not accept this token. Check that it is a new-API personal access token created at developers.deriv.com with trade scope (not an old api token), that it has no spaces, and that the App ID is the one registered there (letters and numbers are fine). Token length: '+tok.length+', App ID: '+(app||'empty'):''))}
@@ -2985,8 +2985,8 @@ async function connect(app,tok){
   const arr=Array.isArray(j.data)?j.data:(j.data&&(j.data.accounts||j.data.items))||j.accounts||[];
   const idOf=a=>a.account_id||a.id||a.loginid||a.login_id;
   const isDemo=a=>/demo|virtual/i.test(String(a.account_type||a.type||'')+String(a.is_virtual===1||a.is_virtual===true?'demo':''))||/^VR/i.test(String(idOf(a)||''));
-  const acc=arr.find(a=>!isDemo(a));
-  if(!acc)throw new Error('No live (real money) account found on this token.');
+  const acc=arr.find(a=>want==='demo'?isDemo(a):!isDemo(a));
+  if(!acc)throw new Error('No '+(want==='demo'?'demo (practice)':'live (real money)')+' account found on this token ('+arr.length+' accounts returned).');
   r=await fetch(B0+'/'+encodeURIComponent(idOf(acc))+'/otp',{method:'POST',headers:H});
   if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Login failed (HTTP '+r.status+'). '+bt)}
   j=await r.json();const url=j.data&&j.data.url;if(!url)throw new Error('Deriv did not return a trading link.');
@@ -3012,7 +3012,7 @@ function sendBuy(w,par){
   });
 }
 
-async function submit(){
+async function submit(kind){
   if(busy||!cur)return;
   const r=calc();if(!r.ok)return;
   let app=(($('swApp')||{}).value||'').replace(/\s+/g,''),tok=(($('swTok')||{}).value||'').replace(/\s+/g,'');
@@ -3020,21 +3020,21 @@ async function submit(){
   if(!app||!tok){msg('Enter your Deriv App ID and token.','#ff8d98');return}
   P.stake=r.stake;P.mult=r.mult;P.tp=r.ti;LS.set('fat_live_prefs',P);
   if($('swApp')&&!$('swApp').value)$('swApp').value=app;if($('swTok')&&!$('swTok').value)$('swTok').value=tok;
-  busy=true;$('trYes').disabled=true;$('trNo').disabled=true;msg('Connecting to your live account...');
+  busy=true;$('trYes').disabled=true;$('trDemo').disabled=true;$('trNo').disabled=true;msg('Connecting to your '+kind+' account...');
   const k=keyOf(cur),a=cur.act;
   try{
-    const c=await connect(app,tok);
+    const c=await connect(app,tok,kind);
     msg('Connected ('+c.id+', balance '+c.bal.toFixed(2)+' '+c.cur+'). Sending order...');
     const r2=calc();if(!r2.ok)throw new Error('Price moved past your stop or target while connecting. Order cancelled.');
     const b=await sendBuy(c.ws,{amount:r2.stake,basis:'stake',contract_type:a.d===1?'MULTUP':'MULTDOWN',currency:c.cur,multiplier:r2.mult,underlying_symbol:cur.sym,limit_order:{take_profit:r2.tp$,stop_loss:r2.sl$}});
-    mark(placed,'fat_placed',k);mark(asked,'fat_asked',k);
-    msg('OPENED LIVE. Contract #'+b.contract_id+' at '+(b.buy_price!=null?'$'+(+b.buy_price).toFixed(2):'stake')+'. Stop -$'+r2.sl$.toFixed(2)+', target +$'+r2.tp$.toFixed(2)+'.','#7defb4');
+    mark(placed,'fat_placed',k+'|'+kind);mark(asked,'fat_asked',k);
+    msg('OPENED ON '+kind.toUpperCase()+'. Contract #'+b.contract_id+' at '+(b.buy_price!=null?'$'+(+b.buy_price).toFixed(2):'stake')+'. Stop -$'+r2.sl$.toFixed(2)+', target +$'+r2.tp$.toFixed(2)+'.','#7defb4');
     try{ws.onclose=null;ws.close()}catch(e){}ws=null;
-    $('trNo').disabled=false;$('trNo').textContent='CLOSE';$('trYes').style.display='none';busy=false;
+    $('trNo').disabled=false;$('trNo').textContent='CLOSE';$('trYes').style.display='none';$('trDemo').style.display='none';busy=false;
   }catch(err){
     msg('NOT OPENED: '+(err&&err.message||err),'#ff8d98');
     if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
-    busy=false;$('trYes').disabled=false;$('trNo').disabled=false;
+    busy=false;$('trYes').disabled=false;$('trDemo').disabled=false;$('trNo').disabled=false;
   }
 }
 
@@ -3042,7 +3042,7 @@ async function submit(){
 window.FATX_plan=function(p){
   cur=p;const k=keyOf(p);
   if(k===lastKey)return;lastKey=k;
-  if(!asked.has(k)&&!placed.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+  if(!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
 };
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trOpen'))open(false)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trOpen'){e.preventDefault();open(false)}});
