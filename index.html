@@ -2922,6 +2922,7 @@ function calc(){
   const tp=a.tp[ti],slD=(px-a.sl)*d,tpD=(tp-px)*d;
   const r={ok:true,stake,mult,ti,px,tp,html:''};
   const lines=[];
+  if(LS.get('fat_nomult:'+cur.sym,0)){r.ok=false;lines.push('<span class="bad">Deriv does not offer multipliers on '+esc(cur.name)+' (it only offers CFDs on MT5/cTrader and digital options there). This page can only open multipliers, so it cannot trade this market.</span>')}
   const al=allowedOf();if(al&&!al.includes(mult)){r.ok=false;lines.push('<span class="bad">'+esc(cur.name)+' only allows multipliers: x'+al.join(', x')+'. Tap one below.</span>')}
   if(!(stake>0)){r.ok=false;lines.push('<span class="bad">Enter a stake above 0.</span>')}
   if(slD<=0){r.ok=false;lines.push('<span class="bad">Price is already past the stop loss. This signal is no longer valid.</span>')}
@@ -2957,7 +2958,8 @@ function render(){
   +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
   $('trTp').value=String(P.tp);
-  const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
+  const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;if(LS.get('fat_nomult:'+cur.sym,0)){c.innerHTML='<button type="button" id="trAny" style="padding:8px 12px;font-size:12px">TRY ANYWAY (CLEAR BLOCK)</button>';$('trAny').onclick=()=>{LS.set('fat_nomult:'+cur.sym,0);upd()};return}
+  c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
   const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
   refresh=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
@@ -3038,6 +3040,7 @@ async function submit(kind){
   }catch(err){
     const em=String(err&&err.message||err),mm=em.match(/accepts?\s*:?\s*([\d][\d,\s.]*)/i);
     let learned=false;
+    if(/not offered for this duration/i.test(em)&&!mm){LS.set('fat_nomult:'+cur.sym,1);msg('NOT OPENED: Deriv does not offer multipliers on '+cur.name+'. It only offers CFDs (MT5/cTrader) and digital options there, so this page cannot trade it. Other markets such as Volatility indices, forex and crypto work with multipliers.','#ff8d98');busy=false;$('trYes').disabled=false;$('trDemo').disabled=false;$('trNo').disabled=false;if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}if(refresh)refresh();return}
     if(mm&&/multiplier/i.test(em)){const l=mm[1].split(/[,\s]+/).map(x=>parseInt(x,10)).filter(n=>n>0);if(l.length){LS.set('fat_mults:'+cur.sym,l);learned=true;const sorted=allowedOf(),cm=+$('trMult').value;if(!sorted.includes(cm)){const r0=calc();$('trMult').value=snap(sorted,Math.min(cm,r0.maxMult||cm))}}}
     msg('NOT OPENED: '+em+(learned?' | Allowed multipliers saved for this market. Pick one below and tap again.':''),'#ff8d98');
     if(learned&&refresh)refresh();
