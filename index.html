@@ -3061,7 +3061,7 @@ async function submit(kind){
 }
 
 /* ===== OPEN POSITIONS PANEL (live updating, per account) ===== */
-const PS={acct:LS.get('fat_ps_acct','live'),ws:null,rows:new Map(),bal:null,cur:'USD',st:'idle',gen:0,note:'',pend:null};
+const PS={acct:LS.get('fat_ps_acct','live'),tab:'open',range:'today',hist:[],hLoad:false,ws:null,rows:new Map(),bal:null,cur:'USD',st:'idle',gen:0,note:'',pend:null};
 const psCss=document.createElement('style');
 psCss.textContent='#psBtn{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:90;background:#07101b;border:1px solid var(--blu,#2b8cff);color:#cfe3f7;font:12px var(--m,monospace);letter-spacing:.1em;padding:9px 12px;cursor:pointer;display:flex;gap:8px;align-items:center}#psBtn b{font-weight:400}'
 +'#psPanel{position:fixed;left:0;right:0;bottom:0;z-index:99;max-height:82vh;display:none;flex-direction:column;background:#050b14;border-top:1px solid var(--blu,#2b8cff);font-family:var(--m,monospace);padding-bottom:env(safe-area-inset-bottom,0px)}#psPanel.on{display:flex}'
@@ -3071,12 +3071,13 @@ psCss.textContent='#psBtn{position:fixed;right:10px;bottom:calc(10px + env(safe-
 +'#psPanel .ps-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 12px;font-size:10px;letter-spacing:.1em;color:var(--dim,#7d90a6)}#psPanel .ps-sum b{display:block;font-weight:400;font-size:14px;color:#fff;letter-spacing:0;margin-top:2px}'
 +'#psList{overflow:auto;flex:1;min-height:60px}.ps-r{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 12px;border-top:1px solid var(--bd,#16273a)}.ps-r .a{font-size:13px;color:#fff}.ps-r .a i{font-style:normal;padding:1px 6px;margin-right:6px;font-size:11px;color:#03060b;font-weight:700}.ps-r .a i.b{background:var(--pos,#2fe38a)}.ps-r .a i.s{background:var(--neg,#ff4d5e)}'
 +'.ps-r .pl{font-size:17px;text-align:right}.ps-r .d{font-size:11px;color:var(--dim,#7d90a6);line-height:1.5}.ps-r .x{text-align:right}.ps-up{color:var(--pos,#2fe38a)}.ps-dn{color:var(--neg,#ff4d5e)}'
-+'#psCreds{padding:6px 12px}#psCreds input{width:100%;font-size:14px;padding:7px 8px;margin:3px 0;text-transform:none}.ps-f{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--bd,#16273a);font-size:11px;color:var(--dim,#7d90a6)}.ps-f span{flex:1}';
++'#psPanel .ps-views{display:flex;gap:6px;padding:8px 12px 0}#psPanel .ps-views button.on,#psRange button.on{border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44}#psRange{display:none;gap:6px;padding:6px 12px 0}.ps-r .d small{display:block;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#psCreds{padding:6px 12px}#psCreds input{width:100%;font-size:14px;padding:7px 8px;margin:3px 0;text-transform:none}.ps-f{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--bd,#16273a);font-size:11px;color:var(--dim,#7d90a6)}.ps-f span{flex:1}';
 document.head.appendChild(psCss);
 const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b>';document.body.appendChild(psBtn);
 const psPanel=document.createElement('div');psPanel.id='psPanel';
 psPanel.innerHTML='<div class="ps-h"><span class="ps-t">OPEN POSITIONS</span><span class="ps-tabs"><button type="button" data-a="live">LIVE</button> <button type="button" data-a="demo">DEMO</button></span><button type="button" id="psX" aria-label="Close">X</button></div>'
-+'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div>OPEN P/L<b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div>'
++'<div class="ps-views"><button type="button" data-v="open">OPEN</button><button type="button" data-v="hist">HISTORY</button></div><div id="psRange"><button type="button" data-r="today">TODAY</button><button type="button" data-r="7d">7 DAYS</button><button type="button" data-r="all">LAST 100</button></div>'
++'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div><span id="psPlL">OPEN P/L</span><b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div>'
 +'<div class="ps-f"><span id="psNote"></span><button type="button" id="psRe">RECONNECT</button></div>';
 document.body.appendChild(psPanel);
 const sgn=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2),pcl=v=>v>=0?'ps-up':'ps-dn';
@@ -3096,7 +3097,23 @@ function psRender(){
   $('psSt').textContent=stn[PS.st]||PS.st;$('psNote').textContent=PS.note||'';
   const cr=psCreds(),need=(!cr.app||!cr.tok)&&PS.st!=='live';
   const cd=$('psCreds');if(need){if(!cd.firstChild)cd.innerHTML='<input id="psApp" type="text" placeholder="Deriv App ID" autocomplete="off"><input id="psTok" type="password" placeholder="PAT token (trade scope)" autocomplete="off">'}else if(cd.firstChild&&PS.st==='live')cd.innerHTML='';
+  psPanel.querySelectorAll('.ps-views button').forEach(b=>b.classList.toggle('on',b.dataset.v===PS.tab));
+  $('psRange').style.display=PS.tab==='hist'?'flex':'none';
+  $('psRange').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.r===PS.range));
+  $('psPlL').textContent=PS.tab==='hist'?'CLOSED P/L':'OPEN P/L';
   const L=$('psList');
+  if(PS.tab==='hist'){
+    const H=PS.hist,pfOf=t=>(+t.sell_price||0)-(+t.buy_price||0),net=H.reduce((a,t)=>a+pfOf(t),0),wn=H.filter(t=>pfOf(t)>0).length;
+    $('psPl').innerHTML=H.length?'<span class="'+pcl(net)+'">'+sgn(net)+'</span>':'-';
+    if(PS.hLoad){L.innerHTML='<div class="ps-r" style="display:block;color:var(--dim,#7d90a6);font-size:12px">Loading history...</div>';return}
+    if(!H.length){L.innerHTML='<div class="ps-r" style="display:block;color:var(--dim,#7d90a6);font-size:12px">'+(PS.st==='live'?'No closed positions in this range on your '+PS.acct+' account.':'Connect to load your '+PS.acct+' history.')+'</div>';return}
+    L.innerHTML='<div class="ps-r" style="display:block;font-size:12px;color:#cfe3f7">'+H.length+' closed | '+wn+' wins ('+Math.round(wn/H.length*100)+'%) | net <span class="'+pcl(net)+'">'+sgn(net)+'</span></div>'+H.map(t=>{
+      const pf=pfOf(t),ct=String(t.contract_type||t.shortcode||''),up=/UP|CALL/i.test(ct),isM=/^MULT/i.test(ct),nm=t.display_name||t.underlying_symbol||t.underlying||t.symbol||'',
+        tm=t.sell_time?new Date(t.sell_time*1000).toLocaleString([],{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'',lc=t.longcode||'';
+      return '<div class="ps-r"><div class="a"><i class="'+(isM?(up?'b':'s'):'b')+'">'+(isM?(up?'BUY':'SELL'):esc(ct.split('_')[0].slice(0,8)||'TRADE'))+'</i>'+esc(nm||(lc?lc.slice(0,28):'Contract'))+'</div><div class="pl '+pcl(pf)+'">'+sgn(pf)+'</div>'
+       +'<div class="d">'+esc(tm)+' | Stake $'+(+t.buy_price||0).toFixed(2)+' &rarr; Sold $'+(+t.sell_price||0).toFixed(2)+' | #'+esc(t.contract_id||'')+(lc?'<small>'+esc(lc)+'</small>':'')+'</div><div></div></div>'}).join('');
+    return;
+  }
   if(!rows.length){L.innerHTML='<div class="ps-r" style="display:block;color:var(--dim,#7d90a6);font-size:12px">'+(PS.st==='live'?'No open positions on this '+PS.acct+' account.':'Connect to see your open '+PS.acct+' positions.')+'</div>';return}
   rows.sort((a,b)=>(b.date_start||0)-(a.date_start||0));
   L.innerHTML=rows.map(c=>{
@@ -3116,17 +3133,24 @@ function psClose(b){
 }
 function psMsg(e){
   let x;try{x=JSON.parse(e.data)}catch(_){return}
-  if(x.error){PS.note=x.error.message||'Deriv error';psRender();return}
+  if(x.error){PS.hLoad=false;PS.note=x.error.message||'Deriv error';psRender();return}
   if(x.msg_type==='balance'&&x.balance){PS.bal=+x.balance.balance;PS.cur=x.balance.currency||PS.cur}
   else if(x.msg_type==='proposal_open_contract'){
     const c=x.proposal_open_contract;
     if(c&&c.contract_id){
-      if(c.is_sold||c.status==='sold'||c.is_expired){if(PS.rows.delete(c.contract_id)){PS.note='Closed #'+c.contract_id+': '+sgn(+c.profit||0)}}
+      if(c.is_sold||c.status==='sold'||c.is_expired){if(PS.rows.delete(c.contract_id)){PS.note='Closed #'+c.contract_id+': '+sgn(+c.profit||0);if(PS.tab==='hist')setTimeout(psHist,1500)}}
       else PS.rows.set(c.contract_id,Object.assign(PS.rows.get(c.contract_id)||{},c));
     }
   }
+  else if(x.msg_type==='profit_table'){PS.hLoad=false;PS.hist=(x.profit_table&&x.profit_table.transactions)||[]}
   else if(x.msg_type==='sell'&&x.sell){PS.note='Sold #'+x.sell.contract_id+' for $'+(+x.sell.sold_for).toFixed(2)}
   psRender();
+}
+function psHist(){
+  if(!PS.ws||PS.ws.readyState!==1){PS.note='Connect first, then open History.';psRender();return}
+  PS.hLoad=true;const q={profit_table:1,description:1,sort:'DESC',limit:100};
+  if(PS.range==='today')q.date_from=Math.floor(new Date().setHours(0,0,0,0)/1000);else if(PS.range==='7d')q.date_from=Math.floor(Date.now()/1000)-7*86400;
+  PS.ws.send(JSON.stringify(q));psRender();
 }
 async function psConnect(){
   const g=++PS.gen;
@@ -3142,17 +3166,19 @@ async function psConnect(){
     if($('swApp')&&!$('swApp').value)$('swApp').value=cr.app;if($('swTok')&&!$('swTok').value)$('swTok').value=cr.tok;
     c.ws.onmessage=psMsg;c.ws.onclose=()=>{if(g===PS.gen){PS.st='offline';PS.note='Connection closed.';psRender()}};
     c.ws.send(JSON.stringify({balance:1,subscribe:1}));c.ws.send(JSON.stringify({proposal_open_contract:1,subscribe:1}));
-    psRender();
+    psRender();if(PS.tab==='hist')psHist();
   }catch(err){if(g===PS.gen){PS.st='error';PS.note=String(err&&err.message||err);psRender()}}
 }
 function psUse(a,openIt){
-  if(a!==PS.acct){PS.acct=a;LS.set('fat_ps_acct',a);PS.rows.clear();PS.bal=null;PS.st='idle';if(PS.ws){try{PS.ws.onclose=null;PS.ws.close()}catch(e){}PS.ws=null}}
+  if(a!==PS.acct){PS.acct=a;LS.set('fat_ps_acct',a);PS.rows.clear();PS.hist=[];PS.bal=null;PS.st='idle';if(PS.ws){try{PS.ws.onclose=null;PS.ws.close()}catch(e){}PS.ws=null}}
   if(openIt){psPanel.classList.add('on');psBtn.style.display='none'}
   if(!PS.ws||PS.ws.readyState!==1)psConnect();else psRender();
 }
 function psHide(){psPanel.classList.remove('on');psBtn.style.display='flex'}
 psBtn.addEventListener('click',()=>psUse(PS.acct,true));
 psBtn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();psUse(PS.acct,true)}});
+psPanel.querySelectorAll('.ps-views button').forEach(b=>b.onclick=()=>{PS.tab=b.dataset.v;if(PS.tab==='hist')psHist();else psRender()});
+$('psRange').querySelectorAll('button').forEach(b=>b.onclick=()=>{PS.range=b.dataset.r;psHist()});
 $('psX').onclick=psHide;$('psRe').onclick=psConnect;
 psPanel.querySelectorAll('.ps-tabs button').forEach(b=>b.onclick=()=>{psUse(b.dataset.a,true)});
 setInterval(()=>{if(PS.ws&&PS.ws.readyState===1)try{PS.ws.send(JSON.stringify({ping:1}))}catch(e){}},30000);
