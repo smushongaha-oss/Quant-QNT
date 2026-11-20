@@ -2930,7 +2930,18 @@ function calc(){
   if(slD>0){
     r.sl$=+(stake*mult*slD/px).toFixed(2);
     r.maxMult=Math.floor(0.9*px/slD);
-    if(r.sl$>=stake*0.95){r.ok=false;lines.push('<span class="bad">Stop is too wide for x'+mult+': the stop loss would be $'+r.sl$.toFixed(2)+' on a $'+stake.toFixed(2)+' stake. Use x'+Math.max(1,r.maxMult)+' or lower.</span>')}
+    if(r.sl$>=stake*0.95){
+      r.tooWide=true;
+      const al2=allowedOf(),fit=al2?al2.filter(n=>n<=r.maxMult):[],mnm=al2?al2[0]:1;
+      if($('trTight')&&$('trTight').checked){
+        r.sl$=+(stake*0.9).toFixed(2);r.tight=true;const dist=0.9*px/mult;r.tightPx=px-d*dist;
+        lines.push('<span class="warn">TIGHTER STOP: stop loss $'+r.sl$.toFixed(2)+' at about '+fx(r.tightPx,cur.dp)+' ('+fx(dist,cur.dp)+' from price) instead of the signal stop '+fx(a.sl,cur.dp)+'. Normal price moves are more likely to hit it.</span>');
+      }else{
+        r.ok=false;
+        if(al2&&!fit.length)lines.push('<span class="bad">The lowest multiplier this market allows is x'+mnm+'. At x'+mnm+' the stop can be at most '+fx(0.9*px/mnm,cur.dp)+' points from price, but this signal\'s stop is '+fx(slD,cur.dp)+' away, so the signal\'s stop cannot fit. Tick the box below to use the closest allowed stop instead, or skip this trade.</span>');
+        else lines.push('<span class="bad">Stop is too wide for x'+mult+': the stop loss would be $'+r.sl$.toFixed(2)+' on a $'+stake.toFixed(2)+' stake. Use x'+(fit.length?fit[fit.length-1]:Math.max(1,r.maxMult))+' or lower, or tick the box below to use a tighter stop.</span>');
+      }
+    }
   }
   if(tpD>0)r.tp$=+(stake*mult*tpD/px).toFixed(2);
   if(r.sl$!=null&&r.ok||r.sl$!=null)lines.unshift('Max loss at stop: <b class="bad">-$'+r.sl$.toFixed(2)+'</b> &nbsp; Profit at TP'+(ti+1)+': <b class="ok">'+(r.tp$!=null?'+$'+r.tp$.toFixed(2):'-')+'</b><br>Position size: $'+(stake*mult).toFixed(2)+' (stake $'+stake.toFixed(2)+' x '+mult+')');
@@ -2954,15 +2965,15 @@ function render(){
   +'<div><label for="trMult">MULTIPLIER</label><input id="trMult" type="number" inputmode="numeric" min="1" step="1" value="'+P.mult+'"></div>'
   +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
   +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
-  +'<div id="trCalc"></div><div id="trChips"></div><div id="trMsg"></div>'
+  +'<div id="trCalc"></div><label id="trTightRow" style="display:none;font-size:11.5px;letter-spacing:.02em;color:#f5a524;margin:6px 0"><input type="checkbox" id="trTight" style="width:auto;margin-right:8px">USE THE CLOSEST ALLOWED STOP INSTEAD (TIGHTER THAN THE SIGNAL STOP)</label><div id="trChips"></div><div id="trMsg"></div>'
   +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
   $('trTp').value=String(P.tp);
   const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;if(LS.get('fat_nomult:'+cur.sym,0)){c.innerHTML='<button type="button" id="trAny" style="padding:8px 12px;font-size:12px">TRY ANYWAY (CLEAR BLOCK)</button>';$('trAny').onclick=()=>{LS.set('fat_nomult:'+cur.sym,0);upd()};return}
   c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
-  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
+  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trTightRow').style.display=r.tooWide?'block':'none';chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
-  refresh=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
+  refresh=upd;$('trTight').onchange=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
 }
 
 function open(auto){
