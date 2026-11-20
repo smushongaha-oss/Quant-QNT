@@ -1302,7 +1302,7 @@ function renderPlan(act){
    +'<span class="tp">TP3 <b>'+f(act.tp[2])+'</b> 3R</span>'
    +'<span>RISK <b>'+f(rk)+'</b> ('+(rk/act.entry*100).toFixed(2)+'%)'+(COST>0?', COST '+(COST/rk).toFixed(2)+'R':'')+'</span>';
   el.className='plan on';setH('planBar',h+'<span class="trb" id="trOpen" role="button" tabindex="0">TRADE LIVE</span>');
-  try{if(window.FATX_plan)window.FATX_plan({act,sym:cfg.sym,dp:S.dp,px:S.C.length?S.C[S.C.length-1].c:null,name:nameOf(cfg.sym),tf:tfName(),age:Math.max(0,S.C.length-1-act.i)});}catch(e){console.error(e)}
+  try{if(window.FATX_plan)window.FATX_plan({act,sym:cfg.sym,dp:S.dp,px:S.C.length?S.C[S.C.length-1].c:null,name:nameOf(cfg.sym),tf:tfName(),age:Math.max(0,S.C.length-1-act.i),C:S.C,A:S.X?S.X.A:null,tfs:cfg.tf,cost:+(cfg.spr&&cfg.spr[cfg.sym])||0});}catch(e){console.error(e)}
 }
 function drawChart(){
   const f=fit($('cvChart'));if(!f)return;
@@ -2916,17 +2916,116 @@ document.body.appendChild(m);
 const fx=(v,dp)=>(+v).toFixed(dp);
 const keyOf=p=>p.sym+'|'+p.tf+'|'+p.act.t+'|'+p.act.d;
 
+/* ===== STRICT TRADING RULES (your 9-point checklist, measured on this chart's candles) ===== */
+const RC={look:40,swN:3,dispAtr:1.0,dispBody:0.6,fvgMin:0.1,fvgTol:0.35,costMax:0.1,tgtR:10,liqBars:400,advBuf:0.1};
+const strictOn=()=>LS.get('fat_strict',false)===true;
+const RULE_LABELS=['15-minute directional bias established','Liquidity sweep confirmed','Market structure shift confirmed','Strong displacement candle','Fair Value Gap identified','Entry on FVG retracement','Stop loss placed beyond the sweep','Full 10R target has room before opposing liquidity','Spread and execution costs are acceptable'];
+function swingPts(C,n,upto){const o=[];for(let k=n;k<=upto-n;k++){let hi=true,lo=true;for(let q=1;q<=n;q++){if(!(C[k].h>C[k-q].h&&C[k].h>=C[k+q].h))hi=false;if(!(C[k].l<C[k-q].l&&C[k].l<=C[k+q].l))lo=false;if(!hi&&!lo)break}if(hi)o.push({k,type:'H',p:C[k].h});if(lo)o.push({k,type:'L',p:C[k].l})}return o}
+function biasOf(C,upto){const sw=swingPts(C,2,upto),H=sw.filter(x=>x.type==='H').slice(-2),L=sw.filter(x=>x.type==='L').slice(-2);if(H.length<2||L.length<2)return 0;if(H[1].p>H[0].p&&L[1].p>L[0].p)return 1;if(H[1].p<H[0].p&&L[1].p<L[0].p)return -1;return 0}
+function toM15(C,upto){const out=[];let cu=null;for(let k=0;k<=upto;k++){const b=C[k],bk=Math.floor(b.t/900)*900;if(!cu||cu.t!==bk){cu={t:bk,o:b.o,h:b.h,l:b.l,c:b.c};out.push(cu)}else{if(b.h>cu.h)cu.h=b.h;if(b.l<cu.l)cu.l=b.l;cu.c=b.c}}return out}
+function evalRules(p,slOv){
+  const a=p.act,C=p.C,d=a.d,i=a.i,R=[],meta={};
+  const mk=(state,note)=>R.push({state,note:note||''});
+  const sl=slOv!=null?slOv:a.sl,risk=Math.abs(a.entry-sl);
+  const fin=()=>({rules:R,pass:R.filter(r=>r.state==='pass').length,fail:R.filter(r=>r.state==='fail').length,manual:R.filter(r=>r.state==='manual').length,meta});
+  if(!C||!C[i]||!(i>12)){for(let q=0;q<9;q++)mk('manual','Not enough candle data to check this. Confirm it yourself.');return fin()}
+  const atr=(p.A&&p.A[i]>0)?p.A[i]:risk/1.5,f=v=>fx(v,p.dp);
+  const sw=swingPts(C,RC.swN,i),typeS=d===-1?'H':'L',typeM=d===-1?'L':'H';
+  /* 2. liquidity sweep: a wick beyond an earlier swing that closes back inside */
+  let s=-1,lvl=null;
+  for(let q=i;q>=Math.max(RC.swN+2,i-RC.look)&&s<0;q--){
+    const cands=sw.filter(x=>x.type===typeS&&x.k<=q-1-RC.swN&&x.k>=q-80).reverse();
+    for(const x of cands){
+      const pierce=d===-1?C[q].h>x.p:C[q].l<x.p;
+      const back=d===-1?(C[q].c<x.p||(q+1<=i&&C[q+1].c<x.p)):(C[q].c>x.p||(q+1<=i&&C[q+1].c>x.p));
+      if(pierce&&back){s=q;lvl=x;break}
+    }
+  }
+  /* 1. M15 bias, measured just before the sweep */
+  const bu=s>0?s-1:i;let b1;
+  if(p.tfs>900)b1=null;else{const mm=p.tfs===900?C:toM15(C,bu);b1=biasOf(mm,p.tfs===900?bu:mm.length-1)}
+  if(b1===null)mk('manual','Needs a chart of M15 or lower to measure. Confirm it yourself.');
+  else if(b1===d)mk('pass',(d===1?'Bullish':'Bearish')+' M15 structure before the sweep.');
+  else mk('fail',b1===0?'M15 structure is mixed, with no clear bias.':'M15 bias is '+(b1===1?'bullish':'bearish')+', against this '+(d===1?'buy':'sell')+'.');
+  if(s<0)mk('fail','No sweep of a swing '+(d===-1?'high':'low')+' found in the last '+RC.look+' candles.');
+  else mk('pass','Swept '+f(lvl.p)+' ('+(i-s)+' candles ago) and closed back.');
+  /* 3. market structure shift */
+  let m=-1,M=null;
+  if(s>=0){const cs=sw.filter(x=>x.type===typeM&&x.k<s);M=cs[cs.length-1];if(M){for(let q=s+1;q<=i;q++){if(d===-1?C[q].c<M.p:C[q].c>M.p){m=q;break}}}}
+  if(s<0)mk('fail','Needs a sweep first.');
+  else if(!M)mk('fail','No swing '+(d===-1?'low':'high')+' found before the sweep to break.');
+  else if(m<0)mk('fail','No candle has closed beyond the swing '+(d===-1?'low':'high')+' at '+f(M.p)+' yet.');
+  else mk('pass','Closed beyond '+f(M.p)+' ('+(i-m)+' candles ago).');
+  /* 4. displacement candle */
+  let dsp=-1;
+  if(m>=0){let bb=0;for(let q=Math.max(s+1,m-2);q<=Math.min(i,m+1);q++){const b=C[q],body=Math.abs(b.c-b.o),rg=b.h-b.l,ok=d===-1?b.c<b.o:b.c>b.o;if(ok&&body>=RC.dispAtr*atr&&body>=RC.dispBody*rg&&body>bb){bb=body;dsp=q}}}
+  if(m<0)mk('fail','Needs a structure shift first.');
+  else if(dsp<0)mk('fail','No candle near the shift has a body of at least '+RC.dispAtr+' ATR that is mostly body.');
+  else mk('pass','Body is '+(Math.abs(C[dsp].c-C[dsp].o)/atr).toFixed(1)+' ATR.');
+  /* 5. fair value gap */
+  let fz=null;
+  if(m>=0){for(let q=Math.max(s+1,m-3,1);q<=Math.min(i-1,m+2);q++){const A0=C[q-1],B0=C[q+1];let lo,hi;if(d===-1){lo=B0.h;hi=A0.l}else{lo=A0.h;hi=B0.l}if(hi-lo>=RC.fvgMin*atr&&(!fz||hi-lo>fz.hi-fz.lo))fz={lo,hi,k:q}}}
+  if(m<0)mk('fail','Needs a structure shift first.');
+  else if(!fz)mk('fail','No gap between candle 1 and candle 3 around the displacement.');
+  else mk('pass','Gap from '+f(fz.lo)+' to '+f(fz.hi)+'.');
+  /* 6. entry on the FVG retracement */
+  if(!fz)mk('fail','Needs a Fair Value Gap first.');
+  else{const tol=RC.fvgTol*atr,ov=C[i].h>=fz.lo&&C[i].l<=fz.hi,inz=a.entry>=fz.lo-tol&&a.entry<=fz.hi+tol;
+    if(i<fz.k+2)mk('fail','The signal candle formed before the gap was complete.');
+    else if(ov&&inz)mk('pass','Signal candle retraced into the gap.');
+    else mk('fail',ov?'Entry '+f(a.entry)+' is away from the gap.':'The signal candle did not retrace into the gap ('+f(fz.lo)+' to '+f(fz.hi)+').')}
+  /* 7. stop beyond the sweep */
+  let ext=null;
+  if(s>=0){const end=m>=0?m:i;ext=d===-1?C[s].h:C[s].l;for(let q=s;q<=end;q++)ext=d===-1?Math.max(ext,C[q].h):Math.min(ext,C[q].l)}
+  if(ext==null)mk('fail','Needs a sweep first.');
+  else{const beyond=d===-1?sl>=ext:sl<=ext;
+    if(beyond)mk('pass','Stop '+f(sl)+' is beyond the sweep extreme '+f(ext)+'.');
+    else{meta.adjSl=d===-1?ext+RC.advBuf*atr:ext-RC.advBuf*atr;mk('fail','Stop '+f(sl)+' is inside the sweep extreme '+f(ext)+'. It needs to be at '+f(meta.adjSl)+' or beyond.')}}
+  /* 8. full 10R target room: older swing levels price has not traded through yet */
+  {const T=a.entry+d*RC.tgtR*risk;let blk=null;
+   meta.tgt10=T;
+   if(risk>0){for(const x of sw){if(x.type!==typeM)continue;if(s>=0&&x.k>=s)continue;if(x.k<i-RC.liqBars)continue;
+     const between=d===-1?(x.p<a.entry&&x.p>T):(x.p>a.entry&&x.p<T);if(!between)continue;
+     let touched=false;for(let q=x.k+1;q<=i;q++){if(d===-1?C[q].l<x.p:C[q].h>x.p){touched=true;break}}
+     if(touched)continue;
+     if(!blk||Math.abs(a.entry-x.p)<Math.abs(a.entry-blk.p))blk=x}}
+   if(!(risk>0))mk('fail','Stop and entry are at the same price.');
+   else if(blk)mk('fail','An untouched swing '+(d===-1?'low':'high')+' at '+f(blk.p)+' ('+(Math.abs(a.entry-blk.p)/risk).toFixed(1)+'R) sits before the 10R target at '+f(T)+'.');
+   else mk('pass','No untouched swing level before 10R at '+f(T)+'.')}
+  /* 9. spread and costs */
+  if(!(p.cost>0))mk('manual','No spread is entered for this market. Enter it in the cost box, or confirm yourself that costs are fine.');
+  else if(!(risk>0))mk('fail','Cannot measure cost without a stop distance.');
+  else{const rr=p.cost/risk;if(rr<=RC.costMax)mk('pass','Spread is '+(rr*100).toFixed(1)+'% of 1R (Deriv multiplier commission is not included).');else mk('fail','Spread is '+(rr*100).toFixed(0)+'% of 1R, above the '+(RC.costMax*100)+'% limit.')}
+  return fin();
+}
+let ovOn=false,ticks={},lastEv=null;
+const planOf=(a,sl)=>{const risk=Math.abs(a.entry-sl);return Object.assign({},a,{sl,risk,tp:[1,2,3,10].map(k=>a.entry+a.d*k*risk)})};
+function evalNow(){const base=evalRules(cur,null);let sl=null;if(ovOn&&base.meta.adjSl!=null)sl=base.meta.adjSl;const E=sl!=null?evalRules(cur,sl):base;E.base=base;E.plan=planOf(cur.act,sl!=null?sl:cur.act.sl);E.adj=sl!=null;return E}
+function rulesHtml(E){
+  const st=strictOn(),col=E.fail===0&&E.manual===0?'#7defb4':E.fail?'#ff8d98':'#f5a524';
+  let h='<div style="margin:10px 0;border:1px solid var(--bd,#16273a);background:#050c15;padding:7px 9px"><div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.1em;color:#cfe3f7;margin-bottom:4px"><span>STRICT RULES <b style="color:'+col+'">'+E.pass+'/9</b></span><label style="margin:0;display:flex;align-items:center;gap:6px;font-size:10px"><input type="checkbox" id="trStrict" style="width:auto"'+(st?' checked':'')+'>STRICT MODE</label></div>';
+  E.rules.forEach((r,q)=>{
+    const ic=r.state==='pass'?'<b style="color:#7defb4">&#10003;</b>':r.state==='fail'?'<b style="color:#ff8d98">&#10007;</b>':'<input type="checkbox" class="trTick" data-q="'+q+'" style="width:auto"'+(ticks[q]?' checked':'')+'>';
+    h+='<div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #0e1b2b;font-size:12px;line-height:1.35"><span style="width:16px;flex:none;text-align:center">'+ic+'</span><span style="color:#cfe3f7">'+(q+1)+'. '+RULE_LABELS[q]+(r.note?'<small style="display:block;color:var(--dim,#7d90a6);font-size:10.5px">'+esc(r.note)+'</small>':'')+'</span></div>'});
+  if(E.base.meta.adjSl!=null)h+='<label style="display:block;margin:8px 0 0;font-size:11px;letter-spacing:.02em;color:#f5a524"><input type="checkbox" id="trAdj" style="width:auto;margin-right:8px"'+(ovOn?' checked':'')+'>MOVE THE STOP BEYOND THE SWEEP TO '+fx(E.base.meta.adjSl,cur.dp)+'. THIS CHANGES THE 1R DISTANCE AND ALL TARGETS.</label>';
+  return h+'</div>';
+}
+
 function calc(){
-  const p=cur,a=p.act,d=a.d,px=p.px||a.entry;
-  const stake=Math.max(0,+$('trStake').value||0),mult=Math.max(1,Math.round(+$('trMult').value||1)),ti=+$('trTp').value;
+  const p=cur,E=evalNow(),a=E.plan,d=a.d,px=p.px||a.entry;
+  const stake=Math.max(0,+$('trStake').value||0),mult=Math.max(1,Math.round(+$('trMult').value||1)),ti=+$('trTp').value,tn=ti===3?'10R':'TP'+(ti+1);
   const tp=a.tp[ti],slD=(px-a.sl)*d,tpD=(tp-px)*d;
   const r={ok:true,stake,mult,ti,px,tp,html:''};
   const lines=[];
+  if(strictOn()){
+    const un=E.rules.map((x,q)=>({x,q})).filter(o=>o.x.state==='fail'||(o.x.state==='manual'&&!ticks[o.q]));
+    if(un.length){r.ok=false;lines.push('<span class="bad">Strict mode: '+un.length+' rule'+(un.length>1?'s are':' is')+' not met. Orders stay blocked until every rule passes (or you turn strict mode off).</span>')}
+  }else if(E.fail>0)lines.push('<span class="warn">'+E.fail+' rule'+(E.fail>1?'s are':' is')+' not met. Strict mode is off, so you can still order.</span>');
   if(LS.get('fat_nomult:'+cur.sym,0)){r.ok=false;lines.push('<span class="bad">Deriv does not offer multipliers on '+esc(cur.name)+' (it only offers CFDs on MT5/cTrader and digital options there). This page can only open multipliers, so it cannot trade this market.</span>')}
   const al=allowedOf();if(al&&!al.includes(mult)){r.ok=false;lines.push('<span class="bad">'+esc(cur.name)+' only allows multipliers: x'+al.join(', x')+'. Tap one below.</span>')}
   if(!(stake>0)){r.ok=false;lines.push('<span class="bad">Enter a stake above 0.</span>')}
   if(slD<=0){r.ok=false;lines.push('<span class="bad">Price is already past the stop loss. This signal is no longer valid.</span>')}
-  if(tpD<=0){r.ok=false;lines.push('<span class="bad">Price is already past TP'+(ti+1)+'. Pick a further target.</span>')}
+  if(tpD<=0){r.ok=false;lines.push('<span class="bad">Price is already past '+tn+'. Pick a further target.</span>')}
   if(slD>0){
     r.sl$=+(stake*mult*slD/px).toFixed(2);
     r.maxMult=Math.floor(0.9*px/slD);
@@ -2944,7 +3043,7 @@ function calc(){
     }
   }
   if(tpD>0)r.tp$=+(stake*mult*tpD/px).toFixed(2);
-  if(r.sl$!=null&&r.ok||r.sl$!=null)lines.unshift('Max loss at stop: <b class="bad">-$'+r.sl$.toFixed(2)+'</b> &nbsp; Profit at TP'+(ti+1)+': <b class="ok">'+(r.tp$!=null?'+$'+r.tp$.toFixed(2):'-')+'</b><br>Position size: $'+(stake*mult).toFixed(2)+' (stake $'+stake.toFixed(2)+' x '+mult+')');
+  if(r.sl$!=null&&r.ok||r.sl$!=null)lines.unshift('Max loss at stop: <b class="bad">-$'+r.sl$.toFixed(2)+'</b> &nbsp; Profit at '+tn+': <b class="ok">'+(r.tp$!=null?'+$'+r.tp$.toFixed(2):'-')+'</b><br>Position size: $'+(stake*mult).toFixed(2)+' (stake $'+stake.toFixed(2)+' x '+mult+')');
   const age=p.age;if(age>=3)lines.push('<span class="warn">This signal is '+age+' candles old. Price has moved since entry, so your fill will differ.</span>');
   const slip=Math.abs(px-a.entry)/a.entry*100;if(slip>=0.1)lines.push('<span class="warn">Current price is '+slip.toFixed(2)+'% from the signal entry. Stop and target amounts are set from the current price.</span>');
   r.html=lines.join('<br>');
@@ -2952,26 +3051,29 @@ function calc(){
 }
 
 function render(){
-  const p=cur,a=p.act,d=a.d,dp=p.dp,f=v=>fx(v,dp);
+  const p=cur,E0=evalNow(),a=E0.plan,d=a.d,dp=p.dp;
   {const px=p.px||a.entry,slD=(px-a.sl)*d,al=allowedOf();if(slD>0){const mx=Math.floor(0.9*px/slD);if(P.mult>mx)P.mult=mx>=10?Math.floor(mx/10)*10:Math.max(1,mx)}if(al&&!al.includes(P.mult))P.mult=snap(al,P.mult)}
   const needCreds=!(($('swApp')||{}).value||'').trim()||!(($('swTok')||{}).value||'').trim();
   $('trBox').innerHTML=
    '<h3>OPEN THIS POSITION? CHOOSE LIVE OR DEMO</h3>'
   +'<div><span class="tr-side '+(d===1?'b':'s')+'">'+(a.lim?'LIMIT ':'')+(d===1?'BUY':'SELL')+' '+a.score+'</span><span style="color:#cfe3f7;font-size:13px">'+esc(p.name)+' / '+esc(p.tf)+'</span></div>'
-  +'<div class="tr-g"><div>ENTRY<b>'+f(a.entry)+'</b></div><div>PRICE NOW<b>'+(p.px!=null?f(p.px):'-')+'</b></div>'
-  +'<div class="sl">STOP LOSS<b>'+f(a.sl)+'</b></div><div class="tp">TP1 (1R)<b>'+f(a.tp[0])+'</b></div>'
-  +'<div class="tp">TP2 (2R)<b>'+f(a.tp[1])+'</b></div><div class="tp">TP3 (3R)<b>'+f(a.tp[2])+'</b></div></div>'
+  +'<div id="trGridWrap"></div><div id="trRulesWrap"></div>'
   +'<div class="tr-row"><div><label for="trStake">STAKE (USD)</label><input id="trStake" type="number" inputmode="decimal" min="1" step="any" value="'+P.stake+'"></div>'
   +'<div><label for="trMult">MULTIPLIER</label><input id="trMult" type="number" inputmode="numeric" min="1" step="1" value="'+P.mult+'"></div>'
-  +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
+  +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option><option value="3">10R TARGET</option></select></div></div>'
   +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
   +'<div id="trCalc"></div><label id="trTightRow" style="display:none;font-size:11.5px;letter-spacing:.02em;color:#f5a524;margin:6px 0"><input type="checkbox" id="trTight" style="width:auto;margin-right:8px">USE THE CLOSEST ALLOWED STOP INSTEAD (TIGHTER THAN THE SIGNAL STOP)</label><div id="trChips"></div><div id="trMsg"></div>'
   +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
-  $('trTp').value=String(P.tp);
+  $('trTp').value=String(strictOn()?3:Math.min(P.tp,3));
   const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;if(LS.get('fat_nomult:'+cur.sym,0)){c.innerHTML='<button type="button" id="trAny" style="padding:8px 12px;font-size:12px">TRY ANYWAY (CLEAR BLOCK)</button>';$('trAny').onclick=()=>{LS.set('fat_nomult:'+cur.sym,0);upd()};return}
   c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
-  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trTightRow').style.display=r.tooWide?'block':'none';chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
+  const grid=()=>{const E=evalNow(),a2=E.plan,f2=v=>fx(v,dp);$('trGridWrap').innerHTML='<div class="tr-g"><div>ENTRY<b>'+f2(a2.entry)+'</b></div><div>PRICE NOW<b>'+(p.px!=null?f2(p.px):'-')+'</b></div><div class="sl">STOP LOSS'+(E.adj?' (MOVED)':'')+'<b>'+f2(a2.sl)+'</b></div><div>1R DISTANCE<b>'+f2(a2.risk)+'</b></div><div class="tp">TP1 (1R)<b>'+f2(a2.tp[0])+'</b></div><div class="tp">TP2 (2R)<b>'+f2(a2.tp[1])+'</b></div><div class="tp">TP3 (3R)<b>'+f2(a2.tp[2])+'</b></div><div class="tp">10R TARGET<b>'+f2(a2.tp[3])+'</b></div></div>'};
+  const drawRules=()=>{const E=evalNow(),w=$('trRulesWrap');w.innerHTML=rulesHtml(E);
+    $('trStrict').onchange=()=>{LS.set('fat_strict',$('trStrict').checked);if($('trStrict').checked)$('trTp').value='3';upd()};
+    w.querySelectorAll('.trTick').forEach(c=>c.onchange=()=>{ticks[+c.dataset.q]=c.checked;upd()});
+    if($('trAdj'))$('trAdj').onchange=()=>{ovOn=$('trAdj').checked;upd()}};
+  const upd=()=>{grid();drawRules();const r=calc();$('trCalc').innerHTML=r.html;$('trTightRow').style.display=r.tooWide?'block':'none';chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
   refresh=upd;$('trTight').onchange=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
 }
@@ -2980,7 +3082,7 @@ function open(auto){
   if(!cur||!cur.act)return;
   const k=keyOf(cur);
   if((placed.has(k+'|live')||placed.has(k+'|demo'))&&!confirm('You already opened this signal ('+(placed.has(k+'|live')?'live':'demo')+'). Open another position on it?'))return;
-  render();m.classList.add('on');
+  ovOn=false;ticks={};render();m.classList.add('on');
   if(auto){try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
 }
 function close(skip){
@@ -3188,8 +3290,12 @@ window.FATX_positions={open:a=>psUse(a||PS.acct,true),use:a=>psUse(a||PS.acct,fa
 /* called by the chart every frame while a signal is open */
 window.FATX_plan=function(p){
   cur=p;const k=keyOf(p);
-  if(k===lastKey)return;lastKey=k;
-  if(!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+  if(k!==lastKey){
+    lastKey=k;try{lastEv=evalRules(p,null)}catch(e){console.error(e);lastEv=null}
+    const E=lastEv;
+    if(!asked.has(k)&&!m.classList.contains('on')&&(!strictOn()||(E&&E.fail===0)))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+  }
+  const b=$('trOpen');if(b&&lastEv){const t='TRADE '+lastEv.pass+'/9';if(b.textContent!==t)b.textContent=t}
 };
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trOpen'))open(false)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trOpen'){e.preventDefault();open(false)}});
