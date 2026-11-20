@@ -2882,7 +2882,9 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const asked=new Set(LS.get('fat_asked',[])),placed=new Set(LS.get('fat_placed',[]));
 const mark=(set,name,k)=>{set.add(k);LS.set(name,[...set].slice(-300))};
-let cur=null,lastKey='',busy=false,ws=null;
+let cur=null,lastKey='',busy=false,ws=null,refresh=null;
+const allowedOf=()=>{const l=cur&&LS.get('fat_mults:'+cur.sym,null);return Array.isArray(l)&&l.length?l.map(Number).filter(n=>n>0).sort((x,y)=>x-y):null};
+const snap=(l,lim)=>{let b=null;for(const n of l)if(n<=lim)b=n;return b==null?l[0]:b};
 const P=Object.assign({stake:10,mult:100,tp:1},LS.get('fat_live_prefs',{}));
 
 const css=document.createElement('style');
@@ -2920,6 +2922,7 @@ function calc(){
   const tp=a.tp[ti],slD=(px-a.sl)*d,tpD=(tp-px)*d;
   const r={ok:true,stake,mult,ti,px,tp,html:''};
   const lines=[];
+  const al=allowedOf();if(al&&!al.includes(mult)){r.ok=false;lines.push('<span class="bad">'+esc(cur.name)+' only allows multipliers: x'+al.join(', x')+'. Tap one below.</span>')}
   if(!(stake>0)){r.ok=false;lines.push('<span class="bad">Enter a stake above 0.</span>')}
   if(slD<=0){r.ok=false;lines.push('<span class="bad">Price is already past the stop loss. This signal is no longer valid.</span>')}
   if(tpD<=0){r.ok=false;lines.push('<span class="bad">Price is already past TP'+(ti+1)+'. Pick a further target.</span>')}
@@ -2938,7 +2941,7 @@ function calc(){
 
 function render(){
   const p=cur,a=p.act,d=a.d,dp=p.dp,f=v=>fx(v,dp);
-  {const px=p.px||a.entry,slD=(px-a.sl)*d;if(slD>0){const mx=Math.floor(0.9*px/slD);if(P.mult>mx)P.mult=mx>=10?Math.floor(mx/10)*10:Math.max(1,mx)}}
+  {const px=p.px||a.entry,slD=(px-a.sl)*d,al=allowedOf();if(slD>0){const mx=Math.floor(0.9*px/slD);if(P.mult>mx)P.mult=mx>=10?Math.floor(mx/10)*10:Math.max(1,mx)}if(al&&!al.includes(P.mult))P.mult=snap(al,P.mult)}
   const needCreds=!(($('swApp')||{}).value||'').trim()||!(($('swTok')||{}).value||'').trim();
   $('trBox').innerHTML=
    '<h3>OPEN THIS POSITION? CHOOSE LIVE OR DEMO</h3>'
@@ -2950,13 +2953,14 @@ function render(){
   +'<div><label for="trMult">MULTIPLIER</label><input id="trMult" type="number" inputmode="numeric" min="1" step="1" value="'+P.mult+'"></div>'
   +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
   +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
-  +'<div id="trCalc"></div><div id="trMsg"></div>'
+  +'<div id="trCalc"></div><div id="trChips"></div><div id="trMsg"></div>'
   +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
   $('trTp').value=String(P.tp);
-  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
+  const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
+  const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
-  $('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
+  refresh=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
 }
 
 function open(auto){
@@ -2977,7 +2981,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&m.classList.contain
 
 const msg=(t,c)=>{const e=$('trMsg');if(e){e.textContent=t;e.style.color=c||'#cfe3f7'}};
 
-async function connect(app,tok,want){
+async function connect(app,tok,want,own){
   const H={'Authorization':'Bearer '+tok,'Deriv-App-ID':app},B0='https://api.derivws.com/trading/v1/options/accounts';
   let r=await fetch(B0,{headers:H});
   if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Account list failed (HTTP '+r.status+'). '+bt+(r.status===401?' | Deriv does not accept this token. Check that it is a new-API personal access token created at developers.deriv.com with trade scope (not an old api token), that it has no spaces, and that the App ID is the one registered there (letters and numbers are fine). Token length: '+tok.length+', App ID: '+(app||'empty'):''))}
@@ -2991,7 +2995,7 @@ async function connect(app,tok,want){
   if(!r.ok){let bt='';try{bt=(await r.text()).slice(0,200)}catch(e){}throw new Error('Login failed (HTTP '+r.status+'). '+bt)}
   j=await r.json();const url=j.data&&j.data.url;if(!url)throw new Error('Deriv did not return a trading link.');
   return new Promise((res,rej)=>{
-    const w=new WebSocket(url);ws=w;let done=false;
+    const w=new WebSocket(url);if(!own)ws=w;let done=false;
     const to=setTimeout(()=>{if(!done){done=true;rej(new Error('Timed out connecting to Deriv.'))}},15000);
     w.onopen=()=>w.send(JSON.stringify({balance:1}));
     w.onerror=()=>{if(!done){done=true;clearTimeout(to);rej(new Error('Connection to Deriv failed.'))}};
@@ -3030,13 +3034,116 @@ async function submit(kind){
     mark(placed,'fat_placed',k+'|'+kind);mark(asked,'fat_asked',k);
     msg('OPENED ON '+kind.toUpperCase()+'. Contract #'+b.contract_id+' at '+(b.buy_price!=null?'$'+(+b.buy_price).toFixed(2):'stake')+'. Stop -$'+r2.sl$.toFixed(2)+', target +$'+r2.tp$.toFixed(2)+'.','#7defb4');
     try{ws.onclose=null;ws.close()}catch(e){}ws=null;
-    $('trNo').disabled=false;$('trNo').textContent='CLOSE';$('trYes').style.display='none';$('trDemo').style.display='none';busy=false;
+    $('trNo').disabled=false;$('trNo').textContent='CLOSE';{const vb=document.createElement('button');vb.type='button';vb.textContent='VIEW POSITIONS';vb.onclick=()=>{close(true);psUse(kind,true)};$('trBtns').insertBefore(vb,$('trNo'));psUse(kind,false)}$('trYes').style.display='none';$('trDemo').style.display='none';busy=false;
   }catch(err){
-    msg('NOT OPENED: '+(err&&err.message||err),'#ff8d98');
+    const em=String(err&&err.message||err),mm=em.match(/accepts?\s*:?\s*([\d][\d,\s.]*)/i);
+    let learned=false;
+    if(mm&&/multiplier/i.test(em)){const l=mm[1].split(/[,\s]+/).map(x=>parseInt(x,10)).filter(n=>n>0);if(l.length){LS.set('fat_mults:'+cur.sym,l);learned=true;const sorted=allowedOf(),cm=+$('trMult').value;if(!sorted.includes(cm)){const r0=calc();$('trMult').value=snap(sorted,Math.min(cm,r0.maxMult||cm))}}}
+    msg('NOT OPENED: '+em+(learned?' | Allowed multipliers saved for this market. Pick one below and tap again.':''),'#ff8d98');
+    if(learned&&refresh)refresh();
     if(ws){try{ws.onclose=null;ws.close()}catch(e){}ws=null}
     busy=false;$('trYes').disabled=false;$('trDemo').disabled=false;$('trNo').disabled=false;
   }
 }
+
+/* ===== OPEN POSITIONS PANEL (live updating, per account) ===== */
+const PS={acct:LS.get('fat_ps_acct','live'),ws:null,rows:new Map(),bal:null,cur:'USD',st:'idle',gen:0,note:'',pend:null};
+const psCss=document.createElement('style');
+psCss.textContent='#psBtn{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:90;background:#07101b;border:1px solid var(--blu,#2b8cff);color:#cfe3f7;font:12px var(--m,monospace);letter-spacing:.1em;padding:9px 12px;cursor:pointer;display:flex;gap:8px;align-items:center}#psBtn b{font-weight:400}'
++'#psPanel{position:fixed;left:0;right:0;bottom:0;z-index:99;max-height:82vh;display:none;flex-direction:column;background:#050b14;border-top:1px solid var(--blu,#2b8cff);font-family:var(--m,monospace);padding-bottom:env(safe-area-inset-bottom,0px)}#psPanel.on{display:flex}'
++'@media(min-width:700px){#psPanel{left:auto;right:10px;bottom:10px;width:440px;border:1px solid var(--blu,#2b8cff)}}'
++'#psPanel .ps-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd,#16273a);font-size:12px;letter-spacing:.12em;color:#cfe3f7}#psPanel .ps-h .ps-t{flex:1}'
++'#psPanel button{font-size:12px;padding:6px 10px;letter-spacing:.06em}#psPanel .ps-tabs button.on{border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44}'
++'#psPanel .ps-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 12px;font-size:10px;letter-spacing:.1em;color:var(--dim,#7d90a6)}#psPanel .ps-sum b{display:block;font-weight:400;font-size:14px;color:#fff;letter-spacing:0;margin-top:2px}'
++'#psList{overflow:auto;flex:1;min-height:60px}.ps-r{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 12px;border-top:1px solid var(--bd,#16273a)}.ps-r .a{font-size:13px;color:#fff}.ps-r .a i{font-style:normal;padding:1px 6px;margin-right:6px;font-size:11px;color:#03060b;font-weight:700}.ps-r .a i.b{background:var(--pos,#2fe38a)}.ps-r .a i.s{background:var(--neg,#ff4d5e)}'
++'.ps-r .pl{font-size:17px;text-align:right}.ps-r .d{font-size:11px;color:var(--dim,#7d90a6);line-height:1.5}.ps-r .x{text-align:right}.ps-up{color:var(--pos,#2fe38a)}.ps-dn{color:var(--neg,#ff4d5e)}'
++'#psCreds{padding:6px 12px}#psCreds input{width:100%;font-size:14px;padding:7px 8px;margin:3px 0;text-transform:none}.ps-f{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--bd,#16273a);font-size:11px;color:var(--dim,#7d90a6)}.ps-f span{flex:1}';
+document.head.appendChild(psCss);
+const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b>';document.body.appendChild(psBtn);
+const psPanel=document.createElement('div');psPanel.id='psPanel';
+psPanel.innerHTML='<div class="ps-h"><span class="ps-t">OPEN POSITIONS</span><span class="ps-tabs"><button type="button" data-a="live">LIVE</button> <button type="button" data-a="demo">DEMO</button></span><button type="button" id="psX" aria-label="Close">X</button></div>'
++'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div>OPEN P/L<b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div>'
++'<div class="ps-f"><span id="psNote"></span><button type="button" id="psRe">RECONNECT</button></div>';
+document.body.appendChild(psPanel);
+const sgn=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2),pcl=v=>v>=0?'ps-up':'ps-dn';
+const fp=v=>{if(v==null||v==='')return '-';const n=+v;if(!isFinite(n))return esc(v);return n.toFixed(Math.abs(n)>=1000?2:Math.abs(n)>=10?3:5)};
+function psCreds(){
+  const app=((($('swApp')||{}).value)||PS.app||'').replace(/\s+/g,''),tok=((($('swTok')||{}).value)||PS.tok||'').replace(/\s+/g,'');
+  return {app,tok};
+}
+function psRender(){
+  const rows=[...PS.rows.values()],tot=rows.reduce((a,c)=>a+(+c.profit||0),0);
+  $('psN').textContent=rows.length;
+  const t=$('psTop');t.textContent=rows.length?sgn(tot):'';t.className=rows.length?pcl(tot):'';
+  psPanel.querySelectorAll('.ps-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.a===PS.acct));
+  $('psBal').textContent=PS.bal!=null?PS.bal.toFixed(2)+' '+PS.cur:'-';
+  $('psPl').innerHTML=rows.length?'<span class="'+pcl(tot)+'">'+sgn(tot)+'</span>':'-';
+  const stn={idle:'NOT CONNECTED',connecting:'CONNECTING...',live:'LIVE FEED',offline:'OFFLINE',error:'ERROR'};
+  $('psSt').textContent=stn[PS.st]||PS.st;$('psNote').textContent=PS.note||'';
+  const cr=psCreds(),need=(!cr.app||!cr.tok)&&PS.st!=='live';
+  const cd=$('psCreds');if(need){if(!cd.firstChild)cd.innerHTML='<input id="psApp" type="text" placeholder="Deriv App ID" autocomplete="off"><input id="psTok" type="password" placeholder="PAT token (trade scope)" autocomplete="off">'}else if(cd.firstChild&&PS.st==='live')cd.innerHTML='';
+  const L=$('psList');
+  if(!rows.length){L.innerHTML='<div class="ps-r" style="display:block;color:var(--dim,#7d90a6);font-size:12px">'+(PS.st==='live'?'No open positions on this '+PS.acct+' account.':'Connect to see your open '+PS.acct+' positions.')+'</div>';return}
+  rows.sort((a,b)=>(b.date_start||0)-(a.date_start||0));
+  L.innerHTML=rows.map(c=>{
+    const up=/UP|CALL/i.test(c.contract_type||''),nm=c.display_name||c.underlying_symbol||c.underlying||c.symbol||'?',pf=+c.profit||0,lo=c.limit_order||{};
+    const sl=lo.stop_loss&&(lo.stop_loss.order_amount!=null?lo.stop_loss.order_amount:lo.stop_loss.display_name),tp=lo.take_profit&&(lo.take_profit.order_amount!=null?lo.take_profit.order_amount:lo.take_profit.display_name);
+    const en=c.entry_spot!=null?c.entry_spot:c.entry_tick,cu=c.current_spot!=null?c.current_spot:c.exit_tick;
+    return '<div class="ps-r"><div class="a"><i class="'+(up?'b':'s')+'">'+(up?'BUY':'SELL')+'</i>'+esc(nm)+(c.multiplier?' x'+c.multiplier:'')+'</div><div class="pl '+pcl(pf)+'">'+sgn(pf)+'</div>'
+     +'<div class="d">'+fp(en)+' &rarr; '+fp(cu)+'<br>Stake $'+(+c.buy_price||0).toFixed(2)+(sl!=null&&!isNaN(+sl)?' | Stop -$'+Math.abs(+sl).toFixed(2):'')+(tp!=null&&!isNaN(+tp)?' | Target +$'+Math.abs(+tp).toFixed(2):'')+' | #'+c.contract_id+'</div>'
+     +'<div class="x"><button type="button" class="psC" data-id="'+c.contract_id+'">CLOSE</button></div></div>'}).join('');
+  L.querySelectorAll('.psC').forEach(b=>b.onclick=()=>psClose(b));
+}
+function psClose(b){
+  const id=+b.dataset.id;
+  if(PS.pend!==id){PS.pend=id;b.textContent='CONFIRM CLOSE';b.style.borderColor='var(--neg,#ff4d5e)';setTimeout(()=>{if(PS.pend===id){PS.pend=null;psRender()}},4000);return}
+  PS.pend=null;b.disabled=true;b.textContent='CLOSING...';
+  if(PS.ws&&PS.ws.readyState===1)PS.ws.send(JSON.stringify({sell:id,price:0}));else{PS.note='Not connected. Reconnect first.';psRender()}
+}
+function psMsg(e){
+  let x;try{x=JSON.parse(e.data)}catch(_){return}
+  if(x.error){PS.note=x.error.message||'Deriv error';psRender();return}
+  if(x.msg_type==='balance'&&x.balance){PS.bal=+x.balance.balance;PS.cur=x.balance.currency||PS.cur}
+  else if(x.msg_type==='proposal_open_contract'){
+    const c=x.proposal_open_contract;
+    if(c&&c.contract_id){
+      if(c.is_sold||c.status==='sold'||c.is_expired){if(PS.rows.delete(c.contract_id)){PS.note='Closed #'+c.contract_id+': '+sgn(+c.profit||0)}}
+      else PS.rows.set(c.contract_id,Object.assign(PS.rows.get(c.contract_id)||{},c));
+    }
+  }
+  else if(x.msg_type==='sell'&&x.sell){PS.note='Sold #'+x.sell.contract_id+' for $'+(+x.sell.sold_for).toFixed(2)}
+  psRender();
+}
+async function psConnect(){
+  const g=++PS.gen;
+  if(PS.ws){try{PS.ws.onclose=null;PS.ws.close()}catch(e){}PS.ws=null}
+  if($('psApp'))PS.app=$('psApp').value;if($('psTok'))PS.tok=$('psTok').value;
+  const cr=psCreds();
+  if(!cr.app||!cr.tok){PS.st='idle';PS.note='Enter your App ID and token.';psRender();return}
+  PS.st='connecting';PS.note='';psRender();
+  try{
+    const c=await connect(cr.app,cr.tok,PS.acct,true);
+    if(g!==PS.gen){try{c.ws.close()}catch(e){}return}
+    PS.ws=c.ws;PS.bal=c.bal;PS.cur=c.cur;PS.st='live';PS.note='Account '+c.id;
+    if($('swApp')&&!$('swApp').value)$('swApp').value=cr.app;if($('swTok')&&!$('swTok').value)$('swTok').value=cr.tok;
+    c.ws.onmessage=psMsg;c.ws.onclose=()=>{if(g===PS.gen){PS.st='offline';PS.note='Connection closed.';psRender()}};
+    c.ws.send(JSON.stringify({balance:1,subscribe:1}));c.ws.send(JSON.stringify({proposal_open_contract:1,subscribe:1}));
+    psRender();
+  }catch(err){if(g===PS.gen){PS.st='error';PS.note=String(err&&err.message||err);psRender()}}
+}
+function psUse(a,openIt){
+  if(a!==PS.acct){PS.acct=a;LS.set('fat_ps_acct',a);PS.rows.clear();PS.bal=null;PS.st='idle';if(PS.ws){try{PS.ws.onclose=null;PS.ws.close()}catch(e){}PS.ws=null}}
+  if(openIt){psPanel.classList.add('on');psBtn.style.display='none'}
+  if(!PS.ws||PS.ws.readyState!==1)psConnect();else psRender();
+}
+function psHide(){psPanel.classList.remove('on');psBtn.style.display='flex'}
+psBtn.addEventListener('click',()=>psUse(PS.acct,true));
+psBtn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();psUse(PS.acct,true)}});
+$('psX').onclick=psHide;$('psRe').onclick=psConnect;
+psPanel.querySelectorAll('.ps-tabs button').forEach(b=>b.onclick=()=>{psUse(b.dataset.a,true)});
+setInterval(()=>{if(PS.ws&&PS.ws.readyState===1)try{PS.ws.send(JSON.stringify({ping:1}))}catch(e){}},30000);
+psRender();
+window.FATX_positions={open:a=>psUse(a||PS.acct,true),use:a=>psUse(a||PS.acct,false)};
 
 /* called by the chart every frame while a signal is open */
 window.FATX_plan=function(p){
