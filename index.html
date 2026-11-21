@@ -2121,7 +2121,7 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+window.FATX={px:sy=>(R[sy]&&R[sy].px)||null,thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
 })();
 </script>
@@ -3073,11 +3073,11 @@ psCss.textContent='#psBtn{position:fixed;right:10px;bottom:calc(10px + env(safe-
 +'.ps-r .pl{font-size:17px;text-align:right}.ps-r .d{font-size:11px;color:var(--dim,#7d90a6);line-height:1.5}.ps-r .x{text-align:right}.ps-up{color:var(--pos,#2fe38a)}.ps-dn{color:var(--neg,#ff4d5e)}'
 +'#psPanel .ps-views{display:flex;gap:6px;padding:8px 12px 0}#psPanel .ps-views button.on,#psRange button.on{border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44}#psRange{display:none;gap:6px;padding:6px 12px 0}.ps-r .d small{display:block;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#psCreds{padding:6px 12px}#psCreds input{width:100%;font-size:14px;padding:7px 8px;margin:3px 0;text-transform:none}.ps-f{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--bd,#16273a);font-size:11px;color:var(--dim,#7d90a6)}.ps-f span{flex:1}';
 document.head.appendChild(psCss);
-const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b>';document.body.appendChild(psBtn);
+const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b><b id="psAu" style="color:#f5a524"></b>';document.body.appendChild(psBtn);
 const psPanel=document.createElement('div');psPanel.id='psPanel';
 psPanel.innerHTML='<div class="ps-h"><span class="ps-t">OPEN POSITIONS</span><span class="ps-tabs"><button type="button" data-a="live">LIVE</button> <button type="button" data-a="demo">DEMO</button></span><button type="button" id="psX" aria-label="Close">X</button></div>'
-+'<div class="ps-views"><button type="button" data-v="open">OPEN</button><button type="button" data-v="hist">HISTORY</button></div><div id="psRange"><button type="button" data-r="today">TODAY</button><button type="button" data-r="7d">7 DAYS</button><button type="button" data-r="all">LAST 100</button></div>'
-+'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div><span id="psPlL">OPEN P/L</span><b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div>'
++'<div class="ps-views"><button type="button" data-v="open">OPEN</button><button type="button" data-v="hist">HISTORY</button><button type="button" data-v="auto">AUTO</button></div><div id="psRange"><button type="button" data-r="today">TODAY</button><button type="button" data-r="7d">7 DAYS</button><button type="button" data-r="all">LAST 100</button></div>'
++'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div><span id="psPlL">OPEN P/L</span><b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div><div id="psAuto" style="display:none"></div>'
 +'<div class="ps-f"><span id="psNote"></span><button type="button" id="psRe">RECONNECT</button></div>';
 document.body.appendChild(psPanel);
 const sgn=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2),pcl=v=>v>=0?'ps-up':'ps-dn';
@@ -3102,6 +3102,8 @@ function psRender(){
   $('psRange').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.r===PS.range));
   $('psPlL').textContent=PS.tab==='hist'?'CLOSED P/L':'OPEN P/L';
   const L=$('psList');
+  L.style.display=PS.tab==='auto'?'none':'';$('psAuto').style.display=PS.tab==='auto'?'block':'none';
+  if(PS.tab==='auto'){$('psPlL').textContent='OPEN P/L';if(typeof auRefresh==='function')auRefresh();return}
   if(PS.tab==='hist'){
     const H=PS.hist,pfOf=t=>(+t.sell_price||0)-(+t.buy_price||0),net=H.reduce((a,t)=>a+pfOf(t),0),wn=H.filter(t=>pfOf(t)>0).length;
     $('psPl').innerHTML=H.length?'<span class="'+pcl(net)+'">'+sgn(net)+'</span>':'-';
@@ -3186,10 +3188,107 @@ psRender();
 window.FATX_positions={open:a=>psUse(a||PS.acct,true),use:a=>psUse(a||PS.acct,false)};
 
 /* called by the chart every frame while a signal is open */
+/* ===== AUTO-TRADE: places Deriv multiplier orders from the engine's own signals (all instruments) ===== */
+const AU={on:false,busy:false,cf:0,lastConn:0,log:[],c:Object.assign({acct:'demo',stake:1,tp:1,maxOpen:3,maxRisk:10,minScore:0,mult:0},LS.get('fat_auto',{})),done:new Set(LS.get('fat_auto_done',[])),recent:{},fails:{}};
+const auCss=document.createElement('style');
+auCss.textContent='#psAuto{overflow:auto;flex:1;padding:8px 12px;font-size:12px;color:#cfe3f7}#psAuto .au-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}#psAuto .au-top b{flex:1;letter-spacing:.1em}#psAuto .au-warn{font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6);margin-bottom:8px}#psAuto .au-g{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}#psAuto label{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim,#7d90a6);margin-bottom:2px}#psAuto input,#psAuto select{width:100%;font-size:14px;padding:6px 8px;text-transform:none;letter-spacing:0}#auLog{margin-top:10px;font-size:11px;line-height:1.5;border-top:1px solid var(--bd,#16273a);padding-top:6px;max-height:160px;overflow:auto}#auLog div{padding:1px 0}#auArm.on{background:#3a0c14;border-color:var(--neg,#ff4d5e);color:#fff}';
+document.head.appendChild(auCss);
+$('psAuto').innerHTML='<div class="au-top"><b id="auState">AUTO-TRADE: OFF</b><button type="button" id="auArm">ARM</button></div>'
++'<div class="au-warn">Places orders from the engine\'s live signals (all instruments) without asking you, using the signal\'s stop and your chosen target. It always starts OFF when the page loads and only works while this page stays open. Start on DEMO.</div>'
++'<div class="au-g"><div><label for="auAcct">ACCOUNT</label><select id="auAcct"><option value="demo">DEMO</option><option value="live">LIVE (REAL MONEY)</option></select></div>'
++'<div><label for="auStake">STAKE PER TRADE (USD)</label><input id="auStake" type="number" inputmode="decimal" min="0.35" step="any"></div>'
++'<div><label for="auTp">TAKE PROFIT AT</label><select id="auTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div>'
++'<div><label for="auMult">MULTIPLIER (0 = AUTO)</label><input id="auMult" type="number" inputmode="numeric" min="0" step="1"></div>'
++'<div><label for="auMax">MAX OPEN POSITIONS</label><input id="auMax" type="number" inputmode="numeric" min="1" step="1"></div>'
++'<div><label for="auRisk">MAX DAILY RISK (USD)</label><input id="auRisk" type="number" inputmode="decimal" min="0" step="any"></div>'
++'<div><label for="auScore">MIN SCORE (0 = ENGINE LIMIT)</label><input id="auScore" type="number" inputmode="numeric" min="0" max="100" step="1"></div></div>'
++'<div class="au-warn" style="margin-top:8px">Daily risk adds up the stop-loss amount of every order placed today. When it reaches the limit, no more orders are placed until tomorrow. Three failed orders in a row switch auto-trade off.</div><div id="auLog"></div>';
+const auSave=()=>LS.set('fat_auto',AU.c);
+const auDay=()=>{const k=new Date().toLocaleDateString('en-CA');let d=LS.get('fat_auto_day',null);if(!d||d.d!==k){d={d:k,n:0,risk:0};LS.set('fat_auto_day',d)}return d};
+function auLog(t){AU.log.unshift(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'  '+t);if(AU.log.length>40)AU.log.pop();auRefresh()}
+function auRefresh(){
+  const d=auDay(),st=$('auState');if(!st)return;
+  st.textContent=AU.on?'AUTO-TRADE: ON ('+AU.c.acct.toUpperCase()+')':'AUTO-TRADE: OFF';st.style.color=AU.on?(AU.c.acct==='live'?'#ff8d98':'#7defb4'):'';
+  const b=$('auArm');b.textContent=AU.on?'DISARM':'ARM';b.classList.toggle('on',AU.on);
+  const x=$('psAu');if(x)x.textContent=AU.on?' AUTO':'';
+  $('auLog').innerHTML='<div style="color:#cfe3f7">Today: '+d.n+' order'+(d.n===1?'':'s')+', risk used $'+d.risk.toFixed(2)+' of $'+(+AU.c.maxRisk).toFixed(2)+'</div>'+AU.log.map(l=>'<div>'+esc(l)+'</div>').join('');
+}
+function auOff(why){AU.on=false;auLog(why);auRefresh()}
+[['auAcct','acct',0],['auStake','stake',1],['auTp','tp',1],['auMult','mult',1],['auMax','maxOpen',1],['auRisk','maxRisk',1],['auScore','minScore',1]].forEach(([id,k,num])=>{
+  const e=$(id);e.value=String(AU.c[k]);
+  e.onchange=()=>{const v=num?+e.value:e.value;if(num&&!isFinite(v))return;if(k==='acct'&&AU.on)auOff('Account changed, so auto-trade was switched off. Arm it again.');AU.c[k]=v;auSave();auRefresh()};
+});
+$('auArm').onclick=()=>{
+  if(AU.on){auOff('Disarmed by you.');return}
+  const cr=psCreds();if(!cr.app||!cr.tok){auLog('Enter your App ID and token in the OPEN tab first, then arm.');return}
+  if(!(AU.c.stake>0)){auLog('Set a stake above 0.');return}
+  if(AU.c.acct==='live'){const t=prompt('LIVE AUTO-TRADING places real-money orders from every engine signal without asking you.\nStake $'+AU.c.stake+' each, up to '+AU.c.maxOpen+' open, daily risk limit $'+AU.c.maxRisk+'.\n\nType LIVE to turn it on.');if(t!=='LIVE'){auLog('Live arming cancelled.');return}}
+  AU.on=true;AU.cf=0;auLog('ARMED on '+AU.c.acct.toUpperCase()+'. Watching every engine signal.');psUse(AU.c.acct,false);auRefresh();
+};
+const auAllowed=sy=>{const l=LS.get('fat_mults:'+sy,null);return Array.isArray(l)&&l.length?l.map(Number).filter(n=>n>0).sort((x,y)=>x-y):null};
+function auMark(key,why){AU.done.add(key);LS.set('fat_auto_done',[...AU.done].slice(-300));if(why)auLog('Skipped '+key.split(':')[0]+': '+why)}
+function auPlan(sy,sg,px){
+  const d=sg.d,slD=(px-sg.sl)*d,tp=sg.tp[AU.c.tp],tpD=(tp-px)*d,stake=+AU.c.stake;
+  if(!(slD>0))return{skip:'price is already past the stop'};
+  if(!(tpD>0))return{skip:'price is already past TP'+(AU.c.tp+1)};
+  if(!(stake>0))return{skip:'stake is 0'};
+  const maxM=Math.floor(0.9*px/slD),al=auAllowed(sy);let mult;
+  if(AU.c.mult>0)mult=Math.round(AU.c.mult);
+  else if(al){const fit=al.filter(n=>n<=maxM);if(!fit.length)return{skip:'stop is too wide: the lowest allowed multiplier (x'+al[0]+') needs a stop within '+(0.9/al[0]*100).toFixed(2)+'% of price'};mult=fit[fit.length-1]}
+  else mult=maxM>=10?Math.floor(maxM/10)*10:Math.max(1,maxM);
+  if(al&&!al.includes(mult))return{skip:'x'+mult+' is not an allowed multiplier here'};
+  const sl$=+(stake*mult*slD/px).toFixed(2),tp$=+(stake*mult*tpD/px).toFixed(2);
+  if(sl$>=stake*0.95)return{skip:'stop is too wide for x'+mult};
+  return{d,stake,mult,sl$,tp$,px};
+}
+async function auPlace(sy,sg,key,plan,retried){
+  AU.busy=true;const cr=psCreds(),nm=(window.FATX&&FATX.nameFor?FATX.nameFor(sy):sy);
+  try{
+    const c=await connect(cr.app,cr.tok,AU.c.acct,true);
+    const p2=auPlan(sy,sg,FATX.px(sy)||plan.px);
+    if(p2.skip){try{c.ws.close()}catch(e){}auMark(key,p2.skip+' (price moved while connecting)');return}
+    const par={amount:p2.stake,basis:'stake',contract_type:p2.d===1?'MULTUP':'MULTDOWN',currency:c.cur,multiplier:p2.mult,underlying_symbol:sy,limit_order:{take_profit:p2.tp$,stop_loss:p2.sl$}};
+    let b;try{b=await sendBuy(c.ws,par)}finally{try{c.ws.onclose=null;c.ws.close()}catch(e){}}
+    auMark(key);AU.recent[sy]=Date.now();AU.cf=0;
+    const day=auDay();day.n++;day.risk=+(day.risk+p2.sl$).toFixed(2);LS.set('fat_auto_day',day);
+    auLog('OPENED '+AU.c.acct.toUpperCase()+' '+(p2.d===1?'BUY':'SELL')+' '+nm+' stake $'+p2.stake+' x'+p2.mult+', stop -$'+p2.sl$.toFixed(2)+', target +$'+p2.tp$.toFixed(2)+', #'+b.contract_id);
+    try{if(typeof SWM!=='undefined'&&SWM.qc)SWM.qc.emit((p2.d===1?'BUY':'SELL')+' x'+p2.mult,p2.stake)}catch(e){}
+    try{navigator.vibrate&&navigator.vibrate(150)}catch(e){}
+    psUse(AU.c.acct,false);
+  }catch(err){
+    const em=String(err&&err.message||err),mm=em.match(/accepts?\s*:?\s*([\d][\d,\s.]*)/i);
+    if(mm&&/multiplier/i.test(em)&&!retried){
+      const l=mm[1].split(/[,\s]+/).map(x=>parseInt(x,10)).filter(n=>n>0);if(l.length){LS.set('fat_mults:'+sy,l);auLog('Learned allowed multipliers for '+nm+': x'+l.join(', x')+'. Retrying once.');AU.busy=false;const np=auPlan(sy,sg,FATX.px(sy)||plan.px);if(np.skip){auMark(key,np.skip)}else await auPlace(sy,sg,key,np,true);return}
+    }
+    if(/not offered for this duration/i.test(em)){LS.set('fat_nomult:'+sy,1);auMark(key,'Deriv does not offer multipliers on '+nm);}
+    else{AU.cf++;AU.fails[key]=(AU.fails[key]||0)+1;auLog('FAILED '+nm+': '+em);if(AU.fails[key]>=2)auMark(key);if(AU.cf>=3)auOff('Three orders failed in a row, so auto-trade switched itself off.')}
+  }finally{AU.busy=false}
+}
+function auTick(){
+  if(!AU.on||AU.busy||!window.FATX||!FATX.scan)return;
+  const kind=AU.c.acct;
+  if(PS.acct!==kind||PS.st!=='live'){if(PS.st!=='connecting'&&Date.now()-AU.lastConn>20000){AU.lastConn=Date.now();psUse(kind,false)}return}
+  const day=auDay();if(day.risk>=+AU.c.maxRisk){if(!AU.paused){AU.paused=true;auLog('Daily risk limit reached. No more orders today.')}return}AU.paused=false;
+  if(PS.rows.size>=+AU.c.maxOpen)return;
+  const L=FATX.scan()||[];
+  for(const it of L){
+    const st=it.st;if(!st||st.mode!=='sig'||!st.sig)continue;
+    const sy=it.sy,sg=st.sig,key=sy+':'+sg.t;
+    if(AU.done.has(key))continue;
+    if(AU.c.minScore>0&&sg.score<AU.c.minScore){continue}
+    if(LS.get('fat_nomult:'+sy,0)){auMark(key,'Deriv does not offer multipliers on this market');continue}
+    if(AU.recent[sy]&&Date.now()-AU.recent[sy]<3600000)continue;
+    const px=FATX.px(sy);if(!(px>0))continue;
+    const plan=auPlan(sy,sg,px);if(plan.skip){auMark(key,plan.skip);continue}
+    auPlace(sy,sg,key,plan,false);return;
+  }
+}
+setInterval(auTick,4000);auRefresh();
+
 window.FATX_plan=function(p){
   cur=p;const k=keyOf(p);
   if(k===lastKey)return;lastKey=k;
-  if(!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+  if(!AU.on&&!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
 };
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trOpen'))open(false)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trOpen'){e.preventDefault();open(false)}});
