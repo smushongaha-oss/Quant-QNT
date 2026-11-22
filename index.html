@@ -2121,7 +2121,7 @@ function init(){
     R.onchange=()=>{ENG.reg=R.value;go();};E.onchange=()=>{ENG.er=+E.value;go();};B.onclick=()=>{ENG.be=!ENG.be;go();};G.onclick=()=>{ENG.edge=!ENG.edge;go();};})();
   LRN.bind();syncBtns();connect();requestAnimationFrame(frame);
 }
-window.FATX={thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
+window.FATX={px:sy=>(R[sy]&&R[sy].px)||null,thr:()=>cfg.thr,scan:()=>SCN,cfg:()=>cfg,grpFor,isClosed,stateOf,nameFor,clk,realPreset};
 init();
 })();
 </script>
@@ -2152,18 +2152,20 @@ let c=0;try{const m=stateOf(sy);if(m.mode==='sig')c=m.side*Math.min(1,m.val/100+
 v.CONFLUENCE=c;return v}
 const score=v=>Object.keys(WT).reduce((t,k)=>t+WT[k]*v[k],0);
 const mineOpens=()=>opens.filter(o=>live?true:!o.cid),expo=()=>mineOpens().reduce((t,o)=>t+(+o.amt||0),0),maxOpen=()=>Math.max(1,Math.floor(nv('swMo'))||1);
-function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')+pnl-expo();let st=mn;
+function stake(){const mn=nv('swMin'),pay=(nv('swPay')||78)/100,left=nv('swMxL')+pnl+PRE-expo();let st=mn;
 if(g('swSz').value==='kmj'&&res.length>=100){const r=res.slice(-100),w=r.filter(x=>x>0).length/100,be=1/(1+pay);if(w>be+.03){const q=Math.min(w,.62),f=(q*pay-(1-q))/pay;st=Math.max(mn,bal*f*.25)}}
 st=Math.min(st,bal*nv('swMaxP')/100,left);return +Math.max(0,st).toFixed(2)}
 function pkt(a,b,c){PK.push({a,b,t:0,s:.014+Math.random()*.01,c})}
-let PL0=0,PKP=0,PLK=false;
+let PL0=0,PKP=0,PLK=false,PRE=0;
 function plUpdate(){const gn=pnl-PL0;if(gn>PKP)PKP=gn;if(!PLK&&nv('swPla')>0&&PKP>=nv('swPla')){PLK=true;log('PROFIT LOCK armed at +'+PKP.toFixed(2),'W')}}
 function plHit(){if(!PLK||!(nv('swPla')>0))return '';const gb=Math.min(95,Math.max(5,nv('swPlg')||40)),gn=pnl-PL0;return gn<=PKP*(1-gb/100)?'PROFIT LOCK: gain fell '+gb+'% from the +'+PKP.toFixed(2)+' peak, stopped at +'+gn.toFixed(2):''}
 function lockTxt(){if(!run||!(nv('swPla')>0))return '';const gb=Math.min(95,Math.max(5,nv('swPlg')||40)),gn=pnl-PL0;return PLK?' | PROFIT LOCK armed: peak +'+PKP.toFixed(2)+', stops if gain falls to +'+(PKP*(1-gb/100)).toFixed(2)+' (now '+(gn>=0?'+':'')+gn.toFixed(2)+')':' | PROFIT LOCK: arms at +'+nv('swPla').toFixed(2)+' (now '+(gn>=0?'+':'')+gn.toFixed(2)+')'}
+function dayPre(){try{const t0=new Date();t0.setHours(0,0,0,0);const ac=g('swAcc').value;return Math.min(0,+TR.filter(x=>x.mode==='LIVE'&&x.ac===ac&&x.t>=t0.getTime()).reduce((a,x)=>a+(+x.p||0),0).toFixed(2))}catch(e){return 0}}
+function killLive(){if(!live||!ws||ws.readyState!==1)return 0;let k=0;opens.forEach(o=>{if(o.cid&&!o.sold){o.sold=1;k++;try{ws.send(JSON.stringify({sell:o.cid,price:0}))}catch(e){}}});if(k)log('KILL SWITCH: asked Deriv to close '+k+' open contract(s) at market price','X');return k}
 function halt(r){halted=r;g('swState').textContent='HALTED';log('GUARD HALT: '+r,'X')}
-function record(p,sy,d,o){if(o&&o.qid)gexit(o,p);if(o&&o.k==='accu'&&p<0)ACOOL=Date.now()+Math.max(0,nv('swAk')||0)*1000;TR.push({t:Date.now(),sy,d,k:g('swTrig').value,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:'',ed:o&&o.ed!=null?o.ed:'',xd:o&&o.xd!=null?o.xd:'',ex:o&&o.dg&&o.p0!=null?o.amt*(o.p0*(1+o.pr)-1):'',vr:o&&o.dg&&o.p0!=null?Math.pow(o.amt*(1+o.pr),2)*o.p0*(1-o.p0):''});if(TR.length>5000)TR.shift();if(o&&o.st&&o.p0!=null){STR.n++;if(p>0)STR.w++;STR.e+=o.p0;STR.v+=o.p0*(1-o.p0);if(STR.n>=30&&(STR.w-STR.e)/Math.sqrt(STR.v)<1)halt('STRICT SKEW NOT HOLDING OUT OF SAMPLE')}saveTR();pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
+function record(p,sy,d,o){if(o&&o.qid)gexit(o,p);if(o&&o.k==='accu'&&p<0)ACOOL=Date.now()+Math.max(0,nv('swAk')||0)*1000;TR.push({t:Date.now(),sy,d,k:g('swTrig').value,amt:o?o.amt:0,p,s:o?o.s:0,v:o?o.v:{},mode:live?'LIVE':'PAPER',ac:live?g('swAcc').value:'',dur:nv('swDur'),cd:o&&o.cd||'',pr:o&&o.pr!=null?o.pr:'',ed:o&&o.ed!=null?o.ed:'',xd:o&&o.xd!=null?o.xd:'',ex:o&&o.dg&&o.p0!=null?o.amt*(o.p0*(1+o.pr)-1):'',vr:o&&o.dg&&o.p0!=null?Math.pow(o.amt*(1+o.pr),2)*o.p0*(1-o.p0):''});if(TR.length>5000)TR.shift();if(o&&o.st&&o.p0!=null){STR.n++;if(p>0)STR.w++;STR.e+=o.p0;STR.v+=o.p0*(1-o.p0);if(STR.n>=30&&(STR.w-STR.e)/Math.sqrt(STR.v)<1)halt('STRICT SKEW NOT HOLDING OUT OF SAMPLE')}saveTR();pkt('CLOSER','CORE',p>0?'#2fe38a':p<0?'#ff4d5e':'#f5a524');pnl+=p;n++;res.push(p);if(p>0){wins++;cons=0}else if(p<0)cons++;hist.push(bal);
 log('CLOSER '+nameFor(sy)+' '+d+' '+(p>=0?'+':'')+p.toFixed(2),p>0?'W':p<0?'L':'X');
-plUpdate();if(-pnl>=nv('swMxL'))halt('MAX SESSION LOSS');else if(plHit())halt(plHit());else if(nv('swTp')>0&&pnl>=nv('swTp'))halt('PROFIT TARGET REACHED, STOPPED TO KEEP THE GAIN');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
+plUpdate();if(-(pnl+PRE)>=nv('swMxL'))halt('MAX SESSION LOSS');else if(plHit())halt(plHit());else if(nv('swTp')>0&&pnl>=nv('swTp'))halt('PROFIT TARGET REACHED, STOPPED TO KEEP THE GAIN');else if(cons>=nv('swMxC'))halt('MAX LOSING STREAK')}
 const LAD=[[15,'s'],[30,'s'],[1,'m'],[2,'m'],[3,'m'],[5,'m'],[10,'m'],[15,'m'],[30,'m'],[1,'h'],[2,'h'],[4,'h'],[8,'h'],[1,'d']],LS=e=>e[0]*({s:1,m:60,h:3600,d:86400})[e[1]];
 function ladder(){const w=durSec(),k0=LAD.findIndex(e=>LS(e)>=w),k=k0<0?LAD.length-1:k0;return LAD.slice(k).concat(LAD.slice(0,k).reverse())}
 const GOOD={};
@@ -2253,7 +2255,7 @@ function accuTrade(sy,p){const nw=Date.now();if(!allowed(sy)||!symOk(sy))return;
 if(mineOpens().length>=maxOpen()||mineOpens().some(o=>o.sy===sy)||nw-lastT<nv('swCd')*1000)return;
 while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTpm')||6))return;
 if(live&&(!authed||!ws||ws.readyState!==1))return;
-if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
+if(nv('swMxL')+pnl+PRE-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl+PRE<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
 const amt=stake();if(amt>bal||!QC.gate(sy))return;
 const gr=(nv('swGr')||1)/100,sg=sigT(sy);if(sg<=0)return;
 const z=zInv((1-.9995/(1+gr))/2),st=g('swAs').value,calmOn=st==='calm'||st==='calmbank',bbOn=st==='bb'||st==='bbx',bankOn=st==='bank'||st==='calmbank'||bbOn,rng=z*sg;
@@ -2308,7 +2310,7 @@ if(et==='accu'){if(isVol(sy)&&B[sy])accuTrade(sy,B[sy].at(-1));return}
 if(DIGT.includes(et)){engineDigit(sy,s,et);return}
 const kd=et&&et!=='rf'?et:g('swTrig').value,ext=XK.includes(kd)&&kd!=='accu',mult=kd==='mult',cm=+g('swConf').value,cv=v.CONFLUENCE,d=mult?(s>0?'MULTUP':'MULTDOWN'):(s>0?'CALL':'PUT');
 if(cm===2&&Math.sign(cv)!==Math.sign(s))return;if(cm===1&&cv!==0&&Math.sign(cv)!==Math.sign(s))return;
-if(live&&!authed)return;if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!ext){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(ext&&!symOk(sy))return;if(!QC.gate(sy))return;lastT=Date.now();
+if(live&&!authed)return;if(nv('swMxL')+pnl+PRE-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl+PRE<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}if(live&&!ext){const dd=durFor(sy);if(!dd||dd.skip)return}const amt=stake();if(amt>bal){if(Date.now()-lastSx>30000){lastSx=Date.now();log('Stake exceeds balance','X')}return}if(ext&&!symOk(sy))return;if(!QC.gate(sy))return;lastT=Date.now();
 pkt('CORE','KMJ','#b18cff');setTimeout(()=>pkt('KMJ','SPOTTER','#b18cff'),500);
 delete REV[sy];if(ext){xTrade(kd,sy,s,amt,v);return}
 if(live){const o={sy,d,amt,s,v:Object.assign({},v)};opens.push(o);QC.emit(d,amt,o);sendBuy(o);log('SEND '+d+' '+nameFor(sy)+' $'+amt+' score '+s.toFixed(2),'I')}
@@ -2374,7 +2376,7 @@ log(nameFor(sy)+' offers: '+(Object.keys(sum).slice(0,8).map(t=>t+'('+[...sum[t]
 const rf=all.filter(c=>c.contract_type==='CALL');
 DURS[sy]=(rf.length&&rf.every(c=>c.expiry_type==='daily'))?{list:[[1,'d']],i:0}:{list:ladderFor(sy),i:0};return}
 if(m.msg_type==='balance'&&m.balance){const first=!authed;bal=+m.balance.balance;cur=m.balance.currency||cur;authed=true;tries=0;if(first){hist=[bal];startBal=bal;log('Connected to '+want.toUpperCase()+' account '+id+' balance '+bal.toFixed(2)+' '+cur,want==='demo'?'W':'X');opens.forEach(o=>{if(o.cid){ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Re-checking open contract #'+o.cid,'I')}})}}
-else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;o.cd=o.dg?(o.tk||1)+'t':(o.mu?'x'+o.mu:curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'');o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(o.dg&&o.pr!=null){LQ[o.side+'|'+o.bar]=o.pr;saveQ()}if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
+else if(m.msg_type==='buy'){const o=opens.find(x=>x.pend===m.req_id);if(o){o.cid=m.buy.contract_id;o.t0=Date.now();delete o.pend;if(halted==='KILL SWITCH'&&!o.sold){o.sold=1;try{ws.send(JSON.stringify({sell:o.cid,price:0}))}catch(e){}log('Late fill after the kill switch, closing #'+o.cid,'X')}o.cd=o.dg?(o.tk||1)+'t':(o.mu?'x'+o.mu:curDur(o.sy)?curDur(o.sy)[0]+curDur(o.sy)[1]:'');o.pr=(m.buy.payout&&m.buy.buy_price)?(m.buy.payout/m.buy.buy_price-1):null;if(o.dg&&o.pr!=null){LQ[o.side+'|'+o.bar]=o.pr;saveQ()}if(DURS[o.sy]&&DURS[o.sy].list&&!DURS[o.sy].locked){DURS[o.sy].locked=true;const e=curDur(o.sy);GOOD[grpKey(o.sy)]=e;log('Duration '+e[0]+e[1]+' accepted for '+nameFor(o.sy),'W')}bal=m.buy.balance_after!=null?m.buy.balance_after:bal;ws.send(JSON.stringify({proposal_open_contract:1,contract_id:o.cid,subscribe:1}));log('Bought #'+o.cid+' '+o.d+' '+nameFor(o.sy),'I')}}
 else if(m.msg_type==='proposal_open_contract'){const c=m.proposal_open_contract,o=opens.find(x=>x.cid===c.contract_id);if(o&&c.is_sold){opens=opens.filter(x=>x!==o);try{const xv=c.exit_tick_display_value!=null?c.exit_tick_display_value:c.exit_tick;if(xv!=null)o.xd=+String(xv).slice(-1)}catch(e){}record(+c.profit,o.sy,o.d,o)}}}}
 catch(e){fail('Cannot reach Deriv from this page ('+(e&&e.name||'error')+'). If this is a CORS block, the browser is refusing the REST call; tell me and I will add a relay.')}}
 
@@ -2393,10 +2395,10 @@ feedOn=true;log('Feed: subscribing to '+pick.length+' open symbols across '+keys
 pick.forEach((sy,i)=>{B[sy]=B[sy]||[];setTimeout(()=>{if(!pw||pw.readyState!==1)return;pw.send(JSON.stringify({ticks:sy,subscribe:1}));if(g('swTrig').value==='digits'){const id=++rid;PH[id]=sy;pw.send(JSON.stringify({ticks_history:sy,count:Math.min(1000,Math.max(50,Math.floor(nv('swWin'))||500)),end:'latest',style:'ticks',req_id:id}))}},i*120)})}
 else if(m.msg_type==='history'&&m.history&&PH[m.req_id]){const sy=PH[m.req_id];delete PH[m.req_id];const pr=m.history.prices||[];if(m.pip_size!=null)DEC[sy]=m.pip_size;if(DEC[sy]==null)HP[sy]=pr;else applyHist(sy,pr)}
 else if(m.msg_type==='tick'&&m.tick){const t=m.tick,sy=t.underlying_symbol||t.symbol;if(sy&&t.pip_size!=null){DEC[sy]=t.pip_size;if(HP[sy]){const hp=HP[sy];delete HP[sy];applyHist(sy,hp)}}if(sy&&run)core(sy,+t.quote)}}}
-function start(){if(g('swTrig').value==='scalp'&&g('swAcc').value==='real'&&!(typeof confirm==='function'&&confirm('REAL MONEY: the Super Scalper places many fast trades on your REAL account. Each trade carries a built-in margin, so losses add up quickly. Continue?')))return;run=true;halted=null;gen++;PL0=pnl;PKP=0;PLK=false;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];opens=opens.filter(o=>o.cid);if(opens.length)log('Keeping '+opens.length+' unsettled live contract(s); they settle once connected','X');bal=live?0:nv('swPb');hist=[bal];
+function start(){if(g('swTrig').value==='scalp'&&g('swAcc').value==='real'&&!(typeof confirm==='function'&&confirm('REAL MONEY: the Super Scalper places many fast trades on your REAL account. Each trade carries a built-in margin, so losses add up quickly. Continue?')))return;run=true;halted=null;gen++;PL0=pnl;PKP=0;PLK=false;live=!!g('swTok').value.trim();if(live&&!g('swApp').value.trim()){log('Enter your Deriv App ID first (developers.deriv.com, PAT type).','L');run=false;return}if(live&&g('swAcc').value==='real'&&!confirm('REAL MONEY: this will place real trades on your real Deriv account. Continue?')){run=false;return}tries=0;authed=false;DURS={};cfReq={};cfMap={};pnl=n=wins=cons=0;res=[];PRE=live?dayPre():0;if(PRE<0)log('Losses already taken today on this '+g('swAcc').value+' account: '+PRE.toFixed(2)+'. They count toward the loss limit, so '+Math.max(0,nv('swMxL')+PRE).toFixed(2)+' is left.','X');opens=opens.filter(o=>o.cid);if(opens.length)log('Keeping '+opens.length+' unsettled live contract(s); they settle once connected','X');bal=live?0:nv('swPb');hist=[bal];
 g('swMode').textContent=live?'LIVE':'PAPER';g('swMode').style.color=live?'var(--neg)':'var(--pos)';g('swGo').textContent='STOP';g('swState').textContent='SCANNING';
 const k=Object.keys(B).filter(allowed);log(k.length?'Watching '+k.length+' scanner instruments ('+(g('swMk').value==='all'?'derived included':'real only')+')':'No real-market instruments yet. Press LOAD REAL MARKETS.','X');if(live)openWs();TRD={};const tg=g('swTrig').value;if(isRFHL())log('Rise/Fall and Higher/Lower: BTC/USD is first priority, then ETH/USD, whenever their signal is ready','W');if(tg==='digits'){resetDigits();if(nv('swCap')>8||nv('swCap')<1)g('swCap').value=8;log('Digits mode: last-digit Over/Under, '+tks()+' tick(s), Volatility indices (1s and regular)','W');openFeed()}else if(tg==='engine')log('Engine-driven: trading the best ready signal at or above ALERT AT, confirmed by the swarm. Contract type: '+g('swEt').selectedOptions[0].textContent,'W');else if(tg==='scalp'){log('SUPER SCALPER: real markets only. Rule '+g('swSr').selectedOptions[0].textContent+', '+durSec()+'s holds, max '+(nv('swSm')||6)+' trades per symbol per minute','W');openFeed()}else if(XK.includes(tg)||tg==='swarm'||g('swFeed').value==='all')openFeed()}
-function stopAll(m){run=false;gen++;closeFeed();g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws)try{ws.close()}catch(e){}ws=null}
+function stopAll(m,keep){const ko=live?opens.filter(o=>o.cid&&!o.sold).length:0;run=false;gen++;closeFeed();g('swGo').textContent='START SWARM';g('swState').textContent=m||'IDLE';if(ws){const w0=ws;if(keep)setTimeout(()=>{try{w0.close()}catch(e){}if(ws===w0)ws=null},3000);else{try{w0.close()}catch(e){}ws=null}}if(ko)log('Stopped. '+ko+' live contract(s) are still open on Deriv and are no longer tracked here. Press START to track them again, or use the KILL SWITCH to close them.','X')}
 /* graph */
 const POS={};let cv,cx2;
 function draw(t){requestAnimationFrame(draw);if(run&&g('swTrig').value==='digits'&&t-(draw.l||0)<66)return;draw.l=t;if(!cv||!cv.offsetParent)return;const w=cv.width=cv.clientWidth*2,h=cv.height=cv.clientHeight*2,x=cv.getContext('2d'),cx=w/2,cy=h/2,rad=Math.min(w,h)*.34,ph=t*.0002;
@@ -2513,7 +2515,7 @@ while(TPM.length&&nw-TPM[0]>60000)TPM.shift();if(TPM.length>=Math.max(1,nv('swTp
 if(live&&!authed)return;
 if(pk.ev<-(nv('swHe')||6)/100){const dm=dmode();if(dm==='alt'||dm==='rot'||dm==='eo'){if(nw-lastSx>30000){lastSx=nw;log('Skipped '+pk.side+' '+pk.b+': house edge '+(-pk.ev*100).toFixed(1)+'% is above your MAX HOUSE EDGE '+(nv('swHe')||6)+'%','X')}ALTN++}return}
 if(live&&(qAt===0||(qPend>0&&Date.now()-qAt<5000)))return;
-if(nv('swMxL')+pnl-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
+if(nv('swMxL')+pnl+PRE-expo()<nv('swMin')){if(!mineOpens().length&&nv('swMxL')+pnl+PRE<nv('swMin'))halt('LOSS ALLOWANCE USED UP');return}
 if(live&&DGOK[sy]===undefined){if(!DGREQ[sy]&&ws&&authed){const id=++rid;DGREQ[sy]=nw;cfMap[id]=sy;ws.send(JSON.stringify({contracts_for:sy,req_id:id}))}else if(DGREQ[sy]&&nw-DGREQ[sy]>6000)DGOK[sy]=true;return}
 if(live&&DGOK[sy]===false)return;
 const amt=stake();if(amt>bal){if(nw-lastSx>30000){lastSx=nw;log('Stake exceeds balance','X')}return}
@@ -2551,7 +2553,7 @@ set('swBal',run?bal.toFixed(2):'-');set('swPnl',pnl.toFixed(2),pnl>=0?'var(--pos
 const sy=sel||cfgSym();set('swCons',SCR[sy]!=null?(SCR[sy]>0?'+':'')+SCR[sy].toFixed(2)+' / '+nv('swThr'):'-');
 if(run&&!halted)g('swState').textContent=opens.length?'IN TRADE':'SCANNING';tbl()}
 function saveOpen(){try{localStorage.setItem('swm_open',JSON.stringify(opens.filter(o=>o.cid).map(o=>({cid:o.cid,sy:o.sy,d:o.d,amt:o.amt,s:o.s,v:o.v,cd:o.cd,pr:o.pr,t0:o.t0,dg:o.dg,side:o.side,bar:o.bar,p0:o.p0,tk:o.tk}))))}catch(e){}}
-function init(){cv=g('cvSwarm');if(!cv)return;try{Object.assign(LQ,JSON.parse(localStorage.getItem('swm_q')||'{}'))}catch(e){}try{opens=(JSON.parse(localStorage.getItem('swm_open')||'[]')).filter(o=>o.cid&&Date.now()-o.t0<86400000);if(opens.length)log('Restored '+opens.length+' unsettled live contract(s) from last session. Press START with your token to settle them.','X')}catch(e){opens=[]}g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{halt('KILL SWITCH');stopAll('KILLED')};
+function init(){cv=g('cvSwarm');if(!cv)return;try{Object.assign(LQ,JSON.parse(localStorage.getItem('swm_q')||'{}'))}catch(e){}try{opens=(JSON.parse(localStorage.getItem('swm_open')||'[]')).filter(o=>o.cid&&Date.now()-o.t0<86400000);if(opens.length)log('Restored '+opens.length+' unsettled live contract(s) from last session. Press START with your token to settle them.','X')}catch(e){opens=[]}g('swGo').onclick=()=>run?stopAll():start();g('swKill').onclick=()=>{const k=killLive();halt('KILL SWITCH');stopAll('KILLED',k>0)};
 try{TR=JSON.parse(localStorage.getItem('swm_tr')||'[]')}catch(e){TR=[]}g('swCsv').onclick=csv;g('swClr').onclick=()=>{if(confirm('Delete all saved paper/live trade history?')){TR=[];tl=-1;try{localStorage.removeItem('swm_tr')}catch(e){}tbl();log('History cleared','X')}};
 g('swTrig').onchange=modeUi;modeUi();
 g('swReal').onclick=()=>{try{realPreset()}catch(e){log('Market list not ready yet','X')}};
@@ -2966,14 +2968,14 @@ function render(){
   +'<div><label for="trTp">TAKE PROFIT</label><select id="trTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div></div>'
   +(needCreds?'<label for="trApp">DERIV APP ID</label><input id="trApp" type="text" inputmode="text" autocomplete="off" value="'+esc((($('swApp')||{}).value||'').trim())+'"><label for="trTok">PAT TOKEN (TRADE SCOPE)</label><input id="trTok" type="password" autocomplete="off" value="'+esc((($('swTok')||{}).value||'').trim())+'">':'')
   +'<div id="trCalc"></div><label id="trTightRow" style="display:none;font-size:11.5px;letter-spacing:.02em;color:#f5a524;margin:6px 0"><input type="checkbox" id="trTight" style="width:auto;margin-right:8px">USE THE CLOSEST ALLOWED STOP INSTEAD (TIGHTER THAN THE SIGNAL STOP)</label><div id="trChips"></div><div id="trMsg"></div>'
-  +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trNo" type="button">NO, SKIP</button></div>'
+  +'<div id="trBtns"><button id="trYes" type="button">OPEN LIVE</button><button id="trDemo" type="button">OPEN DEMO</button><button id="trShare2" type="button" style="grid-column:1/3">SHARE SIGNAL (WHATSAPP, TELEGRAM...)</button><button id="trNo" type="button">NO, SKIP</button></div>'
   +'<div class="lab" style="margin-top:8px;text-transform:none;letter-spacing:.02em;font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6)">Opens a Deriv multiplier at the current market price with the stop loss and take profit above attached. LIVE uses your real money account and real money is at risk. DEMO uses your practice account with virtual funds.</div>';
   $('trTp').value=String(P.tp);
   const chips=()=>{const al=allowedOf(),c=$('trChips'),cm=+$('trMult').value;if(LS.get('fat_nomult:'+cur.sym,0)){c.innerHTML='<button type="button" id="trAny" style="padding:8px 12px;font-size:12px">TRY ANYWAY (CLEAR BLOCK)</button>';$('trAny').onclick=()=>{LS.set('fat_nomult:'+cur.sym,0);upd()};return}
   c.innerHTML=al?'<label>ALLOWED MULTIPLIERS FOR THIS MARKET</label><div style="display:flex;flex-wrap:wrap;gap:6px">'+al.map(n=>'<button type="button" class="trm" data-m="'+n+'" style="padding:8px 12px;font-size:13px;'+(n===cm?'border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44':'')+'">x'+n+'</button>').join('')+'</div>':'';c.querySelectorAll('.trm').forEach(b=>b.onclick=()=>{$('trMult').value=b.dataset.m;upd()})};
   const upd=()=>{const r=calc();$('trCalc').innerHTML=r.html;$('trTightRow').style.display=r.tooWide?'block':'none';chips();$('trYes').disabled=busy||!r.ok;$('trDemo').disabled=busy||!r.ok};
   ['trStake','trMult','trTp'].forEach(id=>{$(id).oninput=upd;$(id).onchange=upd});
-  refresh=upd;$('trTight').onchange=upd;$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
+  refresh=upd;$('trTight').onchange=upd;$('trShare2').onclick=()=>shareSignal(cur);$('trNo').onclick=()=>close(true);$('trYes').onclick=()=>submit('live');$('trDemo').onclick=()=>submit('demo');upd();
 }
 
 function open(auto){
@@ -3073,11 +3075,11 @@ psCss.textContent='#psBtn{position:fixed;right:10px;bottom:calc(10px + env(safe-
 +'.ps-r .pl{font-size:17px;text-align:right}.ps-r .d{font-size:11px;color:var(--dim,#7d90a6);line-height:1.5}.ps-r .x{text-align:right}.ps-up{color:var(--pos,#2fe38a)}.ps-dn{color:var(--neg,#ff4d5e)}'
 +'#psPanel .ps-views{display:flex;gap:6px;padding:8px 12px 0}#psPanel .ps-views button.on,#psRange button.on{border-color:var(--blu,#2b8cff);color:#fff;background:#0b2a44}#psRange{display:none;gap:6px;padding:6px 12px 0}.ps-r .d small{display:block;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#psCreds{padding:6px 12px}#psCreds input{width:100%;font-size:14px;padding:7px 8px;margin:3px 0;text-transform:none}.ps-f{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--bd,#16273a);font-size:11px;color:var(--dim,#7d90a6)}.ps-f span{flex:1}';
 document.head.appendChild(psCss);
-const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b>';document.body.appendChild(psBtn);
+const psBtn=document.createElement('div');psBtn.id='psBtn';psBtn.setAttribute('role','button');psBtn.tabIndex=0;psBtn.innerHTML='POSITIONS <b id="psN">0</b><b id="psTop"></b><b id="psAu" style="color:#f5a524"></b>';document.body.appendChild(psBtn);
 const psPanel=document.createElement('div');psPanel.id='psPanel';
 psPanel.innerHTML='<div class="ps-h"><span class="ps-t">OPEN POSITIONS</span><span class="ps-tabs"><button type="button" data-a="live">LIVE</button> <button type="button" data-a="demo">DEMO</button></span><button type="button" id="psX" aria-label="Close">X</button></div>'
-+'<div class="ps-views"><button type="button" data-v="open">OPEN</button><button type="button" data-v="hist">HISTORY</button></div><div id="psRange"><button type="button" data-r="today">TODAY</button><button type="button" data-r="7d">7 DAYS</button><button type="button" data-r="all">LAST 100</button></div>'
-+'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div><span id="psPlL">OPEN P/L</span><b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div>'
++'<div class="ps-views"><button type="button" data-v="open">OPEN</button><button type="button" data-v="hist">HISTORY</button><button type="button" data-v="auto">AUTO</button></div><div id="psRange"><button type="button" data-r="today">TODAY</button><button type="button" data-r="7d">7 DAYS</button><button type="button" data-r="all">LAST 100</button></div>'
++'<div class="ps-sum"><div>BALANCE<b id="psBal">-</b></div><div><span id="psPlL">OPEN P/L</span><b id="psPl">-</b></div><div>STATUS<b id="psSt">-</b></div></div><div id="psCreds"></div><div id="psList"></div><div id="psAuto" style="display:none"></div>'
 +'<div class="ps-f"><span id="psNote"></span><button type="button" id="psRe">RECONNECT</button></div>';
 document.body.appendChild(psPanel);
 const sgn=v=>(v>=0?'+':'-')+'$'+Math.abs(v).toFixed(2),pcl=v=>v>=0?'ps-up':'ps-dn';
@@ -3102,6 +3104,8 @@ function psRender(){
   $('psRange').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.r===PS.range));
   $('psPlL').textContent=PS.tab==='hist'?'CLOSED P/L':'OPEN P/L';
   const L=$('psList');
+  L.style.display=PS.tab==='auto'?'none':'';$('psAuto').style.display=PS.tab==='auto'?'block':'none';
+  if(PS.tab==='auto'){$('psPlL').textContent='OPEN P/L';if(typeof auRefresh==='function')auRefresh();return}
   if(PS.tab==='hist'){
     const H=PS.hist,pfOf=t=>(+t.sell_price||0)-(+t.buy_price||0),net=H.reduce((a,t)=>a+pfOf(t),0),wn=H.filter(t=>pfOf(t)>0).length;
     $('psPl').innerHTML=H.length?'<span class="'+pcl(net)+'">'+sgn(net)+'</span>':'-';
@@ -3185,14 +3189,197 @@ setInterval(()=>{if(PS.ws&&PS.ws.readyState===1)try{PS.ws.send(JSON.stringify({p
 psRender();
 window.FATX_positions={open:a=>psUse(a||PS.acct,true),use:a=>psUse(a||PS.acct,false)};
 
+/* ===== SHARE SIGNAL: opens the phone's share sheet (WhatsApp group, Telegram, etc.). You tap send. ===== */
+function sigText(p){
+  const a=p.act,dp=p.dp,f=v=>fx(v,dp),rk=Math.abs(a.entry-a.sl)/a.entry*100;
+  return (a.d===1?'BUY':'SELL')+' '+p.name+' / '+p.tf+(a.score!=null?' (score '+a.score+')':'')+'\n'
+   +'Entry: '+f(a.entry)+'\nStop: '+f(a.sl)+'\nTP1: '+f(a.tp[0])+' (1R)\nTP2: '+f(a.tp[1])+' (2R)\nTP3: '+f(a.tp[2])+' (3R)\n'
+   +'Risk: '+rk.toFixed(2)+'% of price'+(p.age>=3?'\nNote: this signal is '+p.age+' candles old.':'')+'\n'
+   +'Focus Auto Traders. Not financial advice.';
+}
+function shareToast(t){let e=$('trToast');if(!e){e=document.createElement('div');e.id='trToast';e.style.cssText='position:fixed;left:50%;bottom:70px;transform:translateX(-50%);z-index:120;background:#07101b;border:1px solid var(--blu,#2b8cff);color:#cfe3f7;font:12px var(--m,monospace);padding:9px 14px;max-width:90vw;text-align:center';document.body.appendChild(e)}e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>{e.style.display='none'},3500)}
+async function shareSignal(p){
+  if(!p||!p.act)return;const text=sigText(p);
+  try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const w=window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  if(!w){try{await navigator.clipboard.writeText(text);shareToast('Signal copied. Paste it into your WhatsApp group.')}catch(e){shareToast('Could not open WhatsApp. Allow pop-ups for this page and try again.')}}
+}
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trShare'))shareSignal(cur)});
 /* called by the chart every frame while a signal is open */
+/* ===== AUTO-TRADE: places Deriv multiplier orders from the engine's own signals (all instruments) ===== */
+const AU={on:false,busy:false,cf:0,lastConn:0,log:[],c:Object.assign({acct:'demo',stake:1,tp:1,maxOpen:3,maxRisk:10,minScore:0,mult:0},LS.get('fat_auto',{})),done:new Set(LS.get('fat_auto_done',[])),recent:{},fails:{}};
+const auCss=document.createElement('style');
+auCss.textContent='#psAuto{overflow:auto;flex:1;padding:8px 12px;font-size:12px;color:#cfe3f7}#psAuto .au-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}#psAuto .au-top b{flex:1;letter-spacing:.1em}#psAuto .au-warn{font-size:10.5px;line-height:1.5;color:var(--dim,#7d90a6);margin-bottom:8px}#psAuto .au-g{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}#psAuto label{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim,#7d90a6);margin-bottom:2px}#psAuto input,#psAuto select{width:100%;font-size:14px;padding:6px 8px;text-transform:none;letter-spacing:0}#auLog{margin-top:10px;font-size:11px;line-height:1.5;border-top:1px solid var(--bd,#16273a);padding-top:6px;max-height:160px;overflow:auto}#auLog div{padding:1px 0}#auArm.on{background:#3a0c14;border-color:var(--neg,#ff4d5e);color:#fff}';
+document.head.appendChild(auCss);
+$('psAuto').innerHTML='<div class="au-top"><b id="auState">AUTO-TRADE: OFF</b><button type="button" id="auArm">ARM</button></div>'
++'<div class="au-warn">Places orders from the engine\'s live signals (all instruments) without asking you, using the signal\'s stop and your chosen target. It always starts OFF when the page loads and only works while this page stays open. Start on DEMO.</div>'
++'<div class="au-g"><div><label for="auAcct">ACCOUNT</label><select id="auAcct"><option value="demo">DEMO</option><option value="live">LIVE (REAL MONEY)</option></select></div>'
++'<div><label for="auStake">STAKE PER TRADE (USD)</label><input id="auStake" type="number" inputmode="decimal" min="0.35" step="any"></div>'
++'<div><label for="auTp">TAKE PROFIT AT</label><select id="auTp"><option value="0">TP1 (1R)</option><option value="1">TP2 (2R)</option><option value="2">TP3 (3R)</option></select></div>'
++'<div><label for="auMult">MULTIPLIER (0 = AUTO)</label><input id="auMult" type="number" inputmode="numeric" min="0" step="1"></div>'
++'<div><label for="auMax">MAX OPEN POSITIONS</label><input id="auMax" type="number" inputmode="numeric" min="1" step="1"></div>'
++'<div><label for="auRisk">MAX DAILY RISK (USD)</label><input id="auRisk" type="number" inputmode="decimal" min="0" step="any"></div>'
++'<div><label for="auScore">MIN SCORE (0 = ENGINE LIMIT)</label><input id="auScore" type="number" inputmode="numeric" min="0" max="100" step="1"></div></div>'
++'<div class="au-warn" style="margin-top:8px">Daily risk adds up the stop-loss amount of every order placed today. When it reaches the limit, no more orders are placed until tomorrow. Three failed orders in a row switch auto-trade off.</div><div id="auLog"></div>';
+const auSave=()=>LS.set('fat_auto',AU.c);
+const auDay=()=>{const k=new Date().toLocaleDateString('en-CA');let d=LS.get('fat_auto_day',null);if(!d||d.d!==k){d={d:k,n:0,risk:0};LS.set('fat_auto_day',d)}return d};
+function auLog(t){AU.log.unshift(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})+'  '+t);if(AU.log.length>40)AU.log.pop();auRefresh()}
+function auRefresh(){
+  const d=auDay(),st=$('auState');if(!st)return;
+  st.textContent=AU.on?'AUTO-TRADE: ON ('+AU.c.acct.toUpperCase()+')':'AUTO-TRADE: OFF';st.style.color=AU.on?(AU.c.acct==='live'?'#ff8d98':'#7defb4'):'';
+  const b=$('auArm');b.textContent=AU.on?'DISARM':'ARM';b.classList.toggle('on',AU.on);
+  const x=$('psAu');if(x)x.textContent=AU.on?' AUTO':'';
+  $('auLog').innerHTML='<div style="color:#cfe3f7">Today: '+d.n+' order'+(d.n===1?'':'s')+', risk used $'+d.risk.toFixed(2)+' of $'+(+AU.c.maxRisk).toFixed(2)+'</div>'+AU.log.map(l=>'<div>'+esc(l)+'</div>').join('');
+}
+function auOff(why){AU.on=false;auLog(why);auRefresh()}
+[['auAcct','acct',0],['auStake','stake',1],['auTp','tp',1],['auMult','mult',1],['auMax','maxOpen',1],['auRisk','maxRisk',1],['auScore','minScore',1]].forEach(([id,k,num])=>{
+  const e=$(id);e.value=String(AU.c[k]);
+  e.onchange=()=>{const v=num?+e.value:e.value;if(num&&!isFinite(v))return;if(k==='acct'&&AU.on)auOff('Account changed, so auto-trade was switched off. Arm it again.');AU.c[k]=v;auSave();auRefresh()};
+});
+$('auArm').onclick=()=>{
+  if(AU.on){auOff('Disarmed by you.');return}
+  const cr=psCreds();if(!cr.app||!cr.tok){auLog('Enter your App ID and token in the OPEN tab first, then arm.');return}
+  if(!(AU.c.stake>0)){auLog('Set a stake above 0.');return}
+  if(AU.c.acct==='live'){const t=prompt('LIVE AUTO-TRADING places real-money orders from every engine signal without asking you.\nStake $'+AU.c.stake+' each, up to '+AU.c.maxOpen+' open, daily risk limit $'+AU.c.maxRisk+'.\n\nType LIVE to turn it on.');if(t!=='LIVE'){auLog('Live arming cancelled.');return}}
+  AU.on=true;AU.cf=0;auLog('ARMED on '+AU.c.acct.toUpperCase()+'. Watching every engine signal.');psUse(AU.c.acct,false);auRefresh();
+};
+const auAllowed=sy=>{const l=LS.get('fat_mults:'+sy,null);return Array.isArray(l)&&l.length?l.map(Number).filter(n=>n>0).sort((x,y)=>x-y):null};
+function auMark(key,why){AU.done.add(key);LS.set('fat_auto_done',[...AU.done].slice(-300));if(why)auLog('Skipped '+key.split(':')[0]+': '+why)}
+function auPlan(sy,sg,px){
+  const d=sg.d,slD=(px-sg.sl)*d,tp=sg.tp[AU.c.tp],tpD=(tp-px)*d,stake=+AU.c.stake;
+  if(!(slD>0))return{skip:'price is already past the stop'};
+  if(!(tpD>0))return{skip:'price is already past TP'+(AU.c.tp+1)};
+  if(!(stake>0))return{skip:'stake is 0'};
+  const maxM=Math.floor(0.9*px/slD),al=auAllowed(sy);let mult;
+  if(AU.c.mult>0)mult=Math.round(AU.c.mult);
+  else if(al){const fit=al.filter(n=>n<=maxM);if(!fit.length)return{skip:'stop is too wide: the lowest allowed multiplier (x'+al[0]+') needs a stop within '+(0.9/al[0]*100).toFixed(2)+'% of price'};mult=fit[fit.length-1]}
+  else mult=maxM>=10?Math.floor(maxM/10)*10:Math.max(1,maxM);
+  if(al&&!al.includes(mult))return{skip:'x'+mult+' is not an allowed multiplier here'};
+  const sl$=+(stake*mult*slD/px).toFixed(2),tp$=+(stake*mult*tpD/px).toFixed(2);
+  if(sl$>=stake*0.95)return{skip:'stop is too wide for x'+mult};
+  return{d,stake,mult,sl$,tp$,px};
+}
+async function auPlace(sy,sg,key,plan,retried){
+  AU.busy=true;const cr=psCreds(),nm=(window.FATX&&FATX.nameFor?FATX.nameFor(sy):sy);
+  try{
+    const c=await connect(cr.app,cr.tok,AU.c.acct,true);
+    const p2=auPlan(sy,sg,FATX.px(sy)||plan.px);
+    if(p2.skip){try{c.ws.close()}catch(e){}auMark(key,p2.skip+' (price moved while connecting)');return}
+    const par={amount:p2.stake,basis:'stake',contract_type:p2.d===1?'MULTUP':'MULTDOWN',currency:c.cur,multiplier:p2.mult,underlying_symbol:sy,limit_order:{take_profit:p2.tp$,stop_loss:p2.sl$}};
+    let b;try{b=await sendBuy(c.ws,par)}finally{try{c.ws.onclose=null;c.ws.close()}catch(e){}}
+    auMark(key);AU.recent[sy]=Date.now();AU.cf=0;
+    const day=auDay();day.n++;day.risk=+(day.risk+p2.sl$).toFixed(2);LS.set('fat_auto_day',day);
+    auLog('OPENED '+AU.c.acct.toUpperCase()+' '+(p2.d===1?'BUY':'SELL')+' '+nm+' stake $'+p2.stake+' x'+p2.mult+', stop -$'+p2.sl$.toFixed(2)+', target +$'+p2.tp$.toFixed(2)+', #'+b.contract_id);
+    try{if(typeof SWM!=='undefined'&&SWM.qc)SWM.qc.emit((p2.d===1?'BUY':'SELL')+' x'+p2.mult,p2.stake)}catch(e){}
+    try{navigator.vibrate&&navigator.vibrate(150)}catch(e){}
+    psUse(AU.c.acct,false);
+  }catch(err){
+    const em=String(err&&err.message||err),mm=em.match(/accepts?\s*:?\s*([\d][\d,\s.]*)/i);
+    if(mm&&/multiplier/i.test(em)&&!retried){
+      const l=mm[1].split(/[,\s]+/).map(x=>parseInt(x,10)).filter(n=>n>0);if(l.length){LS.set('fat_mults:'+sy,l);auLog('Learned allowed multipliers for '+nm+': x'+l.join(', x')+'. Retrying once.');AU.busy=false;const np=auPlan(sy,sg,FATX.px(sy)||plan.px);if(np.skip){auMark(key,np.skip)}else await auPlace(sy,sg,key,np,true);return}
+    }
+    if(/not offered for this duration/i.test(em)){LS.set('fat_nomult:'+sy,1);auMark(key,'Deriv does not offer multipliers on '+nm);}
+    else{AU.cf++;AU.fails[key]=(AU.fails[key]||0)+1;auLog('FAILED '+nm+': '+em);if(AU.fails[key]>=2)auMark(key);if(AU.cf>=3)auOff('Three orders failed in a row, so auto-trade switched itself off.')}
+  }finally{AU.busy=false}
+}
+function auTick(){
+  if(!AU.on||AU.busy||!window.FATX||!FATX.scan)return;
+  const kind=AU.c.acct;
+  if(PS.acct!==kind||PS.st!=='live'){if(PS.st!=='connecting'&&Date.now()-AU.lastConn>20000){AU.lastConn=Date.now();psUse(kind,false)}return}
+  const day=auDay();if(day.risk>=+AU.c.maxRisk){if(!AU.paused){AU.paused=true;auLog('Daily risk limit reached. No more orders today.')}return}AU.paused=false;
+  if(PS.rows.size>=+AU.c.maxOpen)return;
+  const L=FATX.scan()||[];
+  for(const it of L){
+    const st=it.st;if(!st||st.mode!=='sig'||!st.sig)continue;
+    const sy=it.sy,sg=st.sig,key=sy+':'+sg.t;
+    if(AU.done.has(key))continue;
+    if(AU.c.minScore>0&&sg.score<AU.c.minScore){continue}
+    if(LS.get('fat_nomult:'+sy,0)){auMark(key,'Deriv does not offer multipliers on this market');continue}
+    if(AU.recent[sy]&&Date.now()-AU.recent[sy]<3600000)continue;
+    const px=FATX.px(sy);if(!(px>0))continue;
+    const plan=auPlan(sy,sg,px);if(plan.skip){auMark(key,plan.skip);continue}
+    auPlace(sy,sg,key,plan,false);return;
+  }
+}
+setInterval(auTick,4000);auRefresh();
+
 window.FATX_plan=function(p){
   cur=p;const k=keyOf(p);
+  {const ob=$('trOpen');if(ob&&!$('trShare')){const sb=document.createElement('span');sb.id='trShare';sb.className='trb';sb.setAttribute('role','button');sb.tabIndex=0;sb.style.marginLeft='6px';sb.textContent='SHARE';ob.insertAdjacentElement('afterend',sb)}}
   if(k===lastKey)return;lastKey=k;
-  if(!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
+  if(!AU.on&&!asked.has(k)&&!m.classList.contains('on'))setTimeout(()=>{if(cur&&keyOf(cur)===k&&!m.classList.contains('on'))open(true)},500);
 };
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#trOpen'))open(false)});
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trOpen'){e.preventDefault();open(false)}});
+})();
+</script>
+<script>
+/* ===== SWARM ONE-TAP VIEW: one status line, START, KILL. Everything else is behind two small links ===== */
+(function(){
+try{
+  const sw=document.getElementById('sSwarm');if(!sw)return;
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const css=document.createElement('style');
+  css.textContent='#sSwarm.simple .rw>div:not(.acc){display:none!important}#sSwarm.simple:not(.acct-open) .rw>div.acc{display:none!important}#sSwarm.simple .rw{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}'
+  +'#sSwarm.simple .adv-only{display:none!important}'
+  +'#sSwarm.simple .adv-off{position:absolute!important;left:-99999px!important;top:0!important;width:360px!important;height:320px!important;overflow:hidden!important;visibility:hidden!important}'
+  +'#sSwarm:not(.simple) .simple-only{display:none!important}'
+  +'#swOneBox{margin:8px 0 4px}#swOneLine{font-size:15px;letter-spacing:.04em;color:#fff}#swOneLine b{letter-spacing:.1em}#swOneLast{font-size:11.5px;line-height:1.5;margin-top:4px;min-height:17px}'
+  +'#sSwarm.simple #swGo{padding:16px 10px;font-size:16px;letter-spacing:.14em}'
+  +'#swLinks{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0;font-size:10.5px;color:var(--dim,#7d90a6)}#swLinks button{font-size:11px;padding:5px 9px;opacity:.85}#swLinks span{flex:1;min-width:150px}';
+  document.head.appendChild(css);
+  ['swApp','swTok','swAcc'].forEach(id=>{const e=$(id),w=e&&e.closest('.rw > div');if(w)w.classList.add('acc')});
+  if($('swApp'))$('swApp').setAttribute('inputmode','text');
+  const adv=el=>{if(el)el.classList.add('adv-only')},off=el=>{if(el)el.classList.add('adv-off')};
+  adv($('swLink'));adv($('swLab'));adv($('calcBox'));adv($('swSfInfo'));adv($('swSt'));
+  ['swReal','swCsv','swClr','swMood'].forEach(id=>adv($(id)));
+  off($('accBox'));
+  /* the swarm picture and log stay alive off-screen so the swarm code keeps working */
+  if($('cvSwarm')){const g=$('cvSwarm').parentElement.parentElement;off(g&&g.classList.contains('sw2')?g:$('cvSwarm').parentElement)}
+  if($('swTblS')){const t=$('swTblS').parentElement;adv(t);const h=t.previousElementSibling;if(h&&h.classList.contains('ph'))adv(h);const n=t.nextElementSibling;if(n&&n.classList.contains('lab'))adv(n)}
+  /* status line + latest event */
+  const hd=sw.querySelector('.ph');
+  const box=document.createElement('div');box.id='swOneBox';box.className='simple-only';
+  box.innerHTML='<div id="swOneLine"></div><div id="swOneLast"></div>';
+  if(hd&&hd.parentNode)hd.parentNode.insertBefore(box,hd.nextSibling);
+  /* two small links under the START row */
+  const row=$('swGo')&&$('swGo').parentNode;
+  const links=document.createElement('div');links.id='swLinks';
+  links.innerHTML='<button id="swAcctBtn" class="simple-only" type="button">ACCOUNT</button><button id="swSimpleBtn" type="button"></button><span class="simple-only">Safe limits on: $1 stake, 3 open, $10 loss.</span>';
+  if(row&&row.parentNode)row.parentNode.insertBefore(links,row.nextSibling);
+  const btn=$('swSimpleBtn');
+  let simple=true;try{simple=localStorage.getItem('fat_sw_simple')!=='0'}catch(e){}
+  const apply=()=>{sw.classList.toggle('simple',simple);btn.textContent=simple?'ALL SETTINGS':'ONE-TAP VIEW';try{localStorage.setItem('fat_sw_simple',simple?'1':'0')}catch(e){}};
+  btn.onclick=()=>{simple=!simple;apply();window.dispatchEvent(new Event('resize'))};
+  $('swAcctBtn').onclick=()=>sw.classList.toggle('acct-open');
+  apply();
+  const COL={W:'#7defb4',L:'#ff8d98',X:'#f5a524',I:'#6cc6ff'};
+  const line=()=>{
+    const tok=(($('swTok')||{}).value||'').trim(),acc=($('swAcc')||{}).value;let m,c;
+    if(!tok){m='PAPER';c='#7defb4'}else if(acc==='real'){m='REAL MONEY';c='#ff8d98'}else{m='DEMO';c='#7defb4'}
+    const t=id=>($(id)||{}).textContent||'-';
+    $('swOneLine').innerHTML='<b style="color:'+c+'">'+m+'</b> &middot; P&amp;L '+esc(t('swPnl'))+' &middot; '+esc(t('swWr'))+' &middot; '+esc(t('swOpen'))+' open';
+    const l=$('swLog'),f=l&&l.firstElementChild,e=$('swOneLast');
+    e.textContent=f?f.textContent:'Press START.';e.style.color=f?(COL[f.className]||COL.I):COL.I;
+  };
+  line();setInterval(line,1000);
+  /* safe limits, applied just before the swarm's own start code runs */
+  const num=id=>{const e=$(id),v=e?parseFloat(e.value):NaN;return isFinite(v)?v:NaN};
+  const setv=(id,v)=>{const e=$(id);if(e&&String(e.value)!==String(v)){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}};
+  const cap=(id,max)=>{const v=num(id);setv(id,v>0?Math.min(v,max):max)};
+  const go=$('swGo');
+  if(go)go.addEventListener('click',e=>{
+    if(!sw.classList.contains('simple'))return;
+    if((go.textContent||'').trim()==='STOP')return;
+    const tok=(($('swTok')||{}).value||'').trim();
+    if(tok&&($('swAcc')||{}).value==='real'){
+      const t=typeof prompt==='function'?prompt('REAL MONEY: the swarm will place trades on your REAL account (up to $1 per trade, 3 open at once, $10 session loss limit).\n\nType REAL to start.'):null;
+      if(t!=='REAL'){e.preventDefault();e.stopImmediatePropagation();return}
+    }
+    cap('swMin',1);cap('swMo',3);cap('swMxL',10);cap('swMxC',4);cap('swMaxP',0.5);setv('swCd',Math.max(num('swCd')||0,2));
+  },true);
+}catch(e){console.error('swarm one-tap view',e)}
 })();
 </script>
 <script src="upgrade.js"></script>
