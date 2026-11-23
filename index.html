@@ -222,6 +222,20 @@ select{max-width:100%;text-overflow:ellipsis}
 </style>
 </head>
 <body>
+<script>
+/* =====================================================================
+   YOUR FIXED SETTINGS: paste your Telegram details between the quotes.
+   Leave them empty ('') to keep entering them in the page as before.
+   WARNING: anyone who can open this page can read this code, so use a
+   bot made only for these alerts and a private chat. If the token ever
+   leaks, make a new one with @BotFather (/revoke).
+   ===================================================================== */
+window.FAT_FIXED={
+  telegramToken:'8003032792:AAEqq_PBAo57HgeoScOBhXC__hcJHaOXMuY',
+  telegramChat:'-1003609140518'
+};
+</script>
+
 <header class="hd">
   <div class="logo">FAT</div>
   <div class="ttl"><div class="t1">FOCUS AUTO TRADERS <b>//</b> CONFLUENCE ENGINE</div><div class="t2">UP TO 16 INSTRUMENTS / ZONE + STRUCTURE + CANDLE + MOMENTUM + REGIME</div></div>
@@ -3402,6 +3416,18 @@ try{
   b.addEventListener('click',step);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();step()}});
   apply();
 }catch(e){console.error('art watermark',e)}
+})();
+</script><script>
+/* ===== FIXED TELEGRAM DETAILS: applies the values from YOUR FIXED SETTINGS every time the page loads ===== */
+(function(){
+try{
+  const F=window.FAT_FIXED||{},tok=String(F.telegramToken||'').trim(),chat=String(F.telegramChat||'').trim();
+  if(!tok&&!chat)return;
+  const t=document.getElementById('tgtok'),c=document.getElementById('tgchat');
+  const put=(el,v)=>{if(!el||!v)return;el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));el.readOnly=true;el.title='Set in the code (YOUR FIXED SETTINGS)';el.style.opacity='.8'};
+  put(t,tok);put(c,chat);
+  try{const cf=window.FATX&&FATX.cfg&&FATX.cfg();if(cf){if(tok)cf.tok=tok;if(chat)cf.chat=chat}}catch(e){}
+}catch(e){console.error('fixed telegram',e)}
 })();
 </script><script src="upgrade.js"></script>
 </body>
